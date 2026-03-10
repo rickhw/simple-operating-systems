@@ -1,0 +1,17 @@
+# 加入 --platform linux/amd64 消除執行時的架構警告
+DOCKER_CMD = docker run --platform linux/amd64 --rm -v $(PWD):/workspace -w /workspace os-builder
+
+all: build-env myos.bin
+
+build-env:
+	docker build -t os-builder .
+
+myos.bin: boot.o
+	# 加入 -m elf_i386 強制以 32 位元格式連結
+	$(DOCKER_CMD) ld -m elf_i386 -n -T linker.ld -o myos.bin boot.o
+
+boot.o: boot.S
+	$(DOCKER_CMD) nasm -f elf32 boot.S -o boot.o
+
+clean:
+	rm -f *.o *.bin
