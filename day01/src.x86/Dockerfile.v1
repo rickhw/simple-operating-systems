@@ -1,0 +1,14 @@
+FROM debian:bullseye
+
+# 精準替換：只替換 main 與 updates，保留 security 原始來源
+RUN sed -i 's|http://deb.debian.org/debian |http://ftp.tw.debian.org/debian |g' /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y \
+    nasm \
+    build-essential \
+    grub-pc-bin \
+    grub-common \
+    xorriso \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
