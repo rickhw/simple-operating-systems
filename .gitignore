@@ -1,0 +1,4 @@
+asm/*.o
+lib/*.o
+*.bin
+*.iso
