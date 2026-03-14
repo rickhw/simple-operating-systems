@@ -50,9 +50,11 @@ flowchart TD
     end
 
     %% 直接硬體溝通
-    subgraph IO ["4. 基礎 I/O 通訊"]
-        handlers -.->|"inb / outb\n(Inline ASM)"| PIC(("中斷控制器 PIC\n[Day 8]")):::hw
+    subgraph IO ["4. 基礎 I/O 通訊 (Day 21~22)"]
+        handlers -.->|"inb / outb"| PIC(("中斷控制器 PIC\n[Day 8]")):::hw
         tty["lib/tty.c\n[Day 9]"]:::clang -.->|"寫入 0xB8000"| VGA(("顯示卡 VGA\n[Day 2]")):::hw
+        ata_c["lib/ata.c\n[Day 21-22]"]:::clang -.->|"1. inb 檢查 DRQ 狀態\n2. inw/outw 搬運 512 bytes"| HDD(("ATA 硬碟控制器\n(Port 0x1F0~0x1F7)")):::hw
+        HDD -.->|"實體存取"| DISK[("儲存媒體 (hdd.img)")]:::hw
     end
 
     %% 記憶體動態分配 (Day 13~15)
