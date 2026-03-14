@@ -84,3 +84,11 @@ flowchart TD
         syscall_c -->|"6. 服務處理完成"| isr128
         isr128 -->|"7. popa 恢復暫存器\n8. iret 返回 Ring 3"| UserApp
     end
+
+    %% 儲存解析與檔案系統抽象層 (Day 23~24)
+    subgraph StorageFS ["8. 儲存解析與 VFS 抽象層 (Day 23 ~ 24)"]
+        mbr_c["lib/mbr.c\n(parse_mbr)\n[Day 23]"]:::clang -->|"1. 呼叫 ata_read_sector(0)\n萃取硬碟地契"| ata_c
+        syscall_c -.->|"未來 Syscall 將\n轉呼叫 VFS 介面"| vfs_c
+        vfs_c["lib/vfs.c\n(虛擬檔案系統)\n[Day 24]"]:::clang -->|"2. 呼叫 vfs_read()\n透過多型路由轉發"| fs_node["fs_node_t\n(通用檔案節點)"]:::clang
+        fs_node -->|"3. 執行節點綁定的\n具體讀寫邏輯"| dummy_c["dummy_device\n(測試用假裝置)"]:::clang
+    end
