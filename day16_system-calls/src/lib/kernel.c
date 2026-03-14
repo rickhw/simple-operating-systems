@@ -7,7 +7,8 @@
 #include "paging.h"
 #include "timer.h"
 #include "pmm.h"
-#include "kheap.h" // [新增]
+#include "kheap.h"
+#include "syscall.h"
 
 void kernel_main(void) {
     terminal_initialize();
