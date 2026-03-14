@@ -89,7 +89,7 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 
 1. **調試是最大的挑戰：** 在 OS 開發中，你沒有 `gdb` 可以直接連。建議先學會如何使用 QEMU 的偵錯開關（如 `-d int` 查看中斷）以及使用 GDB 遠端連接 QEMU 核心。
 2. **不要過度設計：** 在這 60 天內，目標是「理解概念」而非做出「下一個 Linux」。例如：檔案系統選 FAT16 就好，不要挑戰實作實時日誌系統。
-3. **關於硬體：** 既然你使用的是 **MacBook Pro M1 Max**，你需要建立一個 x86_64 的 Docker 容器來進行編譯，或者使用虛擬機運行 Linux，因為 macOS 的 Linker 與 Linux 格式 (ELF) 不同。
+3. **關於硬體：** 既然你使用的是 **MacBook Pro M1**，你需要建立一個 x86_64 的 Docker 容器來進行編譯，或者使用虛擬機運行 Linux，因為 macOS 的 Linker 與 Linux 格式 (ELF) 不同。
 4. **每天兩小時的分配：**
 * **前 30 分鐘：** 閱讀理論（例如：今天要做 IDT，先看 Intel 手冊關於 Interrupts 的章節）。
 * **後 90 分鐘：** 實作與 Debug。
