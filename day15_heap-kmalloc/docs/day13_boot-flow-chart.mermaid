@@ -1,0 +1,54 @@
+flowchart TD
+    %% 定義節點樣式
+    classDef asm fill:#f9d0c4,stroke:#e06666,stroke-width:2px,color:#000
+    classDef clang fill:#cfe2f3,stroke:#6fa8dc,stroke-width:2px,color:#000
+    classDef hw fill:#fff2cc,stroke:#d6b656,stroke-width:2px,color:#000
+
+    %% 系統啟動流程
+    subgraph Boot ["1. 系統啟動階段"]
+        GRUB(("GRUB")) -->|"載入核心到 1MB"| boot["asm/boot.S"]:::asm
+        boot -->|"建立 16KB 堆疊\n交出控制權"| kernel["lib/kernel.c"]:::clang
+    end
+
+    %% C 語言初始化呼叫 ASM
+    subgraph Init ["2. 核心初始化階段 (C 主動呼叫 ASM)"]
+        kernel -->|"1. 初始化 GDT 表格"| gdt_c["lib/gdt.c"]:::clang
+        gdt_c -->|"呼叫 gdt_flush"| gdt_s["asm/gdt_flush.S"]:::asm
+        gdt_s -.->|"執行 lgdt 指令\n刷新 CPU 段暫存器"| CPU(("CPU")):::hw
+
+        kernel -->|"2. 初始化 IDT 表格"| idt_c["lib/idt.c"]:::clang
+        idt_c -->|"呼叫 idt_flush"| idt_s["asm/interrupts.S"]:::asm
+        idt_s -.->|"執行 lidt 指令\n註冊中斷聯絡簿"| CPU
+
+        kernel -->|"3. 建立分頁目錄"| paging_c["lib/paging.c"]:::clang
+        paging_c -->|"呼叫 enable_paging"| paging_s["asm/paging_asm.S"]:::asm
+        paging_s -.->|"修改 CR3, CR0\n開啟虛擬記憶體"| CPU
+
+        kernel -->|"4. 初始化實體記憶體"| pmm_c["lib/pmm.c"]:::clang
+        pmm_c -.->|"建立 Bitmap 陣列\n標記保留區 (前 4MB)"| RAM(("實體記憶體 RAM")):::hw
+    end
+
+    %% 中斷觸發流程 (ASM 呼叫 C)
+    subgraph Interrupts ["3. 硬體中斷階段 (ASM 保護 C)"]
+        Timer(("時鐘 PIT")):::hw -- "每 10ms 發出 IRQ 0" --> CPU
+        Keyboard(("鍵盤")):::hw -- "按下按鍵發出 IRQ 1" --> CPU
+
+        CPU -->|"查 IDT，跳躍至對應跳板"| isr["asm/interrupts.S\n中斷跳板 ISR"]:::asm
+
+        isr -->|"1. pusha 保存暫存器\n2. 呼叫 C 處理常式"| handlers["lib/timer.c\nlib/keyboard.c"]:::clang
+        handlers -->|"執行完畢"| isr
+        isr -->|"3. popa 恢復暫存器\n4. iret 返回"| CPU
+    end
+
+    %% 直接硬體溝通
+    subgraph IO ["4. 基礎 I/O 通訊"]
+        handlers -.->|"inb / outb\n(Inline ASM)"| PIC(("中斷控制器 PIC")):::hw
+        tty["lib/tty.c"]:::clang -.->|"寫入 0xB8000"| VGA(("顯示卡 VGA")):::hw
+    end
+
+    %% 記憶體動態分配 (Day 13 & 14 預告)
+    subgraph MemMgmt ["5. 記憶體分配與映射 (PMM & Paging)"]
+        SysCall["核心或應用程式\n(需要新記憶體時)"]:::clang -->|"1. pmm_alloc_page()"| pmm_c
+        pmm_c -->|"2. 尋找 Bitmap 為 0 的位元\n回傳 4KB 實體位址"| SysCall
+        SysCall -.->|"3. 將實體位址登記到分頁表\n(Day 14 核心映射)"| paging_c
+    end
