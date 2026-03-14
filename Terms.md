@@ -1,4 +1,4 @@
-### Simple OS 核心名詞對照表
+### Simple OS 核心名詞對照表 (Day01 - 18)
 
 這份清單涵蓋了我們這兩週所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。
 
@@ -25,6 +25,7 @@
 | **CR0** | Control Register 0 | 控制暫存器 0 | 10 | 內含多個系統狀態旗標，最高位 PG (bit 31) 是虛擬記憶體（分頁機制）的總開關。 |
 | **CR3** | Control Register 3 | 控制暫存器 3 | 10 | 負責存放當前任務的「分頁目錄 (Page Directory)」的實體位址（翻譯字典的首頁）。 |
 | **cs** | Code Segment | 程式碼區段暫存器 | 16 | 記錄當前執行的程式碼區段。CPU 也是透過讀取它底層的 CPL (Current Privilege Level) 來判斷現在是處於 Ring 0 還是 Ring 3。 |
+| **eflags** | Extended Flags Register | 狀態旗標暫存器 | 17 | 存放各種系統狀態（如是否允許中斷 IF 旗標）。在切換至 Ring 3 時，必須透過假堆疊特別設定它以確保中斷開啟。 |
 
 #### x86 核心資料結構 (Core Data Structures)
 
@@ -38,6 +39,7 @@
 | **PT** | Page Table | 分頁表 | 10 | 虛擬記憶體字典的「內文」，包含 1024 個指向 4KB 實體頁框的項目。 |
 | **Bitmap** | Bitmap | 位元圖 | 13 | 使用 0 或 1 來極致壓縮記錄實體記憶體 (Page Frame) 使用狀態的陣列。 |
 | **Block Header** | Heap Block Header | 區塊標頭 | 15 | Heap 管理中，偷偷安插在每一個分配出去的記憶體區塊前方的結構，用來記錄該區塊的「大小」與「是否空閒」。 |
+| **TSS** | Task State Segment | 任務狀態段 | 17 | CPU 規定的「逃生路線圖」。掛載於 GDT，用來告訴硬體當 Ring 3 發生中斷時，要切換回哪一個安全的 Ring 0 核心堆疊 (`esp0`)。 |
 
 #### 軟體工具與概念 (Software & Concepts)
 
@@ -57,3 +59,7 @@
 | **Syscall** | System Call | 系統呼叫 | 16 | OS 提供給 User App 的「防彈玻璃窗口」，讓缺乏權限的程式能安全地請求核心服務（如要記憶體、印字串）。 |
 | **Soft IRQ** | Software Interrupt | 軟體中斷 | 16 | 程式透過指令 (如 `int`) 主動觸發的中斷，通常用於呼叫 Syscall。 |
 | **int 0x80** | Interrupt 0x80 | 0x80 號中斷 | 16 | Linux 與 x86 架構下，最傳統且神聖的系統呼叫專用中斷號碼（十進位 128）。 |
+| **iret** | Interrupt Return | 中斷返回指令 | 17 | 組合語言指令，會從堆疊彈出 EIP、CS、EFLAGS。我們利用偽造它的彈出資料，達成從 Ring 0 降級到 Ring 3 的作弊跳轉。 |
+| **ELF** | Executable and Linkable Format | 可執行與可連結格式 | 18 | Linux 與 Unix 系統標準的二進位執行檔格式，包含了機器碼與作業系統所需的載入資訊。 |
+| **Magic Number** | Magic Number | 魔法數字 | 18 | 檔案開頭的特定識別碼（如 ELF 的 `0x7F 'E' 'L' 'F'`），OS 用它來快速驗證檔案格式是否正確。 |
+| **Entry Point** | Entry Point | 進入點 | 18 | 執行檔標頭中記錄的虛擬記憶體位址，指示作業系統「這支程式的第一行指令在哪裡」。 |
