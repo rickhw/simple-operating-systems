@@ -1,6 +1,6 @@
-### Simple OS 核心名詞對照表 (Day01 - 18)
+### Simple OS 核心名詞對照表 (Day 01 - 20 完整版)
 
-這份清單涵蓋了我們這兩週所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。
+這份清單涵蓋了我們這段期間所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。
 
 #### 硬體與 CPU 架構層 (The Hardware)
 
@@ -45,21 +45,18 @@
 
 | 縮寫 | 全名 | 繁體中文名 | Day | 用途與說明 |
 | --- | --- | --- | --- | --- |
-| **OK** | Green "OK" | 綠色 OK 字樣 | 1 | 我們作業系統成功開機後的畫面。我們用它來證明核心運作正常。 |
 | **QEMU** | QEMU Emulator | QEMU 模擬器 | 1 | 我們用來測試作業系統的虛擬機軟體。 |
 | **GRUB** | GRUB Bootloader | GRUB 啟動載入器 | 1 | 負責從硬碟載入我們核心的軟體，並交出 CPU 控制權。 |
 | **Freestanding** | Freestanding Environment | 獨立執行環境 | 4 | 告訴 GCC：「我的核心是直接跑在硬體上的，沒有標準函式庫可用，一切自己來。」的編譯參數。 |
-| **Multitasking** | Multitasking | 多工處理 | 11 | CPU 利用 Timer 中斷，快速地在多個任務之間交替執行，營造出「同時運行」的幻覺。 |
-| **Context Switch** | Context Switch | 上下文切換 (任務切換) | 12 | [極核心] 保存當前任務的 CPU 狀態（esp、暫存器）並載入下一個任務狀態的過程。 |
+| **Context Switch** | Context Switch | 上下文切換 | 12 | [極核心] 保存當前任務的 CPU 狀態（esp、暫存器）並載入下一個任務狀態的過程。 |
 | **PMM** | Physical Memory Management | 實體記憶體管理 | 13 | 系統的「地政事務所」，負責精準追蹤與分配實體 RAM 中每一塊空地。 |
-| **Frame** | Page Frame | 實體頁框 | 13 | 實體記憶體被劃分成的最小標準單位，在 x86 系統中通常為 4KB。 |
 | **Paging** | Paging Mechanism | 分頁機制 (虛擬記憶體) | 14 | 將應用程式眼中的「虛擬位址」翻譯對應到「實體頁框」的 CPU 特權魔法。 |
 | **Heap** | Kernel Heap | 核心堆積 | 15 | OS 向 PMM 批發一大塊 4KB 記憶體後，用來「零售（切割）」給各種動態需求（字串、結構體）的記憶體池。 |
-| **kmalloc** | Kernel Malloc | 核心動態配置 | 15 | 核心專屬的動態記憶體分配函式，負責在 Heap 中尋找空閒區塊並進行切割。 |
 | **Syscall** | System Call | 系統呼叫 | 16 | OS 提供給 User App 的「防彈玻璃窗口」，讓缺乏權限的程式能安全地請求核心服務（如要記憶體、印字串）。 |
-| **Soft IRQ** | Software Interrupt | 軟體中斷 | 16 | 程式透過指令 (如 `int`) 主動觸發的中斷，通常用於呼叫 Syscall。 |
-| **int 0x80** | Interrupt 0x80 | 0x80 號中斷 | 16 | Linux 與 x86 架構下，最傳統且神聖的系統呼叫專用中斷號碼（十進位 128）。 |
 | **iret** | Interrupt Return | 中斷返回指令 | 17 | 組合語言指令，會從堆疊彈出 EIP、CS、EFLAGS。我們利用偽造它的彈出資料，達成從 Ring 0 降級到 Ring 3 的作弊跳轉。 |
 | **ELF** | Executable and Linkable Format | 可執行與可連結格式 | 18 | Linux 與 Unix 系統標準的二進位執行檔格式，包含了機器碼與作業系統所需的載入資訊。 |
-| **Magic Number** | Magic Number | 魔法數字 | 18 | 檔案開頭的特定識別碼（如 ELF 的 `0x7F 'E' 'L' 'F'`），OS 用它來快速驗證檔案格式是否正確。 |
-| **Entry Point** | Entry Point | 進入點 | 18 | 執行檔標頭中記錄的虛擬記憶體位址，指示作業系統「這支程式的第一行指令在哪裡」。 |
+| **Program Header** | Program Header Table | 程式標頭表 | 20 | ELF 內部的重要結構，指示作業系統「請把這段檔案資料，對應到哪個虛擬記憶體位址」。 |
+| **Multiboot** | Multiboot Specification | 多重開機規範 | 19 | GRUB 遵守的開機標準，允許 Bootloader 將硬體狀態與額外檔案的位址打包傳遞給 Kernel。 |
+| **MBI** | Multiboot Information | 多重開機資訊結構 | 19 | 開機時放在 `ebx` 暫存器內的結構體，裡面記載了記憶體大小與模組位址。 |
+| **Module** | Multiboot Module | 多重開機模組 | 19 | 由 GRUB 順手從硬碟載入到實體記憶體的外部檔案（例如我們的 `my_app.elf`）。 |
+| **Loader** | ELF Loader | 程式載入器 | 20 | 核心中負責讀取 ELF、分配虛擬分頁、並將權限交接給應用程式的 C 語言邏輯。 |
