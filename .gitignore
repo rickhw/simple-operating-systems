@@ -1,4 +1,4 @@
-asm/*.o
-lib/*.o
+*.o
+*.o
 *.bin
 *.iso
