@@ -1,4 +1,4 @@
-### Simple OS 核心名詞對照表 (Day 01 - 20 完整版)
+### Simple OS 核心名詞對照表 (Day 01 - 22 完整版)
 
 這份清單涵蓋了我們這段期間所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。
 
@@ -15,6 +15,8 @@
 | **Port** | I/O Port | I/O 通訊埠 | 4 | CPU 與硬體交換指令與資料的獨立通道（信箱編號）。 |
 | **TLB** | Translation Lookaside Buffer | 轉譯後備緩衝區 | 14 | CPU 內部的硬體快取，用來記住「虛擬位址到實體位址」的翻譯結果。修改分頁表後必須用 `invlpg` 指令刷新它。 |
 | **Ring 0 / 3** | Privilege Rings | 特權等級 | 16 | x86 硬體的權限分級防護。Ring 0 是核心專屬的最高權限（上帝視角），Ring 3 是使用者應用程式的最低權限。 |
+| **ATA/IDE** | Advanced Technology Attachment | 先進技術附加介面 | 21 | 傳統硬碟的傳輸介面標準，我們透過 I/O Port (`0x1F0`~`0x1F7`) 與其控制器溝通。 |
+| **LBA** | Logical Block Addressing | 邏輯區塊位址 | 21 | 現代硬碟的尋址方式。將硬碟視為一個巨大的陣列，從 LBA 0 開始，每個區塊通常是 512 Bytes。 |
 
 #### CPU 內部暫存器 (CPU Registers)
 
@@ -60,3 +62,5 @@
 | **MBI** | Multiboot Information | 多重開機資訊結構 | 19 | 開機時放在 `ebx` 暫存器內的結構體，裡面記載了記憶體大小與模組位址。 |
 | **Module** | Multiboot Module | 多重開機模組 | 19 | 由 GRUB 順手從硬碟載入到實體記憶體的外部檔案（例如我們的 `my_app.elf`）。 |
 | **Loader** | ELF Loader | 程式載入器 | 20 | 核心中負責讀取 ELF、分配虛擬分頁、並將權限交接給應用程式的 C 語言邏輯。 |
+| **PIO** | Programmed I/O | 可程式化輸出入 | 21 | 最基礎的硬碟通訊模式。CPU 必須親自透過 I/O Port，將資料一個字元一個字元地在 RAM 與硬碟間搬運。 |
+| **Cache Flush** | Cache Flush | 快取寫回 | 22 | ATA 指令 (`0xE7`)，強制硬碟將其內部緩衝區的資料立刻寫入實體碟片，確保資料持久化。 |
