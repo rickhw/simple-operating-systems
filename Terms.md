@@ -1,4 +1,4 @@
-### Simple OS 核心名詞對照表 (Day 01 - 27 完整版)
+### Simple OS 核心名詞對照表 (Day 01 - 30 終極版)
 
 這份清單涵蓋了我們這段期間所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。
 
@@ -41,11 +41,12 @@
 | **PT** | Page Table | 分頁表 | 10 | 虛擬記憶體字典的「內文」，包含 1024 個指向 4KB 實體頁框的項目。 |
 | **Bitmap** | Bitmap | 位元圖 | 13 | 使用 0 或 1 來極致壓縮記錄實體記憶體 (Page Frame) 使用狀態的陣列。 |
 | **Block Header** | Heap Block Header | 區塊標頭 | 15 | Heap 管理中，偷偷安插在每一個分配出去的記憶體區塊前方的結構，用來記錄該區塊的「大小」與「是否空閒」。 |
-| **TSS** | Task State Segment | 任務狀態段 | 17 | CPU 規定的「逃生路線圖」。掛載於 GDT，用來告訴硬體當 Ring 3 發生中斷時，要切換回哪一個安全的 Ring 0 核心堆疊 (`esp0`)。 |
+| **TSS** | Task State Segment | 任務狀態段 | 17 | CPU 規定的「逃生路線圖」。掛載於 GDT，用來告訴硬體當 Ring 3 發動 Syscall 或中斷時，要切換回哪一個安全的 Ring 0 核心堆疊 (`esp0`)。 |
 | **MBR** | Master Boot Record | 主開機紀錄 | 23 | 硬碟第 0 號磁區 (LBA 0) 的地契資料，存放了開機引導程式與「分區表 (Partition Table)」。 |
 | **fs_node** | File System Node | 檔案節點 (inode) | 24 | VFS 中代表一個檔案、目錄或裝置的核心結構，內部綁定了具體驅動程式的函式指標。 |
 | **Superblock** | Superblock | 超級區塊 | 25 | 檔案系統的「總地契」，位於分區的起點，記錄魔法數字、根目錄位置與分區總大小等關鍵 Metadata。 |
 | **File Entry** | File/Directory Entry | 檔案實體紀錄 | 25 | 存在於目錄區塊中的結構，負責登記單一檔案的「檔名」、「大小」與「資料起始相對 LBA」。 |
+| **Ring Buffer** | Circular Buffer | 環狀緩衝區 | 30 | 鍵盤驅動使用的資料結構，利用頭尾指標的追梭，實作 FIFO (先進先出) 的字元暫存區。 |
 
 #### 軟體工具與概念 (Software & Concepts)
 
@@ -57,18 +58,18 @@
 | **Context Switch** | Context Switch | 上下文切換 | 12 | [極核心] 保存當前任務的 CPU 狀態（esp、暫存器）並載入下一個任務狀態的過程。 |
 | **PMM** | Physical Memory Management | 實體記憶體管理 | 13 | 系統的「地政事務所」，負責精準追蹤與分配實體 RAM 中每一塊空地。 |
 | **Paging** | Paging Mechanism | 分頁機制 (虛擬記憶體) | 14 | 將應用程式眼中的「虛擬位址」翻譯對應到「實體頁框」的 CPU 特權魔法。 |
-| **Heap** | Kernel Heap | 核心堆積 | 15 | OS 向 PMM 批發一大塊 4KB 記憶體後，用來「零售（切割）」給各種動態需求（字串、結構體）的記憶體池。 |
-| **Syscall** | System Call | 系統呼叫 | 16 | OS 提供給 User App 的「防彈玻璃窗口」，讓缺乏權限的程式能安全地請求核心服務（如要記憶體、印字串）。 |
+| **Heap** | Kernel Heap | 核心堆積 | 15 | OS 向 PMM 批發一大塊記憶體後，用來「零售（切割）」給各種動態需求（字串、結構體）的記憶體池。 |
+| **Syscall** | System Call | 系統呼叫 | 16 | OS 提供給 User App 的「防彈玻璃窗口」，讓缺乏權限的程式能安全地請求核心服務（如要記憶體、印字串、討按鍵）。 |
 | **iret** | Interrupt Return | 中斷返回指令 | 17 | 組合語言指令，會從堆疊彈出 EIP、CS、EFLAGS。我們利用偽造它的彈出資料，達成從 Ring 0 降級到 Ring 3 的作弊跳轉。 |
 | **ELF** | Executable and Linkable Format | 可執行與可連結格式 | 18 | Linux 與 Unix 系統標準的二進位執行檔格式，包含了機器碼與作業系統所需的載入資訊。 |
 | **Program Header** | Program Header Table | 程式標頭表 | 20 | ELF 內部的重要結構，指示作業系統「請把這段檔案資料，對應到哪個虛擬記憶體位址」。 |
 | **Multiboot** | Multiboot Specification | 多重開機規範 | 19 | GRUB 遵守的開機標準，允許 Bootloader 將硬體狀態與額外檔案的位址打包傳遞給 Kernel。 |
-| **MBI** | Multiboot Information | 多重開機資訊結構 | 19 | 開機時放在 `ebx` 暫存器內的結構體，裡面記載了記憶體大小與模組位址。 |
-| **Module** | Multiboot Module | 多重開機模組 | 19 | 由 GRUB 順手從硬碟載入到實體記憶體的外部檔案（例如我們的 `my_app.elf`）。 |
-| **Loader** | ELF Loader | 程式載入器 | 20 | 核心中負責讀取 ELF、分配虛擬分頁、並將權限交接給應用程式的 C 語言邏輯。 |
+| **Loader** | ELF Loader | 程式載入器 | 29 | 核心中負責讀取 ELF、分配虛擬分頁、精準計算 `offset` 複製機器碼，並將權限交接給應用程式的 C 語言邏輯。 |
 | **PIO** | Programmed I/O | 可程式化輸出入 | 21 | 最基礎的硬碟通訊模式。CPU 必須親自透過 I/O Port，將資料一個字元一個字元地在 RAM 與硬碟間搬運。 |
-| **Cache Flush** | Cache Flush | 快取寫回 | 22 | ATA 指令 (`0xE7`)，強制硬碟將其內部緩衝區的資料立刻寫入實體碟片，確保資料持久化。 |
+| **Cache Flush** | Cache Flush | 快取寫回 | 29 | ATA 指令 (`0xE7`)，強制硬碟將其內部緩衝區的資料立刻寫入實體碟片。我們在 Day 29 學到必須等 `BSY` 降下才能發送此指令。 |
 | **VFS** | Virtual File System | 虛擬檔案系統 | 24 | 作業系統中的抽象介面層，利用「萬物皆檔案」的設計，將不同的實體檔案系統或硬體裝置統一封裝為標準 API。 |
 | **Function Pointer** | Function Pointer | 函式指標 | 24 | C 語言實作「多型 (Polymorphism)」與物件導向介面的核心技術，將函式位址當作變數儲存並呼叫。 |
 | **SimpleFS** | Simple File System | 簡單檔案系統 | 25 | 我們為了 Simple OS 手工打造的專屬輕量級檔案系統，直接架構在 ATA 硬碟的 LBA 系統之上。 |
-| **Format** | Formatting | 格式化 | 25 | 在空白的硬碟分區上寫入特定檔案系統的基礎設施（如 Superblock 和空目錄），使其具備存取資料的結構。 |
+| **FD** | File Descriptor | 檔案描述符 | 28 | 核心發放給 Ring 3 應用程式的整數號碼牌，代表一個已開啟的檔案節點。 |
+| **User Stack** | User Stack | 使用者堆疊 | 28 | 核心專門分配給 Ring 3 應用程式（位於高虛擬位址）的私有記憶體空間，防止其污染 Kernel Stack 引發 Page Fault。 |
+| **Deadlock** | Kernel Deadlock | 核心死結 | 30 | 作業系統因資源互相等待而永遠卡住的狀態。我們在實作 Shell 時學到，必須手動 `sti` 開啟中斷才能避免 CPU 睡死。 |
