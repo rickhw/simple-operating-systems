@@ -25,6 +25,8 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 
 本專案將 60 天的開發旅程劃分為六個衝刺階段（Sprints）。目前已順利完成前三個階段，系統不僅具備記憶體管理與特權隔離，更成功脫離 Bootloader 依賴，實現了從實體硬碟動態載入執行檔與互動式命令列的現代作業系統雛形。
 
+![](Overview.png)
+
 ## 第一階段：啟動與核心骨架 (Day 1-10) [✅ 已完成]
 
 **目標：** 從 BIOS 接管控制權，建立中斷與基礎輸出能力。
@@ -42,6 +44,8 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 * **Day 16-17:** 系統呼叫 (Syscall, `int 0x80`) 與 TSS 設定，防護降級至 User Mode (Ring 3)。
 * **Day 18-20:** ELF 執行檔解析器、GRUB Multiboot 模組接收與虛實記憶體映射。
 
+![](SubView-A.png)
+
 ## 第三階段：儲存裝置、檔案生態與互動 Shell (Day 21-30) [✅ 已完成]
 
 **目標：** 脫離 GRUB 保母，讓系統具備讀取實體硬碟、動態載入應用程式與雙向互動的能力。
@@ -49,6 +53,9 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 * **Day 21-23:** ATA/IDE 硬碟驅動實作 (PIO 模式) 與 MBR 分區表解析。
 * **Day 24-27:** VFS (虛擬檔案系統) 路由層設計與 SimpleFS 檔案系統實作 (支援跨磁區讀寫)。
 * **Day 28-30:** 檔案描述符 (FD)、User Stack 分配、動態 ELF 載入器，以及結合鍵盤緩衝區的互動式 Simple Shell。
+
+![](SubView-B.png)
+![](SubView-C.png)
 
 ## 第四階段：搶佔式多工與行程管理 (Day 31-40) [🚀 準備展開]
 

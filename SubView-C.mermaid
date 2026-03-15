@@ -1,0 +1,27 @@
+flowchart TD
+    classDef clang fill:#cfe2f3,stroke:#6fa8dc,stroke-width:2px,color:#000
+    classDef r3 fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000
+    classDef isr fill:#f9d0c4,stroke:#e06666,stroke-width:2px,color:#000
+
+    subgraph LoadPhase ["1. 動態載入階段 (Kernel)"]
+        Kernel["kernel_main()"]:::clang -->|"vfs_read()"| ReadELF["從硬碟讀取 my_app.elf"]:::clang
+        ReadELF -->|"elf_load()"| ELFLoader["解析 Program Header\n分配實體分頁與 User Stack"]:::clang
+        ELFLoader -->|"enter_user_mode()"| DropRing["偽造 iret 降級至 Ring 3\n(切換至 App 進入點)"]:::isr
+    end
+
+    subgraph RunPhase ["2. 互動執行階段 (User Space vs Kernel)"]
+        DropRing --> Shell
+
+        Shell["SimpleOS> Shell\n(等待使用者輸入)"]:::r3 -- "呼叫 sys_getchar()" --> Syscall["Syscall 5 (取得字元)"]:::clang
+        Syscall -->|"執行 hlt 休眠\n等待緩衝區更新"| Sleep((CPU 休眠))
+
+        Keyboard((鍵盤敲擊)) -- "觸發 IRQ 1" --> KbdISR["keyboard_handler()"]:::isr
+        KbdISR -->|"寫入字元"| RingBuffer[("256 bytes\nRing Buffer")]:::clang
+        KbdISR -->|"喚醒 CPU"| Sleep
+
+        Sleep -.->|"讀取字元並返回 Ring 3"| Shell
+
+        Shell -- "輸入 'cat hello.txt'" --> ReadCmd["解析指令\n呼叫 sys_read()"]:::r3
+        ReadCmd -->|"轉交 VFS 讀取硬碟"| PrintScreen["印出檔案內容到螢幕"]:::r3
+        PrintScreen --> Shell
+    end
