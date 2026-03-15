@@ -1,0 +1,44 @@
+sequenceDiagram
+    autonumber
+
+    participant TA as 執行緒 A<br/>(kernel.c#thread_A)
+    participant PIT as 硬體時鐘 PIT<br/>(Hardware)
+    participant ISR as 中斷處理<br/>(timer.c#timer_handler)
+    participant SCH as 排程器<br/>(task.c#schedule)
+    participant ASM as 上下文切換<br/>(switch_task.S#switch_task)
+    participant TB as 執行緒 B<br/>(kernel.c#thread_B)
+
+    TA->>TA: 執行中 (例如：無窮迴圈印出 'A')
+
+    Note over TA, PIT: 經過 10 毫秒 (1 Tick)
+    PIT-)ISR: 觸發 IRQ 0 中斷訊號
+
+    activate ISR
+    Note right of ISR: CPU 收到中斷，硬體自動暫停執行緒 A
+
+    ISR->>ISR: outb(0x20, 0x20)<br/>發送 EOI 給 PIC (非常重要！)
+
+    ISR->>SCH: 呼叫 schedule() 強行介入
+    activate SCH
+
+    SCH->>SCH: 從 Ready Queue 選出下一個任務<br/>(current_task = 執行緒 B)
+
+    SCH->>ASM: 呼叫 switch_task(&A.esp, &B.esp)
+    activate ASM
+
+    Note over ASM, TA: --- 1. 備份 Task A 的狀態 ---
+    ASM->>TA: pusha, pushf<br/>(將 CPU 暫存器壓入 A 的 Stack)
+    ASM->>TA: [eax] = esp<br/>(將當前 Stack 指標存入 A 的 TCB)
+
+    Note over ASM, TB: --- 2. 狸貓換太子 (核心魔法) ---
+    ASM->>TB: esp = [eax]<br/>(將 CPU Stack 指標替換為 B 的 TCB)
+
+    Note over ASM, TB: --- 3. 喚醒 Task B 的狀態 ---
+    ASM->>TB: popf, popa<br/>(從 B 的 Stack 彈出並恢復 CPU 暫存器)
+    ASM-->>TB: ret<br/>(跳轉至 B 上次被中斷的指令位址)
+
+    deactivate ASM
+    deactivate SCH
+    deactivate ISR
+
+    TB->>TB: 甦醒！接續執行 (例如：無窮迴圈印出 'B')
