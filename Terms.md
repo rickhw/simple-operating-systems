@@ -1,4 +1,4 @@
-## Simple OS 核心名詞對照表 (Day 01 - 24 完整版)
+### Simple OS 核心名詞對照表 (Day 01 - 27 完整版)
 
 這份清單涵蓋了我們這段期間所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。
 
@@ -44,6 +44,8 @@
 | **TSS** | Task State Segment | 任務狀態段 | 17 | CPU 規定的「逃生路線圖」。掛載於 GDT，用來告訴硬體當 Ring 3 發生中斷時，要切換回哪一個安全的 Ring 0 核心堆疊 (`esp0`)。 |
 | **MBR** | Master Boot Record | 主開機紀錄 | 23 | 硬碟第 0 號磁區 (LBA 0) 的地契資料，存放了開機引導程式與「分區表 (Partition Table)」。 |
 | **fs_node** | File System Node | 檔案節點 (inode) | 24 | VFS 中代表一個檔案、目錄或裝置的核心結構，內部綁定了具體驅動程式的函式指標。 |
+| **Superblock** | Superblock | 超級區塊 | 25 | 檔案系統的「總地契」，位於分區的起點，記錄魔法數字、根目錄位置與分區總大小等關鍵 Metadata。 |
+| **File Entry** | File/Directory Entry | 檔案實體紀錄 | 25 | 存在於目錄區塊中的結構，負責登記單一檔案的「檔名」、「大小」與「資料起始相對 LBA」。 |
 
 #### 軟體工具與概念 (Software & Concepts)
 
@@ -68,3 +70,5 @@
 | **Cache Flush** | Cache Flush | 快取寫回 | 22 | ATA 指令 (`0xE7`)，強制硬碟將其內部緩衝區的資料立刻寫入實體碟片，確保資料持久化。 |
 | **VFS** | Virtual File System | 虛擬檔案系統 | 24 | 作業系統中的抽象介面層，利用「萬物皆檔案」的設計，將不同的實體檔案系統或硬體裝置統一封裝為標準 API。 |
 | **Function Pointer** | Function Pointer | 函式指標 | 24 | C 語言實作「多型 (Polymorphism)」與物件導向介面的核心技術，將函式位址當作變數儲存並呼叫。 |
+| **SimpleFS** | Simple File System | 簡單檔案系統 | 25 | 我們為了 Simple OS 手工打造的專屬輕量級檔案系統，直接架構在 ATA 硬碟的 LBA 系統之上。 |
+| **Format** | Formatting | 格式化 | 25 | 在空白的硬碟分區上寫入特定檔案系統的基礎設施（如 Superblock 和空目錄），使其具備存取資料的結構。 |
