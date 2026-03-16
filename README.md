@@ -81,24 +81,6 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 
 ## 課程藍圖
 
-### Overview
-
-![](Overview.png)
-
-
-### Phase 1 ~ 2
-
-![](SubView-A.png)
-
-
-### Phase 3
-
-![](SubView-B.png)
-![](SubView-C.png)
-
-
-### Details
-
 ![](Course-Overview.png)
 
 ---

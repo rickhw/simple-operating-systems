@@ -1,0 +1,42 @@
+sequenceDiagram
+    autonumber
+
+    participant APP1 as "App 1 (即將死亡)<br/>(app.c)"
+    participant SYS as "系統呼叫介面<br/>(syscall.c)"
+    participant TASK as "排程器 & 狀態管理<br/>(task.c)"
+    participant ASM as "上下文切換<br/>(switch_task.S)"
+    participant APP2 as "App 2 (存活中)<br/>(app.c)"
+
+    Note over APP1, APP2: 雙胞胎 Shell 正在同時搶佔 CPU (Race Condition)
+
+    APP1->>APP1: 解析到 "exit" 指令
+    APP1->>SYS: 觸發 int 0x80 (eax = 7)<br/>呼叫 sys_exit()
+    activate SYS
+
+    SYS->>TASK: 轉交給核心處理<br/>呼叫 exit_task()
+    activate TASK
+
+    Note over TASK: --- 1. 死亡宣告 ---
+    TASK->>TASK: current_task->state = TASK_DEAD<br/>(標記 App 1 為死亡狀態)
+
+    TASK->>TASK: 呼叫 schedule()<br/>(強行讓出 CPU，一去不復返)
+
+    Note over TASK: --- 2. 清理屍體 (Reaping) ---
+    TASK->>TASK: 尋找下一個狀態為 RUNNING 的任務
+    TASK->>TASK: 發現 App 1 已死亡<br/>將其從環狀連結串列 (Linked List) 中剔除
+
+    Note over TASK: --- 3. 移交權力 ---
+    TASK->>TASK: current_task = App 2
+    TASK->>ASM: 呼叫 switch_task(&App1.esp, &App2.esp)
+    activate ASM
+
+    ASM->>ASM: 備份 App 1 最終狀態 (雖然已死)<br/>載入 App 2 的暫存器與 ESP
+    ASM-->>APP2: 執行 ret / iret 喚醒 App 2
+
+    deactivate ASM
+    deactivate TASK
+    deactivate SYS
+
+    Note over APP2: 此後，排程佇列中只剩下 App 2。<br/>即使時鐘中斷 (PIT) 觸發，<br/>schedule() 也只會切換給 App 2。<br/>App 2 正式獨佔鍵盤與 CPU！
+
+    APP2->>APP2: 繼續執行 while(1) 接收指令

@@ -1,0 +1,58 @@
+flowchart TD
+    classDef hardware fill:#fff2cc,stroke:#d6b656,stroke-width:2px,color:#000
+    classDef kernel fill:#cfe2f3,stroke:#6fa8dc,stroke-width:2px,color:#000
+    classDef userspace fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000
+    classDef interface fill:#fce5cd,stroke:#f6b26b,stroke-width:2px,color:#000,stroke-dasharray: 5 5
+    classDef newfeature fill:#f4cccc,stroke:#cc0000,stroke-width:3px,color:#000
+
+    subgraph UserSpace ["User Space (Ring 3) - [第 2, 3 階段完成]"]
+        Shell1["App 1: Interactive Shell\n(State: RUNNING)"]:::userspace
+        Shell2["App 2: Interactive Shell\n(State: DEAD)"]:::userspace
+    end
+
+    subgraph SyscallLayer ["System Call Interface (int 0x80)"]
+        Syscall["Syscall Handler\n(read, getchar, yield, exit)"]:::interface
+    end
+
+    subgraph KernelSpace ["Kernel Space (Ring 0) - [第 4 階段進行中]"]
+        subgraph ProcessMem ["行程管理與多工排程 (Day 31-33)"]
+            Scheduler["Scheduler & TCB\n(清理屍體與任務切換)"]:::newfeature
+            ContextSwitch["Context Switch\n(asm/switch_task.S)"]:::newfeature
+            PMM["PMM (實體記憶體)"]:::kernel
+            VMM["Paging (虛擬分頁)"]:::kernel
+        end
+
+        subgraph FSSubsystem ["檔案與儲存系統"]
+            VFS["VFS (虛擬檔案系統)"]:::kernel
+            SimpleFS["SimpleFS"]:::kernel
+        end
+
+        subgraph Interrupts ["中斷與硬體抽象"]
+            IDT["IDT / ISR (中斷表)"]:::kernel
+            TimerISR["Timer ISR\n(驅動排程心跳)"]:::newfeature
+            ATA["ATA Driver (硬碟)"]:::kernel
+        end
+    end
+
+    subgraph Hardware ["Hardware Layer (硬體層)"]
+        CPU(("x86 CPU")):::hardware
+        PIT(("時鐘 PIT\n(IRQ 0)")):::hardware
+        RAM(("實體 RAM")):::hardware
+        HDD[("ATA 硬碟\n(hdd.img)")]:::hardware
+        KB>鍵盤輸入]:::hardware
+    end
+
+    %% 多工排程的核心驅動線
+    PIT -- "1. 觸發 (每 10ms)" --> TimerISR
+    TimerISR -- "2. 強行呼叫" --> Scheduler
+    Scheduler -- "3. 狸貓換太子" --> ContextSwitch
+    ContextSwitch -- "4. 切換 Stack 與 esp0" --> UserSpace
+
+    %% 一般關聯線
+    Shell1 & Shell2 -->|"請求系統服務 (如 exit)"| Syscall
+    Syscall -->|"路由轉發"| KernelSpace
+
+    ProcessMem <--> RAM
+    FSSubsystem <--> ATA
+    ATA <--> HDD
+    KB --> IDT
