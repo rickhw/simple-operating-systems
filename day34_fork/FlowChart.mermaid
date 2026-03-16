@@ -1,0 +1,19 @@
+flowchart TD
+    classDef kernel fill:#cfe2f3,stroke:#6fa8dc,stroke-width:2px,color:#000
+    classDef userspace fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000
+    classDef highlight fill:#ffe599,stroke:#d6b656,stroke-width:3px,color:#000
+
+    Parent["老爸行程 (PID=1)<br/>呼叫 sys_fork()"]:::userspace --> Syscall["Kernel: 攔截 int 0x80"]:::kernel
+
+    subgraph KernelSpace ["Kernel 核心複製實驗室"]
+        Syscall --> AllocTCB["1. 分配新的 TCB (PID=2)"]:::kernel
+        AllocTCB --> CopyStack["2. 複製 User Stack 與暫存器狀態"]:::kernel
+        CopyStack --> AlterEAX["3. 偷改分身的 EAX = 0"]:::kernel
+        AlterEAX --> Queue["4. 將分身加入排程 Ready Queue"]:::kernel
+    end
+
+    Queue -->|5a. 回傳 PID=2 給老爸| ParentWake["老爸行程 (PID=1)<br/>繼續執行，收到 2"]:::userspace
+    Queue -.->|5b. 等待未來的 Timer 排程| ChildWake["分身行程 (PID=2)<br/>喚醒執行，收到 0"]:::highlight
+
+    ParentWake --> ParentLogic["if (pid > 0)<br/>老爸：呼叫 wait() 等待小孩死掉"]:::userspace
+    ChildWake --> ChildLogic["if (pid == 0)<br/>小孩：去執行其他任務 (如 cat)"]:::highlight

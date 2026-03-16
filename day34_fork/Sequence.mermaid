@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+
+    participant P as "老爸 (PID=1)<br/>(app.c)"
+    participant SYS as "Syscall 介面<br/>(syscall.c)"
+    participant TASK as "排程器 & TCB<br/>(task.c)"
+    participant C as "小孩 (PID=2)<br/>(app.c)"
+
+    P->>SYS: int 0x80 (eax=8)<br/>呼叫 fork()
+    activate SYS
+
+    Note over SYS: CPU 硬體自動壓入 iret 幀<br/>(EIP, CS, EFLAGS, ESP, SS)
+    SYS->>SYS: pusha 壓入通用暫存器
+
+    SYS->>TASK: 呼叫 sys_fork()，傳入暫存器指標
+    activate TASK
+
+    Note over TASK: --- 細胞分裂開始 ---
+    TASK->>TASK: 建立新 TCB (PID=2)<br/>分配新的 Kernel Stack & User Stack
+    TASK->>TASK: 將老爸的堆疊內容 memcpy 給小孩
+
+    Note over TASK: --- 植入不同的記憶 (回傳值) ---
+    TASK->>TASK: 小孩的 Kernel Stack 中，將 EAX 修改為 0
+
+    TASK->>TASK: 將小孩放入 Ready Queue
+    TASK-->>SYS: 回傳新 PID (2) 給老爸
+    deactivate TASK
+
+    SYS-->>P: iret (恢復老爸狀態，EAX=2)
+    deactivate SYS
+
+    Note over P: 老爸甦醒，拿到 2<br/>進入 if (pid > 0) 分支
+    P->>P: 老爸繼續執行
+
+    Note over TASK, C: ... 時間流逝，Timer 中斷觸發 schedule() ...
+
+    TASK->>C: switch_task 切換到小孩的核心堆疊
+    activate C
+    Note right of C: 小孩以為自己剛呼叫完 Syscall<br/>執行 iret，但 EAX 已經被改為 0
+    C->>C: 小孩甦醒，拿到 0<br/>進入 if (pid == 0) 分支
