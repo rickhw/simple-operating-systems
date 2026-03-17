@@ -21,6 +21,8 @@ unsigned char kbdus[128] = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0
 };
 
+// --- 公開 API ---
+
 void keyboard_handler(void) {
     uint8_t scancode = inb(0x60);
     if (!(scancode & 0x80)) {

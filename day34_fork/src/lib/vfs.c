@@ -1,9 +1,24 @@
+// VFS: Virtual File System
 #include "vfs.h"
 #include "tty.h"
 #include "utils.h"
 
 // 宣告全域的根節點 (目前還是空的，等具體檔案系統掛載後才會賦值)
 fs_node_t *fs_root = 0;
+
+// --- 公開 API ---
+
+void vfs_open(fs_node_t *node) {
+    if (node->open != 0) {
+        node->open(node);
+    }
+}
+
+void vfs_close(fs_node_t *node) {
+    if (node->close != 0) {
+        node->close(node);
+    }
+}
 
 // VFS 通用讀取函式
 uint32_t vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
@@ -23,17 +38,5 @@ uint32_t vfs_write(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buf
     } else {
         kprintf("[VFS] Error: Node '%s' does not support write operation.\n", node->name);
         return 0;
-    }
-}
-
-void vfs_open(fs_node_t *node) {
-    if (node->open != 0) {
-        node->open(node);
-    }
-}
-
-void vfs_close(fs_node_t *node) {
-    if (node->close != 0) {
-        node->close(node);
     }
 }

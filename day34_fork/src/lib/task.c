@@ -14,6 +14,8 @@ uint32_t next_task_id = 0;
 extern void switch_task(uint32_t *current_esp, uint32_t *next_esp);
 extern void child_ret_stub(); // 外部定義的終極降落傘
 
+// --- 公開 API ---
+
 void init_multitasking() {
     kprintf("[Task] Initializing Multitasking...\n");
     task_t *main_task = (task_t*) kmalloc(sizeof(task_t));
@@ -25,37 +27,6 @@ void init_multitasking() {
     main_task->next = main_task;
     current_task = main_task;
     ready_queue = main_task;
-}
-
-void exit_task() {
-    current_task->state = TASK_DEAD;
-    schedule();
-}
-
-void schedule() {
-    if (!current_task) return;
-
-    task_t *prev = (task_t*)current_task;
-    task_t *next = current_task->next;
-
-    while (next->state == TASK_DEAD && next != current_task) {
-        prev->next = next->next;
-        next = prev->next;
-    }
-
-    if (next == current_task && current_task->state == TASK_DEAD) {
-        kprintf("\n[Kernel] All user processes terminated. System Idle.\n");
-        while(1) { __asm__ volatile("cli; hlt"); }
-    }
-
-    current_task = next;
-
-    if (current_task != prev) {
-        if (current_task->kernel_stack != 0) {
-            set_kernel_stack(current_task->kernel_stack);
-        }
-        switch_task(&prev->esp, &current_task->esp);
-    }
 }
 
 void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
@@ -88,6 +59,32 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     new_task->esp = (uint32_t) kstack;
     new_task->next = current_task->next;
     current_task->next = new_task;
+}
+
+void schedule() {
+    if (!current_task) return;
+
+    task_t *prev = (task_t*)current_task;
+    task_t *next = current_task->next;
+
+    while (next->state == TASK_DEAD && next != current_task) {
+        prev->next = next->next;
+        next = prev->next;
+    }
+
+    if (next == current_task && current_task->state == TASK_DEAD) {
+        kprintf("\n[Kernel] All user processes terminated. System Idle.\n");
+        while(1) { __asm__ volatile("cli; hlt"); }
+    }
+
+    current_task = next;
+
+    if (current_task != prev) {
+        if (current_task->kernel_stack != 0) {
+            set_kernel_stack(current_task->kernel_stack);
+        }
+        switch_task(&prev->esp, &current_task->esp);
+    }
 }
 
 int sys_fork(registers_t *regs) {
@@ -158,4 +155,9 @@ int sys_fork(registers_t *regs) {
     current_task->next = child;
 
     return child->id;
+}
+
+void exit_task() {
+    current_task->state = TASK_DEAD;
+    schedule();
 }

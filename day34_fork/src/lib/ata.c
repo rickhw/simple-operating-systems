@@ -1,4 +1,5 @@
-// [Day21] add -- start
+// ATA: Advanced Technology Attachment
+// LBA: Logical Block Addressing
 #include "ata.h"
 #include "utils.h"
 #include "tty.h"
@@ -37,6 +38,7 @@ static void ata_delay() {
     inb(ATA_PORT_STATUS);
 }
 
+// --- 公開 API ---
 
 void ata_read_sector(uint32_t lba, uint8_t* buffer) {
     ata_wait_bsy(); // [新增] 開始前先確認硬碟有空
@@ -49,8 +51,7 @@ void ata_read_sector(uint32_t lba, uint8_t* buffer) {
     outb(ATA_PORT_COMMAND, 0x20); // 讀取
 
     ata_delay();    // [新增] 給硬碟一點時間掛上 BSY 旗標
-    // 讀取前，等待硬碟說「我有資料要給你」(DRQ=1)
-    ata_wait_drq();
+    ata_wait_drq(); // 讀取前，等待硬碟說「我有資料要給你」(DRQ=1)
 
     uint16_t* ptr = (uint16_t*) buffer;
     for (int i = 0; i < 256; i++) {

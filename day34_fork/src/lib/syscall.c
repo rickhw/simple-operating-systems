@@ -5,13 +5,15 @@
 #include "keyboard.h"
 #include "task.h"
 
+fs_node_t* fd_table[32] = {0};
+
+// --- 公開 API ---
+
 void init_syscalls(void) {
     kprintf("System Calls initialized on Interrupt 0x80 (128).\n");
 }
 
-fs_node_t* fd_table[32] = {0};
-
-// [修改] 利用 registers_t 讓參數無比清晰！
+// 利用 registers_t 讓參數無比清晰！
 void syscall_handler(registers_t *regs) {
     uint32_t eax = regs->eax;
 

@@ -1,3 +1,4 @@
+// ELF: Executable and Linkable Format
 #ifndef ELF_H
 #define ELF_H
 
@@ -27,10 +28,6 @@ typedef struct {
     uint16_t shstrndx;   // 字串表索引
 } __attribute__((packed)) elf32_ehdr_t;
 
-// 宣告我們的解析函式
-bool elf_check_supported(elf32_ehdr_t* header);
-
-// [Day20] add - start
 typedef struct {
     uint32_t type;   // 區段類型 (1 代表需要載入記憶體的 PT_LOAD)
     uint32_t offset; // 該區段在檔案中的偏移量
@@ -42,8 +39,10 @@ typedef struct {
     uint32_t align;  // 對齊要求
 } __attribute__((packed)) elf32_phdr_t;
 
+// 宣告我們的解析函式
+bool elf_check_supported(elf32_ehdr_t* header);
+
 // 新增 Loader 宣告
 uint32_t elf_load(elf32_ehdr_t* header);
-// [Day20] add - end
 
 #endif

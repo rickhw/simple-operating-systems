@@ -14,6 +14,8 @@ uint32_t user_page_table[1024] __attribute__((aligned(4096)));
 extern void load_page_directory(uint32_t*);
 extern void enable_paging(void);
 
+// --- 公開 API ---
+
 void init_paging(void) {
     // 1. 初始化 Page Directory：將所有條目設為「不存在」
     // 屬性 0x02 代表：Read/Write (可讀寫), 但 Present (存在) 為 0
@@ -49,7 +51,7 @@ void init_paging(void) {
     // [修改] 目錄的第 0 項也必須加上 User 權限 (7)
     page_directory[0] = ((uint32_t)first_page_table) | 7;
 
-    // [Day20][新增] 掛載到目錄的第 32 項 (管理 128MB ~ 132MB 的虛擬空間)
+    // 掛載到目錄的第 32 項 (管理 128MB ~ 132MB 的虛擬空間)
     page_directory[32] = ((uint32_t)user_page_table) | 7; // 7 代表允許 Ring 3 存取
 
     // 0x80000000 除以 4MB (0x400000) = 512，所以 2GB 的位址是由目錄的第 512 項來管！
@@ -61,8 +63,7 @@ void init_paging(void) {
     enable_paging();
 }
 
-
-// === [今天的主角：動態映射函式] ===
+// 動態映射函式
 void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
     // 1. 取得目錄索引 (最高 10 bits)：右移 22 位元
     uint32_t pd_idx = virt >> 22;

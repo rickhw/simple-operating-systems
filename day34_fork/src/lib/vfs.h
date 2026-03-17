@@ -1,3 +1,4 @@
+// VFS: Virtual File System
 #ifndef VFS_H
 #define VFS_H
 
@@ -42,9 +43,10 @@ typedef struct fs_node {
 extern fs_node_t *fs_root;
 
 // VFS 暴露給 Kernel 其他模組呼叫的通用 API
-uint32_t vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
-uint32_t vfs_write(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 void vfs_open(fs_node_t *node);
 void vfs_close(fs_node_t *node);
+
+uint32_t vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
+uint32_t vfs_write(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
 #endif

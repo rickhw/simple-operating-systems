@@ -1,8 +1,11 @@
+// ELF: Executable and Linkable Format
 #include "elf.h"
 #include "tty.h"
 #include "paging.h"
 #include "pmm.h"
 #include "utils.h"
+
+// --- 公開 API ---
 
 // 檢查這是不是一個我們支援的 x86 32-bit ELF 執行檔
 bool elf_check_supported(elf32_ehdr_t* header) {

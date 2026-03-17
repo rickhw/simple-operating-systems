@@ -1,3 +1,6 @@
+// IDT: Interrupt Descriptor Table
+// Intel 8259: https://zh.wikipedia.org/zh-tw/Intel_8259
+// PIC: [Programmable Interrupt Controller](https://en.wikipedia.org/wiki/Programmable_interrupt_controller)
 #include "idt.h"
 #include "io.h"
 
@@ -33,12 +36,12 @@ void isr0_handler(void) {
 }
 
 // 初始化 8259 PIC，將 IRQ 0~15 重映射到 IDT 的 32~47
+// Intel 8259: https://zh.wikipedia.org/zh-tw/Intel_8259
 void pic_remap() {
     // 儲存原本的遮罩 (Masks)
     uint8_t a1 = inb(0x21);
     uint8_t a2 = inb(0xA1);
-    (void)a1; // 消除 unused variable 警告
-    (void)a2; // 消除 unused variable 警告
+    (void)a1; (void)a2; // 消除 unused variable 警告
 
     // 開始初始化序列 (ICW1)
     outb(0x20, 0x11);
@@ -66,6 +69,8 @@ void pic_remap() {
     outb(0xA1, 0xFF);
 }
 
+
+// --- 公開 API ---
 
 void init_idt(void) {
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;

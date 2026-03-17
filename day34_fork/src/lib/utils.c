@@ -3,6 +3,8 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+// === Memory Utils ===
+
 // 記憶體複製 (將 src 複製 size 個 bytes 到 dst)
 void* memcpy(void* dstptr, const void* srcptr, size_t size) {
     unsigned char* dst = (unsigned char*) dstptr;
@@ -22,6 +24,7 @@ void* memset(void* bufptr, int value, size_t size) {
     return bufptr;
 }
 
+// === StringUilts ===
 // 輔助函式：反轉字串
 void reverse_string(char* str, int length) {
     int start = 0;
@@ -33,6 +36,23 @@ void reverse_string(char* str, int length) {
         start++;
         end--;
     }
+}
+
+int strcmp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}
+
+char *strcpy(char *dest, const char *src) {
+    char *saved = dest;
+    while (*src) {
+        *dest++ = *src++;
+    }
+    *dest = '\0';
+    return saved;
 }
 
 // 核心工具：整數轉字串 (itoa)
@@ -71,6 +91,9 @@ void itoa(int value, char* str, int base) {
     str[i] = '\0';
     reverse_string(str, i);
 }
+
+
+// === IO Utils ===
 
 // Kernel 專屬格式化輸出 (kprintf)
 void kprintf(const char* format, ...) {
@@ -129,7 +152,6 @@ void kprintf(const char* format, ...) {
 }
 
 
-// [Day21] add -- start
 uint16_t inw(uint16_t port) {
     uint16_t ret;
     __asm__ volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
@@ -139,24 +161,3 @@ uint16_t inw(uint16_t port) {
 void outw(uint16_t port, uint16_t data) {
     __asm__ volatile ("outw %1, %0" : : "dN" (port), "a" (data));
 }
-// [Day21] add -- end
-
-
-// [Day27] add -- start
-int strcmp(const char *s1, const char *s2) {
-    while (*s1 && (*s1 == *s2)) {
-        s1++;
-        s2++;
-    }
-    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
-
-char *strcpy(char *dest, const char *src) {
-    char *saved = dest;
-    while (*src) {
-        *dest++ = *src++;
-    }
-    *dest = '\0';
-    return saved;
-}
-// [Day27] add -- end
