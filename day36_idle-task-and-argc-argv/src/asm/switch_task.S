@@ -1,4 +1,21 @@
+; [目的] 進程上下文切換 (Context Switch)
+; [流程 - switch_task(old_esp, new_esp)]
+;    Current Stack (Task A)         Next Stack (Task B)
+;    +-------------------+          +-------------------+
+;    | 保存 Task A 現場  |          |                   |
+;    | (pusha, pushf)    |          |                   |
+;    | [esp] -> old_esp  |          |                   |
+;    +---------|---------+          +---------|---------+
+;              |                              V
+;              +------------------------> [ 載入 new_esp ]
+;                                             |
+;                                   +---------V---------+
+;                                   | 恢復 Task B 現場  |
+;                                   | (popf, popa)      |
+;                                   +-------------------+
+
 [bits 32]
+
 global switch_task
 global child_ret_stub
 

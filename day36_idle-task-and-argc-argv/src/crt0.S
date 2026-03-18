@@ -1,4 +1,20 @@
 ; crt0: C Runtime Zero, User Space
+; [目的] User Space 程式進入點與 C 執行環境初始化
+; [流程]
+; Kernel (iret) -> [ _start ]
+;                    |
+;                    |--> [ 清除 EBP ] (建立 Stack Trace 的終點)
+;                    |--> [ 提取參數 ] (從 ESP 取得 argc, argv)
+;                    |--> [ call main ] (進入使用者寫的 C 語言邏輯)
+;                    |      |
+;                    |      V
+;                    |--> [ main 返回 ]
+;                    |
+;                    |--> [ System Call 7 ] (執行 sys_exit 結束進程)
+;                    |
+;                    V
+;               [ 核心回收資源 ]
+
 [bits 32]
 global _start
 extern main ; 告訴組合語言，我們要呼叫 C 語言的 main 函式
