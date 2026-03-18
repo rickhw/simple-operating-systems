@@ -35,8 +35,7 @@ bool elf_check_supported(elf32_ehdr_t* header) {
         return false;
     }
 
-    kprintf("[ELF] Valid x86 32-bit Executable!\n");
-    kprintf("[ELF] Entry Point is at: [0x%x]\n", header->entry);
+    // kprintf("[ELF] Valid x86 32-bit Executable! Entry Point is at: [0x%x].\n", header->entry);
 
     return true;
 }

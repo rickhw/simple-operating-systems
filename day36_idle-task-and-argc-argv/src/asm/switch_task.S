@@ -2,7 +2,7 @@
 ; [流程 - switch_task(old_esp, new_esp)]
 ;    Current Stack (Task A)         Next Stack (Task B)
 ;    +-------------------+          +-------------------+
-;    | 保存 Task A 現場  |          |                   |
+;    | 保存 Task A 現場   |          |                   |
 ;    | (pusha, pushf)    |          |                   |
 ;    | [esp] -> old_esp  |          |                   |
 ;    +---------|---------+          +---------|---------+

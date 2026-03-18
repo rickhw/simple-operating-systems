@@ -173,6 +173,24 @@ int main(int argc, char** argv) {
                 sys_print("[PARENT] Child has finished! I am back in control.\n");
             }
         }
+        // [新增] 呼叫外部的 echo.elf
+        else if (strcmp(cmd_buffer, "echo") == 0) {
+            int pid = sys_fork();
+            if (pid == 0) {
+                // 準備要丟給 echo.elf 的參數 (最後必須是 0 結尾)
+                char* echo_args[] = {"echo.elf", "Hello", "Rick,", "Welcome", "to", "the", "Multiverse!", 0};
+
+                // 靈魂轉移！將子行程變成 echo.elf
+                int err = sys_exec("echo.elf", echo_args);
+
+                if (err == -1) {
+                    sys_print("Error: Exec failed to load echo.elf\n");
+                }
+                sys_exit();
+            } else {
+                sys_wait(pid);
+            }
+        }
         else {
             sys_print("Command not found: ");
             sys_print(cmd_buffer);

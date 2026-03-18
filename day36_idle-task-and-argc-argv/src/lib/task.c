@@ -23,7 +23,7 @@ void idle_loop() {
 }
 
 void init_multitasking() {
-    kprintf("[Task] Initializing Multitasking...\n");
+    // kprintf("[Task] Initializing Multitasking...\n");
     task_t *main_task = (task_t*) kmalloc(sizeof(task_t));
     main_task->id = next_task_id++;
     main_task->esp = 0;

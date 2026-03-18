@@ -1,3 +1,35 @@
+# 緣由
+
+[Facebook](https://www.facebook.com/rick.kyhwang/posts/pfbid02RrS7sEbJjWry84bNM1t2totc9fWYoHCQ61heQ3XT2vzN3aCknVqvmBp4BvEfQBf6l)
+
+[Thread](https://www.threads.com/@sjej77138/post/DVvrnqHElku)
+
+[周志遠教授｜作業系統](https://www.youtube.com/playlist?list=PLS0SUwlYe8cxj8FCPRoPHAehIiN9Vo6VZ)
+
+
+知其然，理論與實務
+
+現代分散式系統
+
+
+## BI and Workflow 工作流程
+
+- 自幹的
+- [Netflix Conductor](https://github.com/Netflix/conductor)
+- [BMC - Orchestration](https://www.bmc.com/it-solutions/automation-orchestration.html)
+- n8n
+- OpenClaw
+
+
+## 心得：課前知識
+
+1. c 語言
+2. 組合語言
+3. 對計算機組織有基本認識: 記憶體
+4. 
+
+---
+
 # Prompt
 
 你是一個資訊科學專家，教授 作業系統實作 這門課程，課程內容是教導學生透過實作一個真的可以運作的小型作業系統，透過課程內容學習到作業系統原理。
@@ -10,6 +42,7 @@
 
 
 https://gemini.google.com/app/18b8fcafe3a7592b
+
 
 ---
 
