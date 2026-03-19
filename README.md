@@ -11,6 +11,13 @@
 
 現代分散式系統
 
+## 實作
+
+- Built-in: help, about, exit
+- ls
+- cat
+- cat
+
 
 ## BI and Workflow 工作流程
 
@@ -26,7 +33,7 @@
 1. c 語言
 2. 組合語言
 3. 對計算機組織有基本認識: 記憶體
-4. 
+
 
 ---
 
