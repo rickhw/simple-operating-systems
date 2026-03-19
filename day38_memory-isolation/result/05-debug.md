@@ -1,0 +1,928 @@
+一樣會 reboot, 底下是 core dump & source code.
+
+```bash
+155: v=20 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000e
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x21
+156: v=21 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000e
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+157: v=80 e=0000 i=1 cpl=3 IP=001b:080480cf pc=080480cf SP=0023:083ffe68 env->regs[R_EAX]=00000005
+EAX=00000005 EBX=00000000 ECX=00000000 EDX=083fff11
+ESI=00000000 EDI=00000000 EBP=083ffe78 ESP=083ffe68
+EIP=080480cf EFL=00000202 [-------] CPL=3 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =001b 00000000 ffffffff 00cffa00 DPL=3 CS32 [-R-]
+SS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000010 CCD=083ffe68 CCO=SUBL
+EFER=0000000000000000
+Servicing hardware INT=0x20
+158: v=20 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000f
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x21
+159: v=21 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000f
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x20
+160: v=20 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000f
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x20
+161: v=20 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000f
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x20
+162: v=20 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000f
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x21
+163: v=21 e=0000 i=0 cpl=0 IP=0008:00100a47 pc=00100a47 SP=0010:c0004aa4 env->regs[R_EAX]=c000005c
+EAX=c000005c EBX=00105084 ECX=00000000 EDX=0000000f
+ESI=c0004ad8 EDI=00000000 EBP=083ffe78 ESP=c0004aa4
+EIP=00100a47 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=00000000 CCO=EFLAGS
+EFER=0000000000000000
+164: v=80 e=0000 i=1 cpl=3 IP=001b:08048025 pc=08048025 SP=0023:083ffe88 env->regs[R_EAX]=00000008
+EAX=00000008 EBX=00000000 ECX=083ffeac EDX=083ffeb0
+ESI=00000000 EDI=00000000 EBP=083ffe98 ESP=083ffe88
+EIP=08048025 EFL=00000206 [-----P-] CPL=3 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =001b 00000000 ffffffff 00cffa00 DPL=3 CS32 [-R-]
+SS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000010 CCD=083ffe88 CCO=SUBL
+EFER=0000000000000000
+165: v=80 e=0000 i=1 cpl=3 IP=001b:08048061 pc=08048061 SP=0023:083ffe80 env->regs[R_EAX]=0000000a
+EAX=0000000a EBX=00000002 ECX=083ffeac EDX=00000002
+ESI=00000000 EDI=00000000 EBP=083ffe94 ESP=083ffe80
+EIP=08048061 EFL=00000202 [-------] CPL=3 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =001b 00000000 ffffffff 00cffa00 DPL=3 CS32 [-R-]
+SS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000010 CCD=083ffe80 CCO=SUBL
+EFER=0000000000000000
+166: v=80 e=0000 i=1 cpl=3 IP=001b:08048043 pc=08048043 SP=0023:083fde7c env->regs[R_EAX]=00000009
+EAX=00000009 EBX=083fdea8 ECX=083fdec8 EDX=083fdea8
+ESI=00000000 EDI=00000000 EBP=083fde90 ESP=083fde7c
+EIP=08048043 EFL=00000202 [-------] CPL=3 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =001b 00000000 ffffffff 00cffa00 DPL=3 CS32 [-R-]
+SS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=00130000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000010 CCD=083fde7c CCO=SUBL
+EFER=0000000000000000
+check_exception old: 0xffffffff new 0xe
+167: v=0e e=0000 i=0 cpl=0 IP=0008:00101d45 pc=00101d45 SP=0010:c0005a30 CR2=083fdec8
+EAX=00428007 EBX=00105084 ECX=000003ff EDX=083ff000
+ESI=0011c000 EDI=c0005d30 EBP=083fdec8 ESP=c0005a30
+EIP=00101d45 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=083fdec8 CR3=0011c000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=08000000 CCD=003fdec8 CCO=SUBL
+EFER=0000000000000000
+check_exception old: 0xe new 0xd
+168: v=08 e=0000 i=0 cpl=0 IP=0008:00101d45 pc=00101d45 SP=0010:c0005a30 env->regs[R_EAX]=00428007
+EAX=00428007 EBX=00105084 ECX=000003ff EDX=083ff000
+ESI=0011c000 EDI=c0005d30 EBP=083fdec8 ESP=c0005a30
+EIP=00101d45 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+FS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+GS =0023 00000000 ffffffff 00cff300 DPL=3 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=083fdec8 CR3=0011c000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=08000000 CCD=003fdec8 CCO=SUBL
+EFER=0000000000000000
+check_exception old: 0x8 new 0xd
+```
+
+---
+
+paging.c
+```c
+#include <stdint.h>
+#include <stddef.h>
+#include "paging.h"
+#include "utils.h"
+#include "pmm.h"
+
+uint32_t page_directory[1024] __attribute__((aligned(4096)));
+uint32_t first_page_table[1024] __attribute__((aligned(4096)));
+uint32_t second_page_table[1024] __attribute__((aligned(4096)));
+uint32_t third_page_table[1024] __attribute__((aligned(4096)));
+uint32_t user_page_table[1024] __attribute__((aligned(4096)));
+
+// ====================================================================
+// 【神級捷徑】預先分配 16 個宇宙的空間！
+// 確保它們永遠在 Kernel 0~4MB 的 1:1 映射區內，實體位址 = 虛擬位址！
+// ====================================================================
+uint32_t universe_pds[16][1024] __attribute__((aligned(4096)));
+uint32_t universe_pts[16][1024] __attribute__((aligned(4096)));
+int next_universe_id = 0;
+
+extern void load_page_directory(uint32_t*);
+extern void enable_paging(void);
+
+void init_paging(void) {
+    for(int i = 0; i < 1024; i++) {
+        page_directory[i] = 0x00000002;
+    }
+
+    for(int i = 0; i < 1024; i++) {
+        first_page_table[i] = (i * 0x1000) | 7;
+    }
+
+    for(int i = 0; i < 1024; i++) { second_page_table[i] = 0; }
+    for(int i = 0; i < 1024; i++) { third_page_table[i] = 0; }
+    for(int i = 0; i < 1024; i++) { user_page_table[i] = 0; }
+
+    page_directory[0] = ((uint32_t)first_page_table) | 7;
+    page_directory[32] = ((uint32_t)user_page_table) | 7;
+    page_directory[512] = ((uint32_t)second_page_table) | 3;
+    page_directory[768] = ((uint32_t)third_page_table) | 3;
+
+    load_page_directory(page_directory);
+    enable_paging();
+}
+
+void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
+    uint32_t pd_idx = virt >> 22;
+    uint32_t pt_idx = (virt >> 12) & 0x03FF;
+
+    uint32_t* page_table;
+
+    if (pd_idx == 0) {
+        page_table = first_page_table;
+    } else if (pd_idx == 32) {
+        // =========================================================
+        // 【宇宙感知】從目前的 CR3 找出我們該寫哪一張 user_page_table！
+        // =========================================================
+        uint32_t cr3;
+        __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
+        uint32_t* current_pd = (uint32_t*) cr3;
+
+        uint32_t pt_entry = current_pd[32];
+        if (pt_entry & 1) { // 檢查 Present bit
+            // 因為 0-4MB 1:1 映射，實體位址可以直接當成指標使用！
+            page_table = (uint32_t*)(pt_entry & 0xFFFFF000);
+        } else {
+            kprintf("Error: user page table not present in current CR3!\n");
+            return;
+        }
+    } else if (pd_idx == 512) {
+        page_table = second_page_table;
+    } else if (pd_idx == 768) {
+        page_table = third_page_table;
+    } else {
+        kprintf("Error: Page table not allocated for pd_idx [%d]!\n", pd_idx);
+        return;
+    }
+
+    page_table[pt_idx] = (phys & 0xFFFFF000) | flags;
+    __asm__ volatile("invlpg (%0)" ::"r" (virt) : "memory");
+}
+
+uint32_t create_page_directory() {
+    if (next_universe_id >= 16) {
+        kprintf("Error: Max universes reached!\n");
+        while(1) __asm__ volatile("hlt");
+    }
+
+    // 1. 取出預先分配好的記憶體區塊 (極度安全，無須 map_page)
+    int id = next_universe_id++;
+    uint32_t* new_pd = universe_pds[id];
+    uint32_t* new_pt = universe_pts[id];
+
+    // 2. 複製 Kernel 原始目錄的基礎建設 (0-4MB 核心區, Heap 等)
+    for(int i = 0; i < 1024; i++) {
+        new_pd[i] = page_directory[i];
+    }
+
+    // 3. 將新的 User Page Table 清空 (新程式不會繼承老爸的記憶體殘骸)
+    for(int i = 0; i < 1024; i++) {
+        new_pt[i] = 0;
+    }
+
+    // 4. 掛載新的 User Page Table 到新宇宙的第 32 個目錄項
+    // 7 = Present | Read/Write | User Mode
+    new_pd[32] = ((uint32_t)new_pt) | 7;
+
+    // 5. 回傳新宇宙的實體位址，準備給 sys_exec 裡的 CR3 使用！
+    return (uint32_t)new_pd;
+}
+```
+
+---
+switch_task.S
+```asm
+; [目的] 進程上下文切換 (Context Switch)
+; [流程 - switch_task(old_esp, new_esp)]
+;    Current Stack (Task A)         Next Stack (Task B)
+;    +-------------------+          +-------------------+
+;    | 保存 Task A 現場   |          |                   |
+;    | (pusha, pushf)    |          |                   |
+;    | [esp] -> old_esp  |          |                   |
+;    +---------|---------+          +---------|---------+
+;              |                              V
+;              +------------------------> [ 載入 new_esp ]
+;                                             |
+;                                   +---------V---------+
+;                                   | 恢復 Task B 現場  |
+;                                   | (popf, popa)      |
+;                                   +-------------------+
+
+[bits 32]
+
+global switch_task
+global child_ret_stub
+
+; extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3);
+switch_task:
+    pusha
+    pushf
+
+    ; =========================================================
+    ; 【關鍵修復：拯救 CR3】
+    ; 必須在修改 ESP「之前」，先從舊堆疊拿出第三個參數 next_cr3
+    ; 我們把它暫存在 EDX 裡 (稍後 popa 會從新堆疊覆蓋掉 EDX，所以借放一下非常安全)
+    ; =========================================================
+    mov edx, [esp + 48]
+
+    ; 保存 current_esp
+    mov eax, [esp + 40]
+    mov [eax], esp
+
+    ; 載入 next_esp (這一步之後，我們就正式跨入新任務的堆疊了！)
+    mov eax, [esp + 44]
+    mov esp, [eax]
+
+    ; 【跨越宇宙】堆疊切換完成，現在將剛才暫存的 CR3 寫入硬體！
+    mov cr3, edx
+
+    popf
+    popa
+
+    ret
+
+; ==========================================
+; 【終極降落傘】純組合語言實作，保證絕不弄髒暫存器！
+; ==========================================
+child_ret_stub:
+    ; 剛從 switch_task 的 ret 跳過來。
+    ; 此時 ESP 完美指向我們在 C 語言壓入的 edi！
+
+    ; 1. 精準彈出我們手工對齊的 4 個暫存器
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp       ; 這裡拿回了完美修正過的 EBP！
+
+    ; 2. 換上平民服裝 (User Data Segment = 0x23)
+    mov cx, 0x23
+    mov ds, cx
+    mov es, cx
+    mov fs, cx
+    mov gs, cx
+
+    mov eax, 0    ; 【核心魔法】子行程拿到回傳值 0！
+
+    ; 3. 完美降落！
+    ; 此刻 ESP 剛好指著我們手工準備的 IRET 幀 (EIP, CS, EFLAGS, ESP, SS)
+    iret
+```
+---
+user_mode.S
+```asm
+; 1. 手動建立一個 Ring 3 的環境。
+; 2. 確保平民有自己的堆疊（這就是為什麼你要 push edx 作為 ESP）。
+; 3. 確保平民不能亂搞（透過 GDT 描述符設定 DPL=3）。
+global enter_user_mode
+enter_user_mode:
+    ; 標準的 C 語言函式開頭
+    push ebp
+    mov ebp, esp
+
+    ; 因為 push 了 ebp，參數的位移要 +4
+    mov eax, [ebp+8]  ; 參數 1: entry_point
+    mov edx, [ebp+12] ; 參數 2: user_stack_ptr
+
+    mov cx, 0x23
+    mov ds, cx
+    mov es, cx
+    mov fs, cx
+    mov gs, cx
+
+    push 0x23         ; SS (User Data Segment)
+    push edx          ; ESP (給平民專用的堆疊！)
+    pushfd            ; EFLAGS Register (Extended Flags)
+    pop ebx
+    or ebx, 0x200     ; 開啟中斷
+    push ebx
+
+    ; 0x1b 的二進位是 ...00011 0 11，最後那兩個 11 就是在告訴 CPU：「等一下 iret 回去後，請進入 Ring 3。」
+    push 0x1b         ; CS (User Code Segment)
+
+    push eax          ; EIP
+    iret              ; Interrupt Return
+```
+---
+paging.S
+```asm
+; [目的] 設定分頁目錄位址並啟動分頁保護模式
+; [流程]
+; 1. load_page_directory: 將 Page Dir 位址寫入 CR3 暫存器
+; 2. enable_paging:
+;    [ 讀取 CR0 ] -> [ bit 31 設為 1 ] -> [ 寫回 CR0 ]
+;                                            |
+;                                            V
+;                                     [ 虛擬記憶體啟動 ]
+
+global load_page_directory
+global enable_paging
+
+; void load_page_directory(uint32_t* dir);
+load_page_directory:
+    mov eax, [esp+4]  ; 取得 C 語言傳進來的 page_directory 陣列位址
+    mov cr3, eax      ; 將位址存入 CR3 暫存器
+    ret
+
+; void enable_paging(void);
+enable_paging:
+    mov eax, cr0      ; 讀取目前的 CR0 狀態
+    or eax, 0x80000000; 使用 OR 運算，把最高位 (PG bit 31) 強制設為 1
+    mov cr0, eax      ; 寫回 CR0，虛擬記憶體機制瞬間啟動！
+    ret
+```
+
+---
+task.c
+```c
+#include <stdint.h>
+#include "task.h"
+#include "pmm.h"
+#include "kheap.h"
+#include "utils.h"
+#include "tty.h"
+#include "gdt.h"
+#include "paging.h"
+#include "simplefs.h"
+#include "vfs.h"
+#include "elf.h"
+
+volatile task_t *current_task = 0;
+volatile task_t *ready_queue = 0;
+uint32_t next_task_id = 0;
+task_t *idle_task = 0;
+
+extern uint32_t page_directory[]; // [Day38] 取得 Kernel 原始的分頁目錄
+// extern void switch_task(uint32_t *current_esp, uint32_t *next_esp); // [Day38][delete]
+extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3); // [Day38][change] 加上第三個參數 cr3
+extern void child_ret_stub();
+
+void idle_loop() {
+    while(1) { __asm__ volatile("sti; hlt"); }
+}
+
+void init_multitasking() {
+    // kprintf("[Task] Initializing Multitasking...\n");
+    task_t *main_task = (task_t*) kmalloc(sizeof(task_t));
+    main_task->id = next_task_id++;
+    main_task->esp = 0;
+    main_task->kernel_stack = 0;
+    main_task->state = TASK_RUNNING;
+    main_task->wait_pid = 0;
+    main_task->page_directory = (uint32_t) page_directory; // [Day38][Add] 住在原始宇宙
+
+    main_task->next = main_task;
+    current_task = main_task;
+    ready_queue = main_task;
+
+    idle_task = (task_t*) kmalloc(sizeof(task_t));
+    idle_task->id = 9999;
+    idle_task->state = TASK_RUNNING;
+    idle_task->wait_pid = 0;
+    idle_task->page_directory = (uint32_t) page_directory; // [Day38][Add] 住在原始宇宙
+
+    uint32_t *kstack_mem = (uint32_t*) kmalloc(4096);
+    uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + 4096);
+    idle_task->kernel_stack = (uint32_t) kstack;
+
+    *(--kstack) = (uint32_t) idle_loop;
+    for(int i = 0; i < 8; i++) *(--kstack) = 0;
+    *(--kstack) = 0x0202;
+
+    idle_task->esp = (uint32_t) kstack;
+}
+
+void exit_task() {
+    task_t *temp = current_task->next;
+    while (temp != current_task) {
+        if (temp->state == TASK_WAITING && temp->wait_pid == current_task->id) {
+            temp->state = TASK_RUNNING;
+            temp->wait_pid = 0;
+        }
+        temp = temp->next;
+    }
+    current_task->state = TASK_DEAD;
+    schedule();
+}
+
+void schedule() {
+    if (!current_task) return;
+
+    task_t *curr = (task_t*)current_task;
+    task_t *next_node = curr->next;
+
+    while (next_node != current_task) {
+        if (next_node->state == TASK_DEAD) {
+            curr->next = next_node->next;
+            next_node = curr->next;
+        } else {
+            curr = next_node;
+            next_node = curr->next;
+        }
+    }
+
+    task_t *next_run = current_task->next;
+    while (next_run->state != TASK_RUNNING && next_run != current_task) {
+        next_run = next_run->next;
+    }
+
+    if (next_run->state != TASK_RUNNING) {
+        next_run = idle_task;
+    }
+
+    task_t *prev = (task_t*)current_task;
+    current_task = next_run;
+
+    if (current_task != prev) {
+        if (current_task->kernel_stack != 0) {
+            set_kernel_stack(current_task->kernel_stack);
+        }
+        // switch_task(&prev->esp, &current_task->esp);
+        // [Day38][Change]【關鍵】把新任務專屬的宇宙 CR3 傳遞給組合語言！
+        switch_task(&prev->esp, &current_task->esp, current_task->page_directory);
+    }
+}
+
+void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
+    task_t *new_task = (task_t*) kmalloc(sizeof(task_t));
+    new_task->id = next_task_id++;
+    new_task->state = TASK_RUNNING;
+    new_task->wait_pid = 0;
+    new_task->page_directory = current_task->page_directory; // [Day38][Add] (sys_fork 裡是 child->page_directory)
+
+    uint32_t *kstack_mem = (uint32_t*) kmalloc(4096);
+    uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + 4096);
+    new_task->kernel_stack = (uint32_t) kstack;
+
+    // 留給 User Stack 一點呼吸空間
+    uint32_t *ustack = (uint32_t*) (user_stack_top - 64);
+
+    *(--ustack) = 0;
+    uint32_t argv_ptr = (uint32_t) ustack;
+    *(--ustack) = argv_ptr;
+    *(--ustack) = 0;
+    *(--ustack) = 0;
+
+    *(--kstack) = 0x23;
+    *(--kstack) = (uint32_t)ustack;
+    *(--kstack) = 0x0202;
+    *(--kstack) = 0x1B;
+    *(--kstack) = entry_point;
+
+    *(--kstack) = 0;
+    *(--kstack) = 0;
+    *(--kstack) = 0;
+    *(--kstack) = 0;
+
+    *(--kstack) = (uint32_t) child_ret_stub;
+
+    for(int i = 0; i < 8; i++) *(--kstack) = 0;
+    *(--kstack) = 0x0202;
+
+    new_task->esp = (uint32_t) kstack;
+    new_task->next = current_task->next;
+    current_task->next = new_task;
+}
+
+int sys_fork(registers_t *regs) {
+    task_t *child = (task_t*) kmalloc(sizeof(task_t));
+    child->id = next_task_id++;
+    child->state = TASK_RUNNING;
+    child->wait_pid = 0;
+    child->page_directory = current_task->page_directory; // [Day38][Add] (sys_fork 裡是 child->page_directory)
+
+    uint32_t *kstack_mem = (uint32_t*) kmalloc(4096);
+    uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + 4096);
+    child->kernel_stack = (uint32_t) kstack;
+
+    uint32_t child_ustack_base = 0x083FF000 - (child->id * 4096);
+    uint32_t child_ustack_phys = pmm_alloc_page();
+    map_page(child_ustack_base, child_ustack_phys, 7);
+
+    uint32_t cr3;
+    __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
+    __asm__ volatile("mov %0, %%cr3" : : "r"(cr3));
+
+    uint32_t parent_ustack_base = regs->user_esp & 0xFFFFF000;
+    uint8_t *src = (uint8_t*) parent_ustack_base;
+    uint8_t *dst = (uint8_t*) child_ustack_base;
+    for(int i = 0; i < 4096; i++) { dst[i] = src[i]; }
+
+    int32_t delta = child_ustack_base - parent_ustack_base;
+    uint32_t child_user_esp = regs->user_esp + delta;
+
+    uint32_t child_ebp = regs->ebp;
+    if (child_ebp >= parent_ustack_base && child_ebp < parent_ustack_base + 4096) {
+        child_ebp += delta;
+    }
+
+    uint32_t curr_ebp = child_ebp;
+    while (curr_ebp >= child_ustack_base && curr_ebp < child_ustack_base + 4096) {
+        uint32_t *ebp_ptr = (uint32_t*) curr_ebp;
+        uint32_t next_ebp = *ebp_ptr;
+        if (next_ebp >= parent_ustack_base && next_ebp < parent_ustack_base + 4096) {
+            *ebp_ptr = next_ebp + delta;
+            curr_ebp = *ebp_ptr;
+        } else {
+            break;
+        }
+    }
+
+    *(--kstack) = regs->user_ss;
+    *(--kstack) = child_user_esp;
+    *(--kstack) = regs->eflags;
+    *(--kstack) = regs->cs;
+    *(--kstack) = regs->eip;
+
+    *(--kstack) = child_ebp;
+    *(--kstack) = regs->ebx;
+    *(--kstack) = regs->esi;
+    *(--kstack) = regs->edi;
+
+    *(--kstack) = (uint32_t) child_ret_stub;
+
+    for(int i = 0; i < 8; i++) *(--kstack) = 0;
+    *(--kstack) = 0x0202;
+
+    child->esp = (uint32_t) kstack;
+    child->next = current_task->next;
+    current_task->next = child;
+
+    return child->id;
+}
+
+// int sys_exec(registers_t *regs) {
+//     char* filename = (char*)regs->ebx;
+//     char** argv = (char**)regs->ecx;
+
+//     fs_node_t* file_node = simplefs_find(filename);
+//     if (file_node == 0) { return -1; }
+
+//     uint8_t* buffer = (uint8_t*) kmalloc(file_node->length);
+//     vfs_read(file_node, 0, file_node->length, buffer);
+//     uint32_t entry_point = elf_load((elf32_ehdr_t*)buffer);
+//     kfree(buffer);
+
+//     if (entry_point == 0) return -1;
+
+//     uint32_t clean_user_stack_top = 0x083FF000 - (current_task->id * 4096) + 4096;
+//     uint32_t stack_ptr = clean_user_stack_top - 64;
+
+//     int argc = 0;
+//     if (argv != 0 && (uint32_t)argv > 0x08000000) {
+//         while (argv[argc] != 0) argc++;
+//     }
+
+//     uint32_t argv_ptrs[16] = {0};
+
+//     if (argc > 0) {
+//         for (int i = argc - 1; i >= 0; i--) {
+//             int len = strlen(argv[i]) + 1;
+//             stack_ptr -= len;
+//             memcpy((void*)stack_ptr, argv[i], len);
+//             argv_ptrs[i] = stack_ptr;
+//         }
+
+//         stack_ptr = stack_ptr & ~3;
+
+//         stack_ptr -= 4;
+//         *(uint32_t*)stack_ptr = 0;
+//         for (int i = argc - 1; i >= 0; i--) {
+//             stack_ptr -= 4;
+//             *(uint32_t*)stack_ptr = argv_ptrs[i];
+//         }
+//         uint32_t argv_base = stack_ptr;
+
+//         stack_ptr -= 4;
+//         *(uint32_t*)stack_ptr = argv_base;
+//         stack_ptr -= 4;
+//         *(uint32_t*)stack_ptr = argc;
+//     } else {
+//         stack_ptr -= 4;
+//         *(uint32_t*)stack_ptr = 0;
+//         stack_ptr -= 4;
+//         *(uint32_t*)stack_ptr = 0;
+//     }
+
+//     stack_ptr -= 4;
+//     *(uint32_t*)stack_ptr = 0;
+
+//     regs->eip = entry_point;
+//     regs->user_esp = stack_ptr;
+
+//     return 0;
+// }
+
+int sys_exec(registers_t *regs) {
+    char* filename = (char*)regs->ebx;
+    char** argv = (char**)regs->ecx;
+
+    fs_node_t* file_node = simplefs_find(filename);
+    if (file_node == 0) { return -1; }
+
+    uint8_t* buffer = (uint8_t*) kmalloc(file_node->length);
+    vfs_read(file_node, 0, file_node->length, buffer);
+
+    // =====================================================================
+    // 【神聖分離】在載入程式碼之前，為這個 Process 建立專屬的新宇宙！
+    // =====================================================================
+
+    // 1. 建立新的 Page Directory
+    uint32_t new_cr3 = create_page_directory();
+
+    // 2. [黑魔法] 切換到新宇宙，這樣 elf_load 才會把程式碼寫進新宇宙的記憶體裡！
+    uint32_t old_cr3;
+    __asm__ volatile("mov %%cr3, %0" : "=r"(old_cr3));
+    __asm__ volatile("mov %0, %%cr3" : : "r"(new_cr3));
+
+    // =====================================================================
+
+    uint32_t entry_point = elf_load((elf32_ehdr_t*)buffer);
+    kfree(buffer);
+
+    if (entry_point == 0) {
+        // 如果載入失敗（例如不是合法的 ELF），必須退回老爸的宇宙，當作沒事發生
+        __asm__ volatile("mov %0, %%cr3" : : "r"(old_cr3));
+        return -1;
+    }
+
+    // 成功載入！正式把這張地契登記在這個任務名下
+    current_task->page_directory = new_cr3;
+
+    // 分配一個全新的實體分頁給 User Stack (在新的宇宙裡)
+    // 雖然位址一樣是 0x083FF000，但背後的實體記憶體已經跟老爸完全不同了！
+    uint32_t clean_user_stack_top = 0x083FF000 + 4096; // 這裡我們讓每個程式的 stack 都在同一個虛擬位址
+    uint32_t ustack_phys = pmm_alloc_page();
+    map_page(0x083FF000, ustack_phys, 7);
+
+    // ------------------------------------------
+    // 接下來的參數建構 (argc, argv) 邏輯完全不變
+    // ------------------------------------------
+    uint32_t stack_ptr = clean_user_stack_top - 64;
+
+    int argc = 0;
+    // 這裡讀取 argv 是安全的，因為它位於核心的 Heap 區，新舊宇宙都看得到！
+    if (argv != 0 && (uint32_t)argv > 0x08000000) {
+        while (argv[argc] != 0) argc++;
+    }
+
+    uint32_t argv_ptrs[16] = {0};
+
+    if (argc > 0) {
+        for (int i = argc - 1; i >= 0; i--) {
+            int len = strlen(argv[i]) + 1;
+            stack_ptr -= len;
+            memcpy((void*)stack_ptr, argv[i], len);
+            argv_ptrs[i] = stack_ptr;
+        }
+
+        stack_ptr = stack_ptr & ~3;
+
+        stack_ptr -= 4;
+        *(uint32_t*)stack_ptr = 0;
+        for (int i = argc - 1; i >= 0; i--) {
+            stack_ptr -= 4;
+            *(uint32_t*)stack_ptr = argv_ptrs[i];
+        }
+        uint32_t argv_base = stack_ptr;
+
+        stack_ptr -= 4;
+        *(uint32_t*)stack_ptr = argv_base;
+        stack_ptr -= 4;
+        *(uint32_t*)stack_ptr = argc;
+    } else {
+        stack_ptr -= 4;
+        *(uint32_t*)stack_ptr = 0;
+        stack_ptr -= 4;
+        *(uint32_t*)stack_ptr = 0;
+    }
+
+    stack_ptr -= 4;
+    *(uint32_t*)stack_ptr = 0;
+
+    regs->eip = entry_point;
+    regs->user_esp = stack_ptr;
+
+    return 0;
+}
+
+int sys_wait(int pid) {
+    task_t *temp = current_task->next;
+    int found = 0;
+    while (temp != current_task) {
+        if (temp->id == (uint32_t)pid) { found = 1; break; }
+        temp = temp->next;
+    }
+    if (!found) return 0;
+
+    current_task->wait_pid = pid;
+    current_task->state = TASK_WAITING;
+    schedule();
+    return 0;
+}
+```

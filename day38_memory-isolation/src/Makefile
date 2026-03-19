@@ -37,20 +37,18 @@ echo.o: echo.c
 	@echo "==> 編譯 Echo 程式 (echo.c)..."
 	$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c echo.c -o echo.o
 
-# 【修改 2】讓 my_app.elf 依賴 crt0.o 和 app.o，並且在連結時確保 crt0.o 放在最前面！
+# Link
 my_app.elf: crt0.o app.o
-	@echo "==> 連結 User App，指定 Entry Point 於 0x08048000..."
+	@echo "==> 連結 Shell..."
 	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o app.o -o my_app.elf
 
-# 【新增】連結 echo.elf (同樣必須把 crt0.o 放在最前面)
 echo.elf: crt0.o echo.o
 	@echo "==> 連結 Echo 程式..."
-	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08080000 crt0.o echo.o -o echo.elf
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o echo.o -o echo.elf
 
-# 【新增】連結 cat.elf
 cat.elf: crt0.o cat.o
 	@echo "==> 連結 Cat 程式..."
-	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x080C0000 crt0.o cat.o -o cat.elf
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o cat.o -o cat.elf
 
 # 專屬清理 User App 的指令
 clean-app:

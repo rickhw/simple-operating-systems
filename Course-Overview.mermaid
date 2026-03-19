@@ -6,64 +6,53 @@ flowchart TD
     classDef clang_r3 fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000,stroke-dasharray: 5 5
     classDef grub fill:#d5a6bd,stroke:#a64d79,stroke-width:2px,color:#000
     classDef highlight fill:#ffe599,stroke:#d6b656,stroke-width:3px,color:#000
+    classDef magic fill:#e4d7f5,stroke:#8e7cc3,stroke-width:3px,color:#000
 
     %% 系統啟動流程
-    subgraph Boot ["1. 系統啟動階段 (Day 1, 2)"]
-        GRUB(("GRUB\n[Day 1]")) -->|"載入核心到 1MB"| boot["asm/boot.S\n[Day 2]"]:::asm
-        GRUB -.->|"順手載入模組\n(模擬安裝)"| Module(("實體記憶體中的\nELF 模組")):::grub
-        boot -->|"傳遞 MBI 指標\n建立 16KB 堆疊"| kernel["lib/kernel.c\n[Day 2]"]:::clang
+    subgraph Boot ["1. 系統啟動與掛載 (Day 1-25)"]
+        GRUB(("GRUB")) -->|"載入核心 & 模組"| boot["asm/boot.S"]:::asm
+        boot -->|"傳遞 MBI"| kernel["kernel_main()"]:::clang
+        kernel -->|"初始化 GDT/IDT/Paging"| init_sys["系統基礎建設"]:::clang
+        kernel -->|"解析 MBR & 掛載 SimpleFS"| simplefs_c["lib/simplefs.c"]:::clang
+        simplefs_c -.->|"跨磁區 LBA 讀寫"| HDD(("ATA 硬碟\n(hdd.img)")):::hw
+        kernel -->|"將 GRUB 模組 (ELF)\n寫入實體硬碟"| simplefs_c
     end
 
-    %% C 語言初始化呼叫 ASM
-    subgraph Init ["2. 核心基礎建設 (Day 6 ~ 16)"]
-        kernel -->|"1. 初始化 GDT/IDT"| gdt_idt["GDT & IDT 表格\n[Day 6-7]"]:::clang
-        gdt_idt -.->|"lgdt / lidt"| CPU(("CPU")):::hw
+    %% 排程與記憶體隔離核心 (Day 31-38)
+    subgraph Scheduler ["2. 多工排程與宇宙隔離 (Day 31-38)"]
+        PIT(("PIT (Timer)")):::hw -- "IRQ 0 (每秒百次)" --> CPU(("CPU")):::hw
+        CPU -->|"觸發"| isr0["timer_handler"]:::clang
+        isr0 -->|"呼叫"| schedule["schedule()\n(排程器)"]:::highlight
 
-        kernel -->|"2. 初始化 Paging"| paging_c["lib/paging.c\n[Day 10]"]:::clang
-        paging_c -.->|"修改 CR3, CR0"| CPU
+        schedule -->|"1. 更新狀態機\n(RUNNING/WAITING/DEAD)"| TaskQueue[("雙向環狀佇列\n(Ready Queue)")]:::clang
+        schedule -->|"2. 尋找下一個任務\n(若無則找 Idle Task)"| TaskQueue
+        schedule -->|"3. 呼叫"| switch_task["switch_task\n(Context Switch)"]:::magic
 
-        kernel -->|"3. 初始化 PMM/Heap"| mem_c["PMM & KHeap\n(128KB 空間)\n[Day 13-15, 29]"]:::clang
-        mem_c -.->|"縫合虛實位址"| RAM(("實體記憶體 RAM")):::hw
-
-        kernel -->|"4. 註冊 Syscall"| syscall_init["lib/syscall.c\n[Day 16]"]:::clang
-        syscall_init -.->|"掛載 isr128"| gdt_idt
+        switch_task -.->|"保存/載入 ESP"| Stack[("Kernel Stacks")]:::hw
+        switch_task -.->|"【切換 CR3 宇宙】"| MMU(("MMU (Paging)")):::hw
+        switch_task -->|"iret 降級或返回"| UserSpace
     end
 
-    %% 儲存與檔案系統 (Day 21 ~ 29)
-    subgraph StorageFS ["3. 儲存與檔案生態系 (Day 21 ~ 29)"]
-        kernel -->|"1. 解析 MBR\n掛載 SimpleFS"| simplefs_c["lib/simplefs.c\n[Day 25-29]"]:::clang
-        simplefs_c -.->|"跨磁區計算 LBA"| ata_c["lib/ata.c\n(ATA 驅動)\n[Day 21-22, 29]"]:::clang
-        ata_c -.->|"outb/inw + 等待 BSY"| HDD(("ATA 硬碟\nPort 0x1F0")):::hw
-        HDD -.->|"讀寫"| DISK[("實體硬碟 (hdd.img)")]:::hw
+    %% 行程生命週期與系統呼叫 (Day 34-38)
+    subgraph Syscalls ["3. 行程生命週期管理 (Syscalls)"]
+        UserSpace["Ring 3 應用程式\n(Shell, echo, cat)"]:::clang_r3 -- "int 0x80 (eax=8)" --> sys_fork["sys_fork()\n[細胞分裂]"]:::clang
+        UserSpace -- "int 0x80 (eax=9)" --> sys_exec["sys_exec()\n[奪舍與重置]"]:::clang
+        UserSpace -- "int 0x80 (eax=10)" --> sys_wait["sys_wait()\n[等待甦醒]"]:::clang
 
-        kernel -->|"2. 將 RAM 中的 ELF\n安裝進硬碟"| simplefs_c
-        kernel -->|"3. 透過 VFS 讀出 ELF"| vfs_c["lib/vfs.c\n[Day 24]"]:::clang
-        vfs_c -->|"路由轉發"| simplefs_c
+        sys_fork -->|"複製堆疊與暫存器"| TaskQueue
+        sys_exec -->|"建立全新 Page Dir\n切換至新宇宙"| MMU
+        sys_exec -->|"讀取 ELF & 構造 argc/argv"| mem_c["PMM / KHeap"]:::clang
+        sys_wait -->|"標記 WAITING"| schedule
     end
 
-    %% 動態載入與特權切換 (Day 28 ~ 29)
-    subgraph AppLoading ["4. 動態載入與權限降級 (Day 28 ~ 29)"]
-        kernel -->|"呼叫 ELF Loader"| elf_c["lib/elf.c\n[Day 20, 29]"]:::clang
-        elf_c -->|"精準計算 offset\n分配 User Stack"| mem_c
-        elf_c -->|"設定 TSS esp0\n準備跳轉"| KernelLoader["enter_user_mode\n[Day 17, 28]"]:::asm
-    end
-
-    %% 互動式 Shell 與中斷迴圈 (Day 30)
-    subgraph Interactive ["5. 互動式 Shell 生態系 (Day 30)"]
-        KernelLoader -->|"假 iret 降級\n(一去不復返)"| UserApp["Shell (app.c)\nRing 3 無窮迴圈\n[Day 30]"]:::highlight
-
+    %% 互動式 I/O (Day 30)
+    subgraph IO ["4. 終端機互動 I/O"]
         Keyboard(("鍵盤")):::hw -- "IRQ 1" --> CPU
-        CPU -->|"觸發中斷"| kbd_isr["keyboard_handler\n[Day 9, 30]"]:::clang
+        CPU --> kbd_isr["keyboard_handler"]:::clang
         kbd_isr -->|"存入"| RingBuffer[("Ring Buffer\n(256 bytes)")]:::clang
 
-        UserApp -- "1. int 0x80 (eax=5)" --> CPU
-        CPU -->|"2. 查 IDT 允許放行"| isr128["isr128\n[Day 16, 28]"]:::asm
-        isr128 -->|"3. push 暫存器"| syscall_h["syscall_handler\n[Day 28, 30]"]:::clang
-
-        syscall_h -->|"4. 呼叫 getchar()\n(主動 sti 開中斷)"| RingBuffer
-        syscall_h -->|"5. 若有字元則返回"| isr128
-        isr128 -->|"6. iret 帶回 eax"| UserApp
-
-        UserApp -- "解析 cat 指令\n發出 sys_read" --> syscall_h
-        syscall_h -->|"轉交 VFS"| vfs_c
+        UserSpace -- "sys_read (eax=4)" --> syscall_h["syscall_handler"]:::clang
+        syscall_h -->|"若是 FD 0 (STDIN)"| RingBuffer
+        syscall_h -->|"若是 FD 3+ (檔案)"| VFS["lib/vfs.c"]:::clang
+        VFS --> simplefs_c
     end
