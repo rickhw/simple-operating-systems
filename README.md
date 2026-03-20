@@ -16,6 +16,7 @@
 
 ## 實作
 
+- Day39/40: 實作 IPC (Inter Process Communication), 實作單核心的鎖機制: Mutex
 - Built-in: help, about, exit
 - ls
 - cat

@@ -22,6 +22,7 @@ int mb_head = 0;  // 讀取頭
 int mb_tail = 0;  // 寫入尾
 int mb_count = 0; // 目前信箱裡的信件數量
 
+// Mutex for Single Processor (SMP)
 // 【新增】核心同步鎖：利用開關中斷來保護 Critical Section
 void ipc_lock() {
     __asm__ volatile("cli"); // 關閉中斷：誰都別想搶走我的 CPU！

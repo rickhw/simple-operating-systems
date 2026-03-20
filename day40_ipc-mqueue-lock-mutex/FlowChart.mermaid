@@ -1,0 +1,50 @@
+flowchart TD
+    %% 定義樣式
+    classDef user fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000
+    classDef kernel fill:#cfe2f3,stroke:#6fa8dc,stroke-width:2px,color:#000
+    classDef critical fill:#fce5cd,stroke:#f1c232,stroke-width:3px,color:#000
+    classDef lock fill:#f9d0c4,stroke:#e06666,stroke-width:2px,color:#000,stroke-dasharray: 5 5
+
+    subgraph UserSpace ["User Space (Ring 3)"]
+        send_req(["呼叫 sys_send(msg)"]):::user
+        recv_req(["呼叫 sys_recv(buffer)"]):::user
+        send_ret(["回傳 0 (成功) / -1 (滿)"]):::user
+        recv_ret(["回傳 1 (收到) / 0 (空)"]):::user
+    end
+
+    subgraph KernelSpace ["Kernel Space (Ring 0) - syscall_handler"]
+
+        %% Send 邏輯
+        lock1["ipc_lock() \n (執行 CLI 關閉中斷)"]:::lock
+        check_full{"mb_count < MAX ?"}:::kernel
+        write_queue["拷貝 msg 到 queue[mb_tail] \n mb_tail = (mb_tail + 1) % MAX \n mb_count++"]:::critical
+        set_err_full["regs->eax = -1"]:::kernel
+        set_ok_send["regs->eax = 0"]:::kernel
+        unlock1["ipc_unlock() \n (執行 STI 開啟中斷)"]:::lock
+
+        send_req --> lock1
+        lock1 --> check_full
+        check_full -->|Yes| write_queue
+        check_full -->|No| set_err_full
+        write_queue --> set_ok_send
+        set_err_full --> unlock1
+        set_ok_send --> unlock1
+        unlock1 --> send_ret
+
+        %% Recv 邏輯
+        lock2["ipc_lock() \n (執行 CLI 關閉中斷)"]:::lock
+        check_empty{"mb_count > 0 ?"}:::kernel
+        read_queue["拷貝 queue[mb_head] 到 buffer \n mb_head = (mb_head + 1) % MAX \n mb_count--"]:::critical
+        set_err_empty["regs->eax = 0"]:::kernel
+        set_ok_recv["regs->eax = 1"]:::kernel
+        unlock2["ipc_unlock() \n (執行 STI 開啟中斷)"]:::lock
+
+        recv_req --> lock2
+        lock2 --> check_empty
+        check_empty -->|Yes| read_queue
+        check_empty -->|No| set_err_empty
+        read_queue --> set_ok_recv
+        set_err_empty --> unlock2
+        set_ok_recv --> unlock2
+        unlock2 --> recv_ret
+    end

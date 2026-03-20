@@ -1,0 +1,70 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant Shell as Shell (Parent)
+    participant Pong as Pong (Receiver)
+    participant Ping1 as Ping 1 (Sender)
+    participant Ping2 as Ping 2 (Sender)
+    participant Kernel as Kernel (IPC Queue)
+
+    User->>Shell: 輸入 "ipc" 指令
+    activate Shell
+
+    Shell->>Kernel: sys_fork() & sys_exec("pong.elf")
+    Kernel-->>Pong: 誕生於新宇宙
+    activate Pong
+
+    Pong->>Kernel: sys_recv() 檢查信箱
+    Kernel-->>Pong: 回傳 0 (信箱為空)
+    Pong->>Kernel: sys_yield() 讓出 CPU 待命
+    deactivate Pong
+
+    Shell->>Kernel: sys_fork() & sys_exec("ping.elf")
+    Kernel-->>Ping1: 誕生於新宇宙
+    activate Ping1
+
+    Shell->>Kernel: sys_fork() & sys_exec("ping.elf")
+    Kernel-->>Ping2: 誕生於新宇宙
+    activate Ping2
+
+    Note over Ping1, Ping2: 兩個 Ping 幾乎同時準備送信
+
+    Ping1->>Kernel: sys_send("Message 1")
+    activate Kernel
+    Note right of Kernel: cli (上鎖)<br/>寫入 Queue [0]<br/>sti (解鎖)
+    Kernel-->>Ping1: 成功送出
+    deactivate Kernel
+    Ping1->>Kernel: sys_exit() (死亡)
+    deactivate Ping1
+
+    Ping2->>Kernel: sys_send("Message 2")
+    activate Kernel
+    Note right of Kernel: cli (上鎖)<br/>寫入 Queue [1]<br/>sti (解鎖)
+    Kernel-->>Ping2: 成功送出
+    deactivate Kernel
+    Ping2->>Kernel: sys_exit() (死亡)
+    deactivate Ping2
+
+    Note over Kernel, Pong: 排程器 (Timer) 喚醒 Pong
+    activate Pong
+    Pong->>Kernel: sys_recv()
+    activate Kernel
+    Note right of Kernel: cli (上鎖)<br/>讀取 Queue [0]<br/>sti (解鎖)
+    Kernel-->>Pong: 取得 "Message 1"
+    deactivate Kernel
+    Pong->>User: 印出 Message 1
+
+    Pong->>Kernel: sys_recv()
+    activate Kernel
+    Note right of Kernel: cli (上鎖)<br/>讀取 Queue [1]<br/>sti (解鎖)
+    Kernel-->>Pong: 取得 "Message 2"
+    deactivate Kernel
+    Pong->>User: 印出 Message 2
+
+    Pong->>Kernel: sys_exit() (死亡)
+    deactivate Pong
+
+    Shell->>Kernel: sys_wait() 回收所有子行程
+    Kernel-->>Shell: 資源清理完畢
+    Shell->>User: 印出 "IPC Test Finished!"
+    deactivate Shell
