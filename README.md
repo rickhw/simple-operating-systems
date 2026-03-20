@@ -1,5 +1,11 @@
 # 緣由
 
+Just for fun
+
+
+實作過 AWS DynamoDB 的 Capacutiy Unit 機制，應用在 API 架構上。
+
+
 [Facebook](https://www.facebook.com/rick.kyhwang/posts/pfbid02RrS7sEbJjWry84bNM1t2totc9fWYoHCQ61heQ3XT2vzN3aCknVqvmBp4BvEfQBf6l)
 
 [Thread](https://www.threads.com/@sjej77138/post/DVvrnqHElku)
@@ -14,7 +20,9 @@
 有興趣的 Topic, 像是 IPC
 
 
-## 實作
+
+
+## 有趣的實作
 
 - Day39/40: 實作 IPC (Inter Process Communication), 實作單核心的鎖機制: Mutex
 - Built-in: help, about, exit

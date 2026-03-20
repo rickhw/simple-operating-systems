@@ -33,16 +33,18 @@ flowchart TD
         switch_task -->|"iret 降級或返回"| UserSpace
     end
 
-    %% 行程生命週期與系統呼叫 (Day 34-38)
-    subgraph Syscalls ["3. 行程生命週期管理 (Syscalls)"]
-        UserSpace["Ring 3 應用程式\n(Shell, echo, cat)"]:::clang_r3 -- "int 0x80 (eax=8)" --> sys_fork["sys_fork()\n[細胞分裂]"]:::clang
+    %% 行程生命週期與系統呼叫 (Day 34-40)
+    subgraph Syscalls ["3. 行程生命週期管理與 IPC (Syscalls)"]
+        UserSpace["Ring 3 應用程式\n(Shell, ping, pong)"]:::clang_r3 -- "int 0x80 (eax=8)" --> sys_fork["sys_fork()\n[細胞分裂]"]:::clang
         UserSpace -- "int 0x80 (eax=9)" --> sys_exec["sys_exec()\n[奪舍與重置]"]:::clang
         UserSpace -- "int 0x80 (eax=10)" --> sys_wait["sys_wait()\n[等待甦醒]"]:::clang
+        UserSpace -- "int 0x80 (eax=11, 12)" --> sys_ipc["sys_send() / sys_recv()\n[跨宇宙通訊]"]:::clang
 
         sys_fork -->|"複製堆疊與暫存器"| TaskQueue
         sys_exec -->|"建立全新 Page Dir\n切換至新宇宙"| MMU
         sys_exec -->|"讀取 ELF & 構造 argc/argv"| mem_c["PMM / KHeap"]:::clang
         sys_wait -->|"標記 WAITING"| schedule
+        sys_ipc -->|"cli (上鎖) / sti (解鎖)"| IPC_Mailbox[("IPC Message Queue\n[Day 40]")]:::clang
     end
 
     %% 互動式 I/O (Day 30)

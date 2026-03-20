@@ -1,6 +1,6 @@
-### Simple OS 核心名詞對照表 (Day 01 - 38 終極版)
+## Simple OS 核心名詞對照表 (Day 01 - 40 終極版)
 
-這份清單涵蓋了我們這段期間所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。我已經將最新的**多工作業排程、行程生命週期與 MMU 記憶體隔離概念**加入其中。
+這份清單涵蓋了我們這段期間所接觸的所有底層硬體、CPU 架構、軟體工具與程式設計概念。我已經將最新的**多工作業排程、行程生命週期、MMU 記憶體隔離與 IPC 行程通訊概念**加入其中。
 
 #### 硬體與 CPU 架構層 (The Hardware)
 
@@ -43,7 +43,7 @@
 | **MBR** | Master Boot Record | 主開機紀錄 | 23 | 硬碟第 0 號磁區 (LBA 0) 的地契資料，存放開機引導程式與「分區表 (Partition Table)」。 |
 | **fs_node** | File System Node | 檔案節點 (inode) | 24 | VFS 中代表檔案、目錄或裝置的核心結構，內部綁定了驅動程式的函式指標。 |
 | **Superblock** | Superblock | 超級區塊 | 25 | 檔案系統的「總地契」，記錄魔法數字、根目錄位置與分區總大小等關鍵 Metadata。 |
-| **Ring Buffer** | Circular Buffer | 環狀緩衝區 | 30 | 利用頭尾指標追梭，實作 FIFO (先進先出) 的字元暫存區，用於鍵盤輸入。 |
+| **Ring Buffer** | Circular Buffer | 環狀緩衝區 | 30 | 利用頭尾指標追梭，實作 FIFO (先進先出) 的字元暫存區，用於鍵盤與 Day 40 的 IPC Message Queue。 |
 
 #### 軟體工具與作業系統概念 (Software & Concepts)
 
@@ -57,3 +57,7 @@
 | **Idle Task** | System Idle Process | 系統空閒任務 | 36 | 永遠不會死亡、權限最低的背景任務。當沒有其他工作時負責執行 `hlt` 讓 CPU 省電。 |
 | **Memory Isolation**| Memory Isolation | 記憶體隔離 | 38 | 透過為每個 Process 提供獨立的 Page Directory，確保應用程式之間不會互相存取或覆蓋對方（奪舍）。 |
 | **VFS** | Virtual File System | 虛擬檔案系統 | 24 | 「萬物皆檔案」的介面層，將不同的實體檔案系統統一封裝為標準 API。 |
+| **IPC** | Inter-Process Comm. | 行程間通訊 | 39 | 讓處於不同隔離宇宙（CR3）的行程，透過核心提供的郵局（Message Queue）互相傳遞資料的機制。 |
+| **Polling / Yielding** | Polling & Yielding | 輪詢與讓出 | 39 | 迴圈檢查狀態（Polling），若未就緒則主動呼叫 `sys_yield` 交出 CPU 控制權，避免燒毀系統效能。 |
+| **Race Condition** | Race Condition | 競爭危害 | 40 | 多個任務同時且無序地修改共享變數，導致結果錯亂的恐怖現象。 |
+| **Mutex / Spinlock** | Mutual Exclusion | 互斥鎖 / 自旋鎖 | 40 | 保護危險區域（Critical Section）的神器。在我們的單核心系統中，實作為單純的開關硬體中斷 (`cli` / `sti`)。 |
