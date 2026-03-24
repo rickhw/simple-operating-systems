@@ -25,10 +25,9 @@ Just for fun
 ## 有趣的實作
 
 - Day39/40: 實作 IPC (Inter Process Communication), 實作單核心的鎖機制: Mutex
-- Built-in: help, about, exit
-- ls
-- cat
-- cat
+- Built-in: help, about, exit, cd, pwd, path solution
+- ls, touch, cat, mkdir
+
 
 
 ## BI and Workflow 工作流程
@@ -73,11 +72,11 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 
 ---
 
-# Simple OS 60 天實作課程大綱 (終極更新版)
+# Simple OS 60 天實作課程大綱
 
 本專案將 60 天的開發旅程劃分為六個衝刺階段（Sprints）。目前已順利完成前四個階段，系統不僅具備記憶體管理與特權隔離，更成功脫離 Bootloader 依賴，實現了從實體硬碟動態載入執行檔、互動式命令列，以及具備 MMU 隔離與 IPC 通訊的現代多工作業環境。
 
-## Phase 1: System Boot & Kernel Infrastructure (第一階段：啟動與核心骨架) [Day 1-10] [✅ 已完成]
+## Phase 1: System Boot & Kernel Infrastructure (第一階段：啟動與核心骨架) 
 
 **目標：** 從 BIOS 接管控制權，建立中斷與基礎輸出能力。
 
@@ -85,7 +84,7 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 * **Day 5-8:** GDT (全域描述符表)、IDT (中斷描述符表)、ISR 中斷跳板與 PIC 控制器。
 * **Day 9-10:** 鍵盤驅動與 Timer (PIT) 基礎中斷處理，完成硬體事件攔截。
 
-## Phase 2: Memory Management & Privilege Isolation (第二階段：記憶體與特權階級大挪移) [Day 11-20] [✅ 已完成]
+## Phase 2: Memory Management & Privilege Isolation (第二階段：記憶體與特權階級大挪移)
 
 **目標：** 建立現代記憶體管理機制，並成功在 Ring 3 執行外部應用程式。
 
@@ -94,7 +93,7 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 * **Day 16-17:** 系統呼叫 (Syscall, `int 0x80`) 與 TSS 設定，防護降級至 User Mode (Ring 3)。
 * **Day 18-20:** ELF 執行檔解析器、GRUB Multiboot 模組接收與虛實記憶體映射。
 
-## Phase 3: Storage, File System & Interactive Shell (第三階段：儲存裝置、檔案生態與互動 Shell) [Day 21-30] [✅ 已完成]
+## Phase 3: Storage, File System & Interactive Shell (第三階段：儲存裝置、檔案生態與互動 Shell)
 
 **目標：** 脫離 GRUB 保母，讓系統具備讀取實體硬碟、動態載入應用程式與雙向互動的能力。
 
@@ -102,7 +101,7 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 * **Day 24-27:** VFS (虛擬檔案系統) 路由層設計與 SimpleFS 檔案系統實作 (支援跨磁區讀寫)。
 * **Day 28-30:** 檔案描述符 (FD)、User Stack 分配、動態 ELF 載入器，以及結合鍵盤緩衝區的互動式 Simple Shell。
 
-## Phase 4: Preemptive Multitasking & Process Management (第四階段：搶佔式多工與行程管理) [Day 31-40] [✅ 已完成]
+## Phase 4: Preemptive Multitasking & Process Management (第四階段：搶佔式多工與行程管理)
 
 **目標：** 讓系統同時執行多個應用程式，完善行程生命週期管理與記憶體保護。
 
@@ -110,7 +109,7 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 * **Day 34-37:** 實作 UNIX 經典系統呼叫：`fork` (複製行程)、`exec` (替換執行檔)、`exit` 與 `wait`，並讓 Shell 具備解析與動態載入外部 ELF 工具的能力。
 * **Day 38-40:** 實作 MMU 記憶體隔離 (Memory Isolation) 與跨宇宙的 CR3 切換；建立核心同步機制 (Mutex) 與行程間通訊 (IPC Message Queue)，徹底解決資料競爭與記憶體奪舍問題。
 
-## Phase 5: User Space Ecosystem & Advanced File System (第五階段：User Space 生態擴張與寫入能力) [Day 41-50] [🚀 準備展開]
+## Phase 5: User Space Ecosystem & Advanced File System (第五階段：User Space 生態擴張與寫入能力) 
 
 **目標：** 打造平民專用的標準 C 函式庫，並讓檔案系統具備建立與寫入能力。
 
@@ -118,7 +117,7 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 * **Day 44-46:** Ring 3 的動態記憶體分配器 (`malloc`/`free`) 與 `sbrk` 系統呼叫。
 * **Day 47-50:** SimpleFS 升級（支援目錄結構與 `sys_write` 寫入硬碟），實作進階指令如 `ls`, `mkdir`, `echo > file`。
 
-## Phase 6: Graphical User Interface & Window System (第六階段：圖形介面與視窗系統) [Day 51-60]
+## Phase 6: Graphical User Interface & Window System (第六階段：圖形介面與視窗系統)
 
 **目標：** 脫離純文字模式，進入高解析度的畫布與視窗世界。
 
@@ -135,13 +134,10 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 
 ---
 
-## 建議與反饋
+## 學習環境
 
 1. **調試是最大的挑戰：** 在 OS 開發中，你沒有 `gdb` 可以直接連。建議先學會如何使用 QEMU 的偵錯開關（如 `-d int` 查看中斷）以及使用 GDB 遠端連接 QEMU 核心。
 2. **不要過度設計：** 在這 60 天內，目標是「理解概念」而非做出「下一個 Linux」。例如：檔案系統選 FAT16 就好，不要挑戰實作實時日誌系統。
-3. **關於硬體：** 既然你使用的是 **MacBook Pro M1**，你需要建立一個 x86_64 的 Docker 容器來進行編譯，或者使用虛擬機運行 Linux，因為 macOS 的 Linker 與 Linux 格式 (ELF) 不同。
-4. **每天兩小時的分配：**
-* **前 30 分鐘：** 閱讀理論（例如：今天要做 IDT，先看 Intel 手冊關於 Interrupts 的章節）。
-* **後 90 分鐘：** 實作與 Debug。
+3. **硬體環境：** **MacBook Pro M1**，你需要建立一個 x86_64 的 Docker 容器來進行編譯，或者使用虛擬機運行 Linux，因為 macOS 的 Linker 與 Linux 格式 (ELF) 不同。
 
 ---
