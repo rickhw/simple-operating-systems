@@ -1,0 +1,49 @@
+flowchart TD
+    classDef app fill:#e8f4f8,stroke:#6fa8dc,stroke-width:2px,color:#000
+    classDef libc fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000,stroke-dasharray: 5 5
+    classDef syscall fill:#ffe599,stroke:#d6b656,stroke-width:3px,color:#000
+    classDef vfs fill:#f4cccc,stroke:#c90076,stroke-width:2px,color:#000
+    classDef fs fill:#d5a6bd,stroke:#a64d79,stroke-width:2px,color:#000
+    classDef hw fill:#fff2cc,stroke:#d6b656,stroke-width:2px,color:#000
+
+    subgraph Ring3 ["Ring 3: User Space (應用程式與 libc)"]
+        Shell["Shell (app.c / shell.c)\n[解析指令、追蹤狀態]"]:::app
+        Utils["外部工具\n(ls, mkdir, write, rm, pwd)"]:::app
+
+        Libc_Mem["libc 記憶體管理\n(malloc / free)"]:::libc
+        Libc_IO["libc 檔案系統 API\n(create_file, mkdir, chdir, getcwd)"]:::libc
+
+        Shell -->|"呼叫"| Libc_Mem
+        Shell -->|"內建 cd / pwd"| Libc_IO
+        Utils -->|"呼叫"| Libc_IO
+    end
+
+    subgraph Ring0 ["Ring 0: Kernel Space (系統呼叫與核心)"]
+        Syscall{"Syscall Handler\n(int 0x80)"}:::syscall
+        Task["Task Struct (CWD)\n[提供 current_dir]"]:::vfs
+        KHeap["Kernel Heap / PMM\n(sys_sbrk)"]:::fs
+
+        Libc_Mem -- "sys_sbrk (13)" --> Syscall
+        Libc_IO -- "sys_create, sys_mkdir\nsys_chdir, sys_getcwd" --> Syscall
+
+        Syscall -->|"擴充 User Heap"| KHeap
+        Syscall -->|"結合 CWD 傳遞路徑"| Task
+    end
+
+    subgraph FS ["檔案系統引擎 (VFS & SimpleFS)"]
+        VFS["VFS (Virtual File System)\n[統一介面層]"]:::vfs
+        PathEngine["路徑解析引擎 (Path Resolution)\n[處理 /a/b/c, ., ..]"]:::fs
+        BlockAlloc["全域磁區分配器\n[管理 Superblock Data LBA]"]:::fs
+        DirMgmt["目錄與地契管理\n[處理 64-byte file_entry_t]"]:::fs
+
+        Task -->|"vfs_XXX"| VFS
+        VFS -->|"simplefs_XXX"| PathEngine
+        PathEngine -->|"定位目標目錄"| DirMgmt
+        DirMgmt -->|"需要新空間時"| BlockAlloc
+    end
+
+    subgraph Hardware ["底層硬體"]
+        HDD(("ATA 硬碟 (hdd.img)")):::hw
+        BlockAlloc -.->|"更新 Superblock"| HDD
+        DirMgmt -.->|"讀寫磁區 (Sector)"| HDD
+    end

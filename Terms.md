@@ -61,3 +61,22 @@
 | **Polling / Yielding** | Polling & Yielding | 輪詢與讓出 | 39 | 迴圈檢查狀態（Polling），若未就緒則主動呼叫 `sys_yield` 交出 CPU 控制權，避免燒毀系統效能。 |
 | **Race Condition** | Race Condition | 競爭危害 | 40 | 多個任務同時且無序地修改共享變數，導致結果錯亂的恐怖現象。 |
 | **Mutex / Spinlock** | Mutual Exclusion | 互斥鎖 / 自旋鎖 | 40 | 保護危險區域（Critical Section）的神器。在我們的單核心系統中，實作為單純的開關硬體中斷 (`cli` / `sti`)。 |
+
+
+#### x86 核心資料結構 (Core Data Structures)
+
+| 縮寫 | 全名 | 繁體中文名 | Day | 用途與說明 |
+| --- | --- | --- | --- | --- |
+| **Directory Entry** | Directory Entry | 目錄項目 (地契) | 47 | 記錄單一檔案/資料夾 Metadata 的資料結構。在 Day 47 擴展為 64 bytes 完美對齊，包含 `type` 以區分檔案與目錄。 |
+| **CWD** | Current Working Directory | 當前工作目錄 | 48 | 記錄單一 Process 目前身處的硬碟位置 (LBA)。保存在 `task_t` 中，隨著行程 `fork` 繼承。 |
+
+#### 軟體工具與作業系統概念 (Software & Concepts) 
+
+| 縮寫 | 全名 | 繁體中文名 | Day | 用途與說明 |
+| --- | --- | --- | --- | --- |
+| **Dynamic Allocation**| Dynamic Memory Allocation | 動態記憶體分配 | 42 | 在程式執行期間（而非編譯期）動態索取記憶體的技術，對應 C 語言的 `malloc` 與 `free`。分為 Kernel Heap 與 User Heap。 |
+| **sbrk** | Set Break | 設定 Heap 邊界 | 43 | User Space 向 Kernel 索要更多實體記憶體的系統呼叫。透過推動 `heap_end` 邊界來擴充可用空間。 |
+| **Logical Deletion** | Logical Deletion | 邏輯刪除 | 46 | 作業系統刪除檔案的高效手法。不清除實際硬碟資料，只將目錄項目中的檔名首字元標記為 `\0` 以釋放空間。 |
+| **Reverse Resolution**| Reverse Path Resolution | 反向路徑解析 (爬樹法)| 50 | 正統 UNIX 實作 `pwd` 的魔法。透過尋找當前目錄的 `..` 不斷往上層爬，並反向推導出絕對路徑，確保路徑永遠準確。 |
+| **Path Resolution** | Path Resolution Engine | 路徑解析引擎 | 50 | 檔案系統的核心大腦。負責將人類可讀的路徑（如 `/folder/a.txt`）逐層拆解，並轉換為實體的磁區位置 (LBA)。 |
+| **Block Allocator** | Block Allocator | 磁區分配器 | 49 | 解決多資料夾空間重疊危機的全域管理者。透過記錄與更新 Superblock 的 `data_start_lba`，確保新檔案寫入安全的空間。 |
