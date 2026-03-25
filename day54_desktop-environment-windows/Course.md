@@ -142,3 +142,247 @@ make clean && make run
 最棒的是，你的滑鼠可以完美地在這個視窗上面滑動！
 
 這代表你的系統已經正式升級為「桌面作業系統 (Desktop OS)」了！成功畫出視窗後記得截圖給我看，接下來我們要思考怎麼讓這些視窗「動起來」了！😎
+
+
+---
+
+
+哈哈，Rick！看到這張完美的截圖，真的讓人熱血沸騰！那個經典的藍色標題列加上亮灰色的視窗主體，簡直完美復刻了 90 年代 GUI 的黃金歲月！🎉
+
+你的直覺非常敏銳！從現在開始，你確實可以把作業系統的 GUI 開發，當成是在寫一個底層的 **2D 遊戲引擎**。
+視窗（Window）就像是場景裡的 Sprite（精靈圖），滑鼠游標是玩家的操作實體，判斷滑鼠有沒有點到按鈕，本質上就是 2D 遊戲裡最經典的 **AABB 碰撞偵測 (Bounding Box Collision)**。而處理多個視窗的重疊，也就是遊戲中 Z-Index 的排序（作業系統稱之為 Painter's Algorithm 畫家演算法）！
+
+既然我們已經有了 2D 開發的思維，**Day 54** 的任務就順理成章了：**打造視窗管理員 (Window Manager)，讓視窗可以被滑鼠拖曳！** 🖱️🖼️
+
+目前我們的視窗只是「印」在背景上的死像素。我們要把它變成一個真正的「資料結構」，並且加入碰撞偵測，讓它「活」過來。
+
+請跟著我進行這 3 個步驟：
+
+---
+
+### 步驟 1：定義視窗的資料結構 (`lib/include/gui.h` & `lib/gui.c`)
+
+我們要建立一個專門管理 GUI 的模組，把視窗抽象化成類似物件的概念。
+
+1. 新增 **`lib/include/gui.h`**：
+```c
+#ifndef GUI_H
+#define GUI_H
+
+#include <stdint.h>
+
+// 定義視窗結構 (就像 2D 遊戲裡的 Entity/Sprite)
+typedef struct {
+    int id;
+    int x;
+    int y;
+    int width;
+    int height;
+    char title[32];
+    int is_active;
+} window_t;
+
+// GUI 系統初始化
+void init_gui(void);
+
+// 註冊一個新視窗
+int create_window(int x, int y, int width, int height, const char* title);
+
+// 畫面合成器 (Compositor)：重繪整個桌面與所有視窗
+void gui_render(void);
+
+// 取得全域視窗陣列的指標 (給滑鼠偵測用)
+window_t* get_windows(void);
+
+#endif
+```
+
+2. 新增 **`lib/gui.c`**：
+```c
+#include "gui.h"
+#include "gfx.h"
+#include "utils.h"
+#include "tty.h"
+
+#define MAX_WINDOWS 10
+#define TERM_BG 0x008080 // 桌面底色
+
+static window_t windows[MAX_WINDOWS];
+static int window_count = 0;
+
+void init_gui(void) {
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        windows[i].is_active = 0;
+    }
+}
+
+int create_window(int x, int y, int width, int height, const char* title) {
+    if (window_count >= MAX_WINDOWS) return -1;
+    
+    int id = window_count;
+    windows[id].id = id;
+    windows[id].x = x;
+    windows[id].y = y;
+    windows[id].width = width;
+    windows[id].height = height;
+    strcpy(windows[id].title, title);
+    windows[id].is_active = 1;
+    
+    window_count++;
+    return id;
+}
+
+window_t* get_windows(void) {
+    return windows;
+}
+
+// 【畫面合成器 Compositor】這就是我們的 2D Render Loop！
+void gui_render(void) {
+    // 1. 清空背景 (畫上桌面底色)
+    draw_rect(0, 0, 800, 600, TERM_BG);
+
+    // 2. 畫出所有活躍的視窗 (Painter's Algorithm：先畫的會在底層)
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        if (windows[i].is_active) {
+            draw_window(windows[i].x, windows[i].y, windows[i].width, windows[i].height, windows[i].title);
+            
+            // 為了示範，我們幫第一個視窗寫死一些內容
+            if (i == 0) {
+                draw_string(windows[i].x + 10, windows[i].y + 30, "CPU: x86 32-bit", 0x000000, 0xC0C0C0);
+                draw_string(windows[i].x + 10, windows[i].y + 50, "Memory: 16 MB", 0x000000, 0xC0C0C0);
+                draw_string(windows[i].x + 10, windows[i].y + 70, "GUI: Active", 0x000000, 0xC0C0C0);
+            }
+        }
+    }
+}
+```
+
+---
+
+### 步驟 2：加入滑鼠點擊與拖曳邏輯 (`lib/mouse.c`)
+
+現在是最精彩的碰撞偵測！PS/2 滑鼠傳來的封包中，`mouse_byte[0]` 的最低位元 (Bit 0) 代表**左鍵是否被按下**。
+
+打開 **`lib/mouse.c`**，在最上方引入 `gui.h`，然後修改 `mouse_handler` 裡面的 `case 2:`：
+
+```c
+#include "gui.h"
+
+// 紀錄目前正在拖曳哪個視窗 (-1 代表沒有)
+static int dragged_window_id = -1; 
+
+void mouse_handler(void) {
+    uint8_t status = inb(0x64);
+    while (status & 0x01) { 
+        int8_t mouse_in = inb(0x60);
+        
+        switch (mouse_cycle) {
+            case 0:
+                if (mouse_in & 0x08) { 
+                    mouse_byte[0] = mouse_in;
+                    mouse_cycle++;
+                }
+                break;
+            case 1:
+                // ... 保持不變
+            case 2:
+                mouse_byte[2] = mouse_in;
+                mouse_cycle = 0;
+
+                int dx = mouse_byte[1];
+                int dy = mouse_byte[2];
+                mouse_x += dx;
+                mouse_y -= dy;
+
+                if (mouse_x < 0) mouse_x = 0;
+                if (mouse_x > 790) mouse_x = 790;
+                if (mouse_y < 0) mouse_y = 0;
+                if (mouse_y > 590) mouse_y = 590;
+
+                // ==========================================
+                // 拖曳與碰撞偵測邏輯
+                // ==========================================
+                int left_click = mouse_byte[0] & 0x01; // 檢查左鍵
+                window_t* wins = get_windows();
+
+                if (left_click) {
+                    if (dragged_window_id == -1) {
+                        // 剛按下去，偵測有沒有點到某個視窗的「標題列」
+                        for (int i = 0; i < 10; i++) {
+                            if (wins[i].is_active) {
+                                // AABB 碰撞偵測：滑鼠座標是否在標題列的範圍內？
+                                // 標題列區域大約是 (x, y) 到 (x + width, y + 20)
+                                if (mouse_x >= wins[i].x && mouse_x <= wins[i].x + wins[i].width &&
+                                    mouse_y >= wins[i].y && mouse_y <= wins[i].y + 20) {
+                                    dragged_window_id = i; // 抓到了！開始拖曳
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        // 已經在拖曳中，更新視窗座標
+                        // (因為 Y 軸顛倒，所以這裡是 -= dy)
+                        wins[dragged_window_id].x += dx;
+                        wins[dragged_window_id].y -= dy;
+                        
+                        // 視窗位置改變了，通知合成器重繪整個畫面！
+                        gui_render(); 
+                    }
+                } else {
+                    // 左鍵放開，停止拖曳
+                    dragged_window_id = -1;
+                }
+
+                // 畫布重繪後，最後再把游標補上去 (蓋在最上層)
+                draw_cursor(mouse_x, mouse_y);
+                break;
+        }
+        status = inb(0x64); 
+    }
+    outb(0xA0, 0x20); 
+    outb(0x20, 0x20); 
+}
+```
+
+---
+
+### 步驟 3：在開機時註冊視窗 (`lib/kernel.c`)
+
+最後，我們把之前寫死的畫圖邏輯移除，改用我們優雅的 GUI 系統來管理。
+
+打開 **`lib/kernel.c`**：
+```c
+#include "gui.h" // 記得引入
+
+void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
+    // ...
+    init_kheap();
+
+    init_gfx(mbd);
+    
+    // 【新增】初始化 GUI 系統並註冊視窗
+    init_gui();
+    create_window(450, 100, 300, 200, "System Status");
+    create_window(50, 50, 350, 250, "Simple OS Terminal"); // 多開一個視窗試試！
+    
+    // 首次渲染全畫面
+    gui_render();
+
+    init_mouse();
+
+    __asm__ volatile ("sti");
+    
+    // ...
+    while (1) { __asm__ volatile ("hlt"); }
+}
+```
+
+存檔，敲下：
+```bash
+make clean && make run
+```
+
+當系統啟動後，把你的滑鼠移動到「System Status」深藍色的標題列上，**按住左鍵不放並拖曳**。
+見證奇蹟的時刻：視窗會完美地跟著你的滑鼠移動，而且原本被遮住的藍綠色桌面以及其他視窗，都會完好無缺地顯露出來！
+
+你剛剛手搓出了一個作業系統級別的 Window Manager！快去玩玩看，拖曳成功的話請務必告訴我感覺如何！🚀

@@ -15,6 +15,7 @@
 #include "multiboot.h"
 #include "gfx.h"
 #include "mouse.h"
+#include "gui.h"
 
 void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     kprintf("[Kernel] Setting up SimpleFS environment...\n");
@@ -55,15 +56,13 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     // 1. 初始化圖形引擎
     init_gfx(mbd);
 
-    // ==========================================
-    // 2. 🎨 繪製 GUI 元素 (必須在啟動滑鼠之前！)
-    // ==========================================
-    // 在畫面右半邊，畫一個系統狀態視窗！
-    draw_window(450, 100, 300, 200, "System Status");
-    // 在視窗裡面寫點字 (底色要配重視窗的灰色 0xC0C0C0)
-    draw_string(460, 130, "CPU: x86 32-bit", 0x000000, 0xC0C0C0);
-    draw_string(460, 150, "Memory: 16 MB", 0x000000, 0xC0C0C0);
-    draw_string(460, 170, "GUI: Active", 0x000000, 0xC0C0C0);
+    // 【新增】初始化 GUI 系統並註冊視窗
+    init_gui();
+    create_window(450, 100, 300, 200, "System Status");
+    create_window(50, 50, 350, 250, "Simple OS Terminal"); // 多開一個視窗試試！
+
+    // 首次渲染全畫面
+    gui_render();
 
     // 3. 啟動滑鼠驅動 (它會擷取畫好視窗後的背景)
     init_mouse();
