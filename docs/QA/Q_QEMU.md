@@ -3,6 +3,7 @@
 
 用 qemu 啟動一個 vm 時，我沒有指定任何硬體資訊，那預設的 CPU / Memory / Disk / Network 會是什麼？像是 `qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d`
 
+---
 
 # A
 
