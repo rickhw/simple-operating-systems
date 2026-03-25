@@ -1,4 +1,5 @@
-# 緣由
+# 緣由 / 動機
+
 
 Just for fun
 
@@ -12,14 +13,15 @@ Just for fun
 
 [周志遠教授｜作業系統](https://www.youtube.com/playlist?list=PLS0SUwlYe8cxj8FCPRoPHAehIiN9Vo6VZ)
 
+[黃敬群 Jserv - Linux 核心設計]
+
+[管理者如何持續學習技術？](https://rickhw.github.io/2019/03/30/Management/How-do-Manager-Keep-Learning/)
 
 知其然，理論與實務
 
 現代分散式系統
 
 有興趣的 Topic, 像是 IPC
-
-
 
 
 ## 有趣的實作
@@ -39,11 +41,47 @@ Just for fun
 - OpenClaw
 
 
+## 方法
+
+一個 Session 作為主要課程內容，取得課程內容，討論主要課程問題。
+另一個 Session 當作助教，諮詢像是 c / asm / qemu 等知識
+
+
 ## 心得：課前知識
 
 1. c 語言
 2. 組合語言
 3. 對計算機組織有基本認識: 記憶體
+
+
+---
+
+## 有 AI 之後，還需要學作業系統？還需要學計算機科學 (CS)？
+
+### 學這個有什麼用？
+
+### 交給小龍蝦就好？或者用現代各種 AI Agent，像是 AntiGravity, Cursor, Kiro, 
+
+寫應用，也就是功能需求 (Functional Requirement, FR)，大部分都不太難，
+
+寫非功能需求 (Non-Functional Requirement, NFR)，對於 AI 來講，也不太難。
+
+但是把 FR & NFR 這兩個放在一起，是大部分的人比較不會意識到的，所以不會特別去跟 AI Agent 説。
+
+## Multiple AI Agent
+
+我看到很多人已經掉入 multitask 的認知問題了，也就是開了一堆 AI Agent，同時做很多事，做了一堆 Context Switch。
+
+其實開一堆 AI Agent，人自己轉換成調度者，這個本質上就是主管在做的事，包含決定產品發展方向、任務分配、資源調度、品質標準、驗收標準、上線計劃 ... 等。
+
+
+## 太多、太快、太跳
+
+做軟體架構師的時候，為了要滿足業務需求，在解決問題思路需要銜接業務需求與軟體工程之間。
+
+這兩者介於抽象、具象之間，而往往在表達不夠完整，以及經驗上的落差之下，就會造成「太多」、「太快」、「太跳」的現象。
+
+這些現象，在 AI 興起之後，又更明顯了。
 
 
 ---
