@@ -10,6 +10,27 @@ static uint32_t fb_width = 0;
 static uint32_t fb_height = 0;
 static uint8_t  fb_bpp = 0;
 
+// [Day53] add -- start
+// 滑鼠游標系統 (Mouse Cursor System)
+static int cursor_x = 400;
+static int cursor_y = 300;
+static uint32_t cursor_bg[100]; // 儲存游標底下的 10x10 背景像素
+
+// 10x10 游標點陣圖 (1: 白色邊框, 2: 黑色填滿, 0: 透明)
+static const uint8_t cursor_bmp[10][10] = {
+    {1,1,0,0,0,0,0,0,0,0},
+    {1,2,1,0,0,0,0,0,0,0},
+    {1,2,2,1,0,0,0,0,0,0},
+    {1,2,2,2,1,0,0,0,0,0},
+    {1,2,2,2,2,1,0,0,0,0},
+    {1,2,2,2,2,2,1,0,0,0},
+    {1,2,2,2,2,2,2,1,0,0},
+    {1,2,2,1,1,1,1,1,1,0},
+    {1,1,1,0,0,0,0,0,0,0},
+    {1,0,0,0,0,0,0,0,0,0}
+};
+// [Day53] add -- end
+
 void init_gfx(multiboot_info_t* mbd) {
     if (mbd->flags & (1 << 12)) {
         fb_addr = (uint8_t*) (uint32_t) mbd->framebuffer_addr;
@@ -78,3 +99,41 @@ void draw_char(char c, int x, int y, uint32_t fg_color, uint32_t bg_color) {
     }
 }
 // [Day52] add -- end
+
+
+// [Day53] add -- start
+// 【新增】取得螢幕上特定座標的像素顏色
+uint32_t get_pixel(int x, int y) {
+    if (fb_addr == 0 || x < 0 || (uint32_t)x >= fb_width || y < 0 || (uint32_t)y >= fb_height) return 0;
+    uint32_t offset = (y * fb_pitch) + (x * (fb_bpp / 8));
+    // 組合 BGRA 成為 32-bit 顏色
+    uint32_t color = fb_addr[offset] | (fb_addr[offset + 1] << 8) | (fb_addr[offset + 2] << 16);
+    return color;
+}
+
+// 【新增】畫出滑鼠游標 (並處理背景還原)
+void draw_cursor(int new_x, int new_y) {
+    // 1. 先把「舊位置」的背景還原
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            put_pixel(cursor_x + j, cursor_y + i, cursor_bg[i * 10 + j]);
+        }
+    }
+
+    // 2. 更新最新座標
+    cursor_x = new_x;
+    cursor_y = new_y;
+
+    // 3. 備份「新位置」的背景，然後畫上游標
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            // 備份背景
+            cursor_bg[i * 10 + j] = get_pixel(cursor_x + j, cursor_y + i);
+
+            // 畫游標
+            if (cursor_bmp[i][j] == 1) put_pixel(cursor_x + j, cursor_y + i, 0xFFFFFF); // 白邊
+            else if (cursor_bmp[i][j] == 2) put_pixel(cursor_x + j, cursor_y + i, 0x000000); // 黑底
+        }
+    }
+}
+// [Day53] add -- end

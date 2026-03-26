@@ -15,6 +15,7 @@ extern void idt_flush(uint32_t);
 extern void isr0();     // 第 0  號中斷：的 Assembly 進入點
 extern void isr32();    // 第 32 號中斷：Timer IRQ 0
 extern void isr33();    // 第 33 號中斷：宣告組合語言的鍵盤跳板
+extern void isr44();    // 第 44 號中斷：Mouse Handler
 extern void isr128();   // 第 128 號中斷：system calls
 
 // 設定單一 IDT 條目的輔助函式
@@ -38,35 +39,36 @@ void isr0_handler(void) {
 // 初始化 8259 PIC，將 IRQ 0~15 重映射到 IDT 的 32~47
 // Intel 8259: https://zh.wikipedia.org/zh-tw/Intel_8259
 void pic_remap() {
-    // 儲存原本的遮罩 (Masks)
     uint8_t a1 = inb(0x21);
     uint8_t a2 = inb(0xA1);
-    (void)a1; (void)a2; // 消除 unused variable 警告
+    (void)a1; (void)a2;
 
-    // 開始初始化序列 (ICW1)
+    // ICW1: 開始初始化序列
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
 
-    // ICW2: 設定 Master PIC 的偏移量為 0x20 (十進位 32)
+    // ICW2: 設定 Master PIC 偏移量為 0x20 (32)
     outb(0x21, 0x20);
-    // ICW2: 設定 Slave PIC 的偏移量為 0x28 (十進位 40)
+    // ICW2: 設定 Slave PIC 偏移量為 0x28 (40)
     outb(0xA1, 0x28);
 
-    // ICW3: 告訴 Master PIC 有一個 Slave 接在 IRQ2
+    // ICW3: Master 告訴 Slave 接在 IRQ2
     outb(0x21, 0x04);
-    // ICW3: 告訴 Slave PIC 它的串聯身份
+    // ICW3: Slave 確認身分
     outb(0xA1, 0x02);
 
     // ICW4: 設定為 8086 模式
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
 
-    // [關鍵設定] 遮罩設定：0 代表開啟，1 代表屏蔽
-    // 我們目前只開啟 IRQ1 (鍵盤)，關閉其他所有硬體中斷 (避免 Timer 狂噴中斷干擾我們)
-    // 0xFD 的二進位是 1111 1101 (第 1 個 bit 是 0，代表開啟鍵盤)
-    // 0xFC 的二進位是 1111 1100 (第 0 和第 1 個 bit 都是 0，代表開啟 Timer 與 Keyboard)
-    outb(0x21, 0xFC); // [修改] 從 0xFD 變成 0xFC
-    outb(0xA1, 0xFF);
+    // ==========================================================
+    // [最終設定] 遮罩 (Masks)：0 代表開啟，1 代表屏蔽
+    // 為了讓 IRQ 12 (滑鼠) 通過，我們必須：
+    // 1. 開啟 Master PIC 的 IRQ 0(Timer), 1(Keyboard), 2(Slave連線) -> 1111 1000 = 0xF8
+    // 2. 開啟 Slave PIC 的 IRQ 12 (第 4 個 bit) -> 1110 1111 = 0xEF
+    // ==========================================================
+    outb(0x21, 0xF8);
+    outb(0xA1, 0xEF);
 }
 
 
@@ -91,8 +93,12 @@ void init_idt(void) {
 
     // [新增] 掛載第 32 號中斷 (IRQ0 Timer)
     idt_set_gate(32, (uint32_t)isr32, 0x08, 0x8E);
+
     // [新增] 掛載第 33 號中斷 (IRQ1 鍵盤)
     idt_set_gate(33, (uint32_t)isr33, 0x08, 0x8E);
+
+    // [Day53] 掛載第 44 號中斷 (IRQ1 Mouse)
+    idt_set_gate(44, (uint32_t)isr44, 0x08, 0x8E);
 
     // [新增] 掛載第 128 號中斷 (System Call)
     // 注意！旗標是 0xEE (允許 Ring 3 呼叫)

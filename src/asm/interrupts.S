@@ -10,12 +10,19 @@
 ;    |--> [ iret ] (返回使用者模式)
 
 global idt_flush
+
 global isr0
 extern isr0_handler
+
 global isr32
 extern timer_handler
+
 global isr33
 extern keyboard_handler
+
+global isr44
+extern mouse_handler
+
 global isr128
 extern syscall_handler
 
@@ -39,6 +46,13 @@ isr32:
 isr33:
     pusha
     call keyboard_handler
+    popa
+    iret
+
+
+isr44:
+    pusha
+    call mouse_handler
     popa
     iret
 
