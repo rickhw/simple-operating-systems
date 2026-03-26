@@ -1,19 +1,19 @@
 #include "stdio.h"
 
 int main(int argc, char** argv) {
-    print("\n[ECHO Program] Start printing arguments...\n");
+    printf("\n[ECHO Program] Start printing arguments...\n");
 
     if (argc <= 1) {
-        print("  (No arguments provided)\n");
+        printf("  (No arguments provided)\n");
         return 0;
     }
 
     for (int i = 1; i < argc; i++) {
-        print("  ");
-        print(argv[i]);
-        print("\n");
+        printf("  ");
+        printf(argv[i]);
+        printf("\n");
     }
 
-    print("[ECHO Program] Done.\n");
+    printf("[ECHO Program] Done.\n");
     return 0;
 }

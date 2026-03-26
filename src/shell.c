@@ -1,47 +1,6 @@
 #include "stdio.h"
 #include "unistd.h"
 
-// int fork() {
-//     int pid;
-//     __asm__ volatile ("int $0x80" : "=a"(pid) : "a"(8) : "memory");
-//     return pid;
-// }
-
-// int exec(char* filename, char** argv) {
-//     int ret;
-//     // ebx 傳檔名，ecx 傳字串陣列指標
-//     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(9), "b"(filename), "c"(argv) : "memory");
-//     return ret;
-// }
-
-// int wait(int pid) {
-//     int ret;
-//     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(10), "b"(pid) : "memory");
-//     return ret;
-// }
-
-// // 系統呼叫封裝
-// void print(char* msg) {
-//     __asm__ volatile ("int $0x80" : : "a"(2), "b"(msg) : "memory");
-// }
-
-// int open(char* filename) {
-//     int fd;
-//     __asm__ volatile ("int $0x80" : "=a"(fd) : "a"(3), "b"(filename) : "memory");
-//     return fd;
-// }
-
-// int read(int fd, char* buffer, int size) {
-//     int bytes;
-//     __asm__ volatile ("int $0x80" : "=a"(bytes) : "a"(4), "b"(fd), "c"(buffer), "d"(size) : "memory");
-//     return bytes;
-// }
-
-// char getchar() {
-//     int c;
-//     __asm__ volatile ("int $0x80" : "=a"(c) : "a"(5) : "memory");
-//     return (char)c;
-// }
 
 // User Space 專用的字串比對工具
 int strcmp(const char *s1, const char *s2) {
@@ -97,17 +56,23 @@ int parse_args(char* input, char** argv) {
 
 // 【修改】將 _start 改名為 main，並回傳 int
 int main(int argc, char** argv) {
-    // 為了畫面乾淨，我們只在沒有參數 (頂層 Shell) 時印出歡迎詞
     if (argc <= 1) {
-        print("\n======================================\n");
-        print("      Welcome to Simple OS Shell!     \n");
-        print("======================================\n");
+        printf("\n======================================\n");
+        printf("      Welcome to Simple OS Shell!     \n");
+        printf("======================================\n");
+    } else {
+        // 【看這邊！】用 printf 代替以前一大坨的 sys_print！
+        printf("Awesome! I received %d arguments:\n", argc);
+        for(int i = 0; i < argc; i++) {
+            printf("  Arg %d: %s\n", i, argv[i]);
+        }
+        printf("\n");
     }
 
     char cmd_buffer[128];
 
     while (1) {
-        print("SimpleOS> ");
+        printf("SimpleOS> ");
         read_line(cmd_buffer, 128);
         if (cmd_buffer[0] == '\0') continue;
 
@@ -118,19 +83,19 @@ int main(int argc, char** argv) {
 
         // 內建指令 (Built-ins)
         if (strcmp(cmd, "help") == 0) {
-            print("Built-in commands: help, about, exit\n");
-            print("External apps    : echo, cat\n");
+            printf("Built-in commands: help, about, exit\n");
+            printf("External apps    : echo, cat\n");
         }
         else if (strcmp(cmd, "about") == 0) {
-            print("Simple OS v1.0 - Dynamic Shell Edition\n");
+            printf("Simple OS v1.0 - Dynamic Shell Edition\n");
         }
         else if (strcmp(cmd, "exit") == 0) {
-            print("Goodbye!\n");
+            printf("Goodbye!\n");
             exit();
         }
         // [Day39] add -- start
         else if (strcmp(cmd_buffer, "ipc") == 0) {
-            print("\n--- Starting IPC Queue Test ---\n");
+            printf("\n--- Starting IPC Queue Test ---\n");
 
             // 1. 創造 Pong (收信者) - 讓它準備連續收兩封信！
             int pid_pong = fork();
@@ -163,7 +128,7 @@ int main(int argc, char** argv) {
             wait(pid_pong);
             wait(pid_ping1);
             wait(pid_ping2);
-            print("--- IPC Test Finished! ---\n\n");
+            printf("--- IPC Test Finished! ---\n\n");
         }
         // [Day39] add -- end
         // 【動態執行外部程式】
@@ -179,9 +144,9 @@ int main(int argc, char** argv) {
             if (pid == 0) {
                 int err = exec(elf_name, parsed_argv);
                 if (err == -1) {
-                    print("Command not found: ");
-                    print(cmd);
-                    print("\n");
+                    printf("Command not found: ");
+                    printf(cmd);
+                    printf("\n");
                 }
                 exit();
             } else {
