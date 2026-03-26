@@ -25,4 +25,9 @@ window_t* get_windows(void);
 
 void gui_render(int mouse_x, int mouse_y);
 
+// 【Day 56 新增】焦點與關閉控制
+void set_focused_window(int id);
+int get_focused_window(void);
+void close_window(int id);
+
 #endif

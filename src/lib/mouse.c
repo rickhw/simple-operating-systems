@@ -16,6 +16,7 @@ static int mouse_x = 400; // 預設在螢幕正中間
 static int mouse_y = 300;
 // 紀錄目前正在拖曳哪個視窗 (-1 代表沒有)
 static int dragged_window_id = -1;
+static int prev_left_click = 0; // 【新增】記錄上一次的左鍵狀態，用來偵測「剛按下」的瞬間
 
 // 等待鍵盤控制器就緒
 static void mouse_wait(uint8_t a_type) {
@@ -101,36 +102,62 @@ void mouse_handler(void) {
                 int left_click = mouse_byte[0] & 0x01; // 檢查左鍵
                 window_t* wins = get_windows();
 
-                if (left_click) {
-                    if (dragged_window_id == -1) {
-                        // 剛按下去，偵測有沒有點到某個視窗的「標題列」
+                // 【核心互動邏輯】
+                if (left_click && !prev_left_click) {
+                    // 滑鼠「剛按下的瞬間」
+                    int clicked_id = -1;
+
+                    // 為了符合 Z-Order，我們應該「倒過來」檢查，先檢查最上層的 (也就是 Focused 視窗)
+                    int current_focus = get_focused_window();
+                    if (current_focus != -1 && wins[current_focus].is_active) {
+                        if (mouse_x >= wins[current_focus].x && mouse_x <= wins[current_focus].x + wins[current_focus].width &&
+                            mouse_y >= wins[current_focus].y && mouse_y <= wins[current_focus].y + wins[current_focus].height) {
+                            clicked_id = current_focus;
+                        }
+                    }
+
+                    // 如果最上層沒點到，再檢查其他視窗
+                    if (clicked_id == -1) {
                         for (int i = 0; i < 10; i++) {
-                            if (wins[i].is_active) {
-                                // AABB 碰撞偵測：滑鼠座標是否在標題列的範圍內？
-                                // 標題列區域大約是 (x, y) 到 (x + width, y + 20)
+                            if (wins[i].is_active && i != current_focus) {
                                 if (mouse_x >= wins[i].x && mouse_x <= wins[i].x + wins[i].width &&
-                                    mouse_y >= wins[i].y && mouse_y <= wins[i].y + 20) {
-                                    dragged_window_id = i; // 抓到了！開始拖曳
+                                    mouse_y >= wins[i].y && mouse_y <= wins[i].y + wins[i].height) {
+                                    clicked_id = i;
                                     break;
                                 }
                             }
                         }
-                    } else {
-                        // 已經在拖曳中，更新視窗座標
-                        // (因為 Y 軸顛倒，所以這裡是 -= dy)
-                        wins[dragged_window_id].x += dx;
-                        wins[dragged_window_id].y -= dy;
-
-                        // 視窗位置改變了，通知合成器重繪整個畫面！
-                        // gui_render();
-                        gui_render(mouse_x, mouse_y);
                     }
-                } else {
-                    // 左鍵放開，停止拖曳
+
+                    // 如果真的點到了某個視窗
+                    if (clicked_id != -1) {
+                        set_focused_window(clicked_id); // 將它拉到最上層！
+
+                        // 判斷是否點到了右上角的 [X] 按鈕
+                        if (mouse_x >= wins[clicked_id].x + wins[clicked_id].width - 20 &&
+                            mouse_x <= wins[clicked_id].x + wins[clicked_id].width - 6 &&
+                            mouse_y >= wins[clicked_id].y + 4 && mouse_y <= wins[clicked_id].y + 18) {
+                            close_window(clicked_id); // 關閉視窗！
+                        }
+                        // 判斷是否點到了標題列，準備拖曳
+                        else if (mouse_y >= wins[clicked_id].y && mouse_y <= wins[clicked_id].y + 20) {
+                            dragged_window_id = clicked_id;
+                        }
+                    }
+                }
+                else if (left_click && prev_left_click) {
+                    // 滑鼠「持續按住」中
+                    if (dragged_window_id != -1) {
+                        wins[dragged_window_id].x += mouse_byte[1];
+                        wins[dragged_window_id].y -= mouse_byte[2];
+                    }
+                }
+                else {
+                    // 左鍵放開
                     dragged_window_id = -1;
                 }
 
-                // 【修改】不管有沒有拖曳，只要滑鼠動了，就觸發整個世界的重繪！
+                prev_left_click = left_click; // 更新狀態紀錄
                 gui_render(mouse_x, mouse_y);
                 break;
         }
