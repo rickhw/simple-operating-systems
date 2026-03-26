@@ -1,8 +1,22 @@
-// 封裝 sys_fork
+// [Day34] 封裝 sys_fork
 int sys_fork() {
     int pid;
     __asm__ volatile ("int $0x80" : "=a"(pid) : "a"(8) : "memory");
     return pid;
+}
+
+// [Day35][新增] 封裝 sys_exec (Syscall 9)
+int sys_exec(char* filename) {
+    int ret;
+    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(9), "b"(filename) : "memory");
+    return ret;
+}
+
+// [新增] 封裝 sys_wait (Syscall 10)
+int sys_wait(int pid) {
+    int ret;
+    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(10), "b"(pid) : "memory");
+    return ret;
 }
 
 // 系統呼叫封裝
@@ -50,12 +64,10 @@ void read_line(char* buffer, int max_len) {
     buffer[i] = '\0'; // 字串結尾
 }
 
-// 封裝 sys_yield
 void sys_yield() {
     __asm__ volatile ("int $0x80" : : "a"(6) : "memory");
 }
 
-// 封裝 sys_exit
 void sys_exit() {
     __asm__ volatile ("int $0x80" : : "a"(7) : "memory");
 }
@@ -83,9 +95,11 @@ void _start() {
             sys_print("  help    - Show this message\n");
             sys_print("  cat     - Read 'hello.txt' from disk\n");
             sys_print("  about   - OS information\n");
+            sys_print("  fork    - Test pure fork()\n");
+            sys_print("  run     - Test fork() + exec() to spawn a new shell\n");
         }
         else if (strcmp(cmd_buffer, "about") == 0) {
-            sys_print("Simple OS v1.0\nBuilt from scratch in 30 days!\n");
+            sys_print("Simple OS v1.0\nBuilt from scratch in 35 days!\n");
         }
         else if (strcmp(cmd_buffer, "cat") == 0) {
             int fd = sys_open("hello.txt");
@@ -101,28 +115,58 @@ void _start() {
             }
         }
         else if (strcmp(cmd_buffer, "exit") == 0) {
-            // [新增] 處理 exit 指令
             sys_print("Goodbye!\n");
-            sys_exit(); // 呼叫核心，了結自己！
+            sys_exit();
         }
-
         else if (strcmp(cmd_buffer, "fork") == 0) {
             int pid = sys_fork();
 
             if (pid == 0) {
-                // 我是剛出生的分身！
                 sys_print("\n[CHILD] Hello! I am the newborn process!\n");
                 sys_print("[CHILD] My work here is done, committing suicide...\n");
-                sys_exit(); // 小孩登出
+                sys_exit();
+            } else {
+                sys_print("\n[PARENT] Magic! I just created a child process!\n");
+                sys_yield();
+                sys_yield();
+            }
+        }
+        // [Day35][新增] 測試 Fork-Exec 模型
+        else if (strcmp(cmd_buffer, "run") == 0) {
+            int pid = sys_fork();
+
+            // if (pid == 0) {
+            //     // 我是分身！我現在要洗掉自己的記憶體，轉生為一個全新的 Shell！
+            //     sys_print("\n[CHILD] Executing my_app.elf to replace my soul...\n");
+
+            //     // 執行變身魔法
+            //     sys_exec("my_app.elf");
+
+            //     // --- 以下的程式碼理論上「永遠不會」被執行到 ---
+            //     // 因為只要 exec 成功，整個記憶體與 EIP 就被覆蓋成新程式的起點了！
+            //     sys_print("[CHILD] ERROR: Exec failed! I am still the old me!\n");
+            //     sys_exit();
+            // } else {
+            //     // 我是老爸！
+            //     sys_print("\n[PARENT] Spawned a child to run a new instance of Shell.\n");
+            //     sys_yield();
+            //     sys_yield();
+            // }
+            if (pid == 0) {
+                sys_print("\n[CHILD] Executing my_app.elf to replace my soul...\n");
+                sys_exec("my_app.elf");
+                sys_exit();
             } else {
                 // 我是老爸！
-                sys_print("\n[PARENT] Magic! I just created a child process!\n");
+                sys_print("\n[PARENT] Spawned child (PID ");
+                // 這裡簡化印出，直接告訴大家我在等
+                sys_print("). Waiting for it to finish...\n");
 
-                // 【關鍵】老爸印完字後，主動讓出 CPU！
-                // 這樣排程器必定會切換到小孩，讓小孩能順利印字並執行 exit，
-                // 而不會兩個人同時在搶終端機的畫面！
-                sys_yield();
-                sys_yield(); // 為了保險，多讓幾次
+                // 【終極魔法】老爸陷入沉睡，把鍵盤和螢幕全部讓給小孩！
+                sys_wait(pid);
+
+                // 當執行到這裡時，代表小孩已經死了，老爸被喚醒了！
+                sys_print("[PARENT] Child has finished! I am back in control.\n");
             }
         }
         else {

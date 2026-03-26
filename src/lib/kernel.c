@@ -14,7 +14,7 @@
 #include "task.h"
 #include "multiboot.h"
 
-// [重構] 將檔案系統的初始化與安裝過程獨立出來
+// 將檔案系統的初始化與安裝過程獨立出來
 void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     kprintf("[Kernel] Setting up SimpleFS environment...\n");
 
@@ -65,6 +65,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     // 呼叫我們重構好的函式！
     setup_filesystem(part_lba, mbd);
 
+    // [Day35] start
     // --- 應用程式載入與排程 ---
     kprintf("[Kernel] Fetching 'my_app.elf' from Virtual File System...\n");
     fs_node_t* app_node = simplefs_find("my_app.elf");
@@ -87,11 +88,15 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
             create_user_task(entry_point, 0x083FF000 + 4096);
 
             kprintf("Kernel dropping to idle state. Have fun!\n");
-            schedule();
+
+            // 【關鍵修復】Kernel 必須功成身退，把自己宣告死亡！
+            // 否則排程器會以為 Kernel 還活著，就會一直把 CPU 切給 Kernel 的 hlt！
+            exit_task();
         }
     } else {
         kprintf("[Kernel] Error: Shell (my_app.elf) not found on disk.\n");
     }
+    // [Day35] end
 
     while (1) { __asm__ volatile ("hlt"); }
 }

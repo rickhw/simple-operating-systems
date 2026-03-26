@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include "tty.h"
 #include "io.h"
 #include "utils.h"
 

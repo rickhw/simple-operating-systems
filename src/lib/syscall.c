@@ -5,15 +5,13 @@
 #include "keyboard.h"
 #include "task.h"
 
+// 【修復】拔掉 extern，讓它真正在這個檔案裡被分配記憶體空間！
 fs_node_t* fd_table[32] = {0};
-
-// --- 公開 API ---
 
 void init_syscalls(void) {
     kprintf("System Calls initialized on Interrupt 0x80 (128).\n");
 }
 
-// 利用 registers_t 讓參數無比清晰！
 void syscall_handler(registers_t *regs) {
     uint32_t eax = regs->eax;
 
@@ -23,29 +21,24 @@ void syscall_handler(registers_t *regs) {
     else if (eax == 3) {
         char* filename = (char*)regs->ebx;
         fs_node_t* node = simplefs_find(filename);
-
-        if (node == 0) {
-            regs->eax = (uint32_t)-1;
-            return;
-        }
+        if (node == 0) { regs->eax = -1; return; }
         for (int i = 3; i < 32; i++) {
             if (fd_table[i] == 0) {
                 fd_table[i] = node;
-                regs->eax = i; // 將結果寫回 regs，等一下 popa 就會載入 CPU
+                regs->eax = i;
                 return;
             }
         }
-        regs->eax = (uint32_t)-1;
+        regs->eax = -1;
     }
     else if (eax == 4) {
         int fd = (int)regs->ebx;
         uint8_t* buffer = (uint8_t*)regs->ecx;
         uint32_t size = (uint32_t)regs->edx;
-
         if (fd >= 3 && fd < 32 && fd_table[fd] != 0) {
             regs->eax = vfs_read(fd_table[fd], 0, size, buffer);
         } else {
-            regs->eax = (uint32_t)-1;
+            regs->eax = -1;
         }
     }
     else if (eax == 5) {
@@ -61,7 +54,12 @@ void syscall_handler(registers_t *regs) {
         exit_task();
     }
     else if (eax == 8) {
-        // 直接將整個暫存器狀態交給 sys_fork 處理
         regs->eax = sys_fork(regs);
+    }
+    else if (eax == 9) {
+        regs->eax = sys_exec(regs);
+    }
+    else if (eax == 10) {
+        regs->eax = sys_wait(regs->ebx);
     }
 }

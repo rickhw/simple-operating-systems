@@ -13,20 +13,28 @@ switch_task:
     popa
     ret
 
-; 【終極降落傘】所有 Ring 3 任務（包含初始 Shell 與 Fork 分身）都從這裡降落
+; ==========================================
+; 【終極降落傘】純組合語言實作，保證絕不弄髒暫存器！
+; ==========================================
 child_ret_stub:
-    mov ax, 0x23
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+    ; 剛從 switch_task 的 ret 跳過來。
+    ; 此時 ESP 完美指向我們在 C 語言壓入的 edi！
 
-    ; 精準彈出我們在 C 語言中手工對齊的 4 個暫存器
+    ; 1. 精準彈出我們手工對齊的 4 個暫存器
     pop edi
     pop esi
     pop ebx
-    pop ebp
+    pop ebp       ; 這裡拿回了完美修正過的 EBP！
 
-    mov eax, 0 ; 【核心魔法】小孩拿到回傳值 0！
+    ; 2. 換上平民服裝 (User Data Segment = 0x23)
+    mov cx, 0x23
+    mov ds, cx
+    mov es, cx
+    mov fs, cx
+    mov gs, cx
 
-    iret       ; 彈出 IRET 幀，完美降落
+    mov eax, 0    ; 【核心魔法】子行程拿到回傳值 0！
+
+    ; 3. 完美降落！
+    ; 此刻 ESP 剛好指著我們手工準備的 IRET 幀 (EIP, CS, EFLAGS, ESP, SS)
+    iret
