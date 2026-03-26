@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "gdt.h"
 #include "idt.h"
+#include "paging.h" // [新增]
 
 void kernel_main(void) {
     terminal_initialize();
@@ -16,6 +17,10 @@ void kernel_main(void) {
     // 初始化神經系統 IDT
     init_idt();
     kprintf("IDT loaded successfully.\n");
+
+    // 啟動記憶體分頁
+    init_paging();
+    kprintf("Paging Enabled. Virtual Memory activated!\n");
 
     // [關鍵] 執行 sti (Set Interrupt Flag) 開啟全域中斷
     // 從這行開始，CPU 會開始接聽外部硬體的呼叫！
