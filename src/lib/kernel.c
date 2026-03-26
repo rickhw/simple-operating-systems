@@ -34,21 +34,38 @@ void kernel_main(void) {
 
     kprintf("Kernel subsystems initialized.\n\n");
 
-    // === Day 21: ATA PIO 讀取測試 ===
-    kprintf("--- Hard Disk Read Test ---\n");
+    // === Day 22: ATA PIO 讀寫測試 ===
+    kprintf("--- Hard Disk Write Test ---\n");
 
-    // 配置一塊 512 bytes 的緩衝區來放資料
-    uint8_t* sector_buffer = (uint8_t*) kmalloc(512);
+    // 準備兩塊 512 bytes 的緩衝區：一個用來寫，一個用來讀
+    uint8_t* write_buffer = (uint8_t*) kmalloc(512);
+    uint8_t* read_buffer  = (uint8_t*) kmalloc(512);
 
-    // 呼叫驅動程式，讀取第 0 號磁區 (LBA 0)
-    kprintf("Reading LBA 0...\n");
-    ata_read_sector(0, sector_buffer);
+    // 把寫入緩衝區清空為 0
+    memset(write_buffer, 0, 512);
 
-    // 把讀到的前 64 個字元當作字串印出來看看
-    sector_buffer[64] = '\0'; // 加上結尾符號防爆
-    kprintf("Data on disk: [%s]\n", (char*)sector_buffer);
+    // 在寫入緩衝區填上我們的專屬印記
+    char* msg = "Greetings from Simple OS! This data was WRITTEN by the Kernel!";
+    memcpy(write_buffer, msg, 62); // 字串長度大約 62 bytes
 
-    kfree(sector_buffer);
+    // 1. 寫入到 LBA 1 (第 2 個磁區)
+    kprintf("Writing to LBA 1...\n");
+    ata_write_sector(1, write_buffer);
+    kprintf("Write completed.\n");
+
+    // 2. 為了證明不是我們作弊，我們把 read_buffer 清空
+    memset(read_buffer, 0, 512);
+
+    // 3. 從 LBA 1 讀取剛才寫入的資料
+    kprintf("Reading from LBA 1...\n");
+    ata_read_sector(1, read_buffer);
+
+    // 4. 印出來驗證！
+    kprintf("Data on disk (LBA 1): %s\n", (char*)read_buffer);
+
+    kfree(write_buffer);
+    kfree(read_buffer);
+
 
     kprintf("\nSystem is ready.\n> ");
     while (1) { __asm__ volatile ("hlt"); }
