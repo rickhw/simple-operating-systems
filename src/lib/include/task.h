@@ -62,6 +62,7 @@ typedef struct task {
     uint32_t page_directory; // [Day38]【新增】這個 Task 專屬的分頁目錄實體位址 (CR3)
     uint32_t state;
     uint32_t wait_pid;
+    uint32_t heap_end; // [Day43]【新增】記錄 User Heap 的當前頂點
     struct task *next;
 } task_t;
 

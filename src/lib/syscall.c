@@ -127,4 +127,16 @@ void syscall_handler(registers_t *regs) {
         ipc_unlock(); // 🔓 解鎖！離開危險區域
         // End OF CRITICAL SECTION
     }
+
+    // Syscall 13: sbrk (動態記憶體擴充)
+    else if (eax == 13) {
+        int increment = (int)regs->ebx;
+        uint32_t old_end = current_task->heap_end;
+
+        // 把 Heap 的邊界往上推
+        current_task->heap_end += increment;
+
+        // 回傳舊的邊界，這就是新分配空間的起始位址！
+        regs->eax = old_end;
+    }
 }

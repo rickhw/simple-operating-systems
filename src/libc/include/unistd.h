@@ -8,6 +8,6 @@ void yield();
 void exit();
 void send(char* msg);
 int recv(char* buffer);
-
+void* sbrk(int increment);
 
 #endif

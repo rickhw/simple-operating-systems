@@ -111,7 +111,16 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     new_task->id = next_task_id++;
     new_task->state = TASK_RUNNING;
     new_task->wait_pid = 0;
-    new_task->page_directory = current_task->page_directory; // [Day38][Add] (sys_fork 裡是 child->page_directory)
+    new_task->page_directory = current_task->page_directory; // [Day38][Add]
+
+    // ==========================================
+    // [Day43]【新增】為初代老爸 (Shell) 預先分配 10 個實體分頁給 User Heap
+    // ==========================================
+    for (int i = 0; i < 10; i++) {
+        uint32_t heap_phys = pmm_alloc_page();
+        map_page(0x10000000 + (i * 4096), heap_phys, 7);
+    }
+    new_task->heap_end = 0x10000000; // 初始化 Heap 頂點
 
     uint32_t *kstack_mem = (uint32_t*) kmalloc(4096);
     uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + 4096);
@@ -153,6 +162,11 @@ int sys_fork(registers_t *regs) {
     child->state = TASK_RUNNING;
     child->wait_pid = 0;
     child->page_directory = current_task->page_directory; // [Day38][Add] (sys_fork 裡是 child->page_directory)
+
+    // ==========================================
+    // [Day43]【新增】讓子行程暫時繼承老爸的 Heap 邊界紀錄
+    // ==========================================
+    child->heap_end = current_task->heap_end;
 
     uint32_t *kstack_mem = (uint32_t*) kmalloc(4096);
     uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + 4096);
@@ -265,6 +279,15 @@ int sys_exec(registers_t *regs) {
     uint32_t clean_user_stack_top = 0x083FF000 + 4096;
     uint32_t ustack_phys = pmm_alloc_page();
     map_page(0x083FF000, ustack_phys, 7);
+
+    // ==========================================
+    // [Day]【新增】預先分配 10 個實體分頁 (40KB) 給 User Heap
+    // ==========================================
+    for (int i = 0; i < 10; i++) {
+        uint32_t heap_phys = pmm_alloc_page();
+        map_page(0x10000000 + (i * 4096), heap_phys, 7);
+    }
+    current_task->heap_end = 0x10000000; // 初始化 Heap 頂點
 
     uint32_t stack_ptr = clean_user_stack_top - 64;
 
