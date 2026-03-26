@@ -1,16 +1,8 @@
-// [Day34] 封裝 sys_fork
 int sys_fork() {
     int pid;
     __asm__ volatile ("int $0x80" : "=a"(pid) : "a"(8) : "memory");
     return pid;
 }
-
-// // [Day35][新增] 封裝 sys_exec (Syscall 9)
-// int sys_exec(char* filename) {
-//     int ret;
-//     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(9), "b"(filename) : "memory");
-//     return ret;
-// }
 
 int sys_exec(char* filename, char** argv) {
     int ret;
@@ -19,7 +11,6 @@ int sys_exec(char* filename, char** argv) {
     return ret;
 }
 
-// [新增] 封裝 sys_wait (Syscall 10)
 int sys_wait(int pid) {
     int ret;
     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(10), "b"(pid) : "memory");
@@ -79,124 +70,178 @@ void sys_exit() {
     __asm__ volatile ("int $0x80" : : "a"(7) : "memory");
 }
 
+// 【新增】簡易字串切割器 (將空白替換為 \0，並把指標存入 argv)
+int parse_args(char* input, char** argv) {
+    int argc = 0;
+    int i = 0;
+    int in_word = 0;
+
+    while (input[i] != '\0') {
+        if (input[i] == ' ') {
+            input[i] = '\0';
+            in_word = 0;
+        } else {
+            if (!in_word) {
+                argv[argc++] = &input[i];
+                in_word = 1;
+            }
+        }
+        i++;
+    }
+    argv[argc] = 0; // 結尾補 NULL
+    return argc;
+}
+
 // 【修改】將 _start 改名為 main，並回傳 int
 int main(int argc, char** argv) {
-    sys_print("\n======================================\n");
-    sys_print("      Welcome to Simple OS Shell!     \n");
-    sys_print("======================================\n");
-
-    // 把接收到的參數印出來證明靈魂轉移成功！
-    if (argc > 0) {
-        sys_print("Awesome! I received arguments:\n");
-        for(int i = 0; i < argc; i++) {
-            sys_print("  Arg ");
-            char num[2] = {i + '0', '\0'};
-            sys_print(num);
-            sys_print(": ");
-
-            // 增加安全檢查，確保 argv[i] 不是 NULL
-            if (argv[i] != 0) {
-                sys_print(argv[i]);
-            } else {
-                sys_print("(null)");
-            }
-            sys_print("\n");
-        }
-        sys_print("\n");
+    // 為了畫面乾淨，我們只在沒有參數 (頂層 Shell) 時印出歡迎詞
+    if (argc <= 1) {
+        sys_print("\n======================================\n");
+        sys_print("      Welcome to Simple OS Shell!     \n");
+        sys_print("======================================\n");
     }
 
     char cmd_buffer[128];
 
     while (1) {
         sys_print("SimpleOS> ");
-
-        // 讀取使用者輸入的指令
         read_line(cmd_buffer, 128);
+        if (cmd_buffer[0] == '\0') continue;
 
-        // 執行指令邏輯
-        if (strcmp(cmd_buffer, "") == 0) {
-            continue;
+        // 【核心魔法】解析使用者輸入
+        char* parsed_argv[16];
+        int parsed_argc = parse_args(cmd_buffer, parsed_argv);
+        char* cmd = parsed_argv[0];
+
+        // 內建指令 (Built-ins)
+        if (strcmp(cmd, "help") == 0) {
+            sys_print("Built-in commands: help, about, exit\n");
+            sys_print("External apps    : echo, cat\n");
         }
-        else if (strcmp(cmd_buffer, "help") == 0) {
-            sys_print("Available commands:\n");
-            sys_print("  help    - Show this message\n");
-            sys_print("  cat     - Read 'hello.txt' from disk\n");
-            sys_print("  about   - OS information\n");
-            sys_print("  fork    - Test pure fork()\n");
-            sys_print("  run     - Test fork() + exec() to spawn a new shell\n");
+        else if (strcmp(cmd, "about") == 0) {
+            sys_print("Simple OS v1.0 - Dynamic Shell Edition\n");
         }
-        else if (strcmp(cmd_buffer, "about") == 0) {
-            sys_print("Simple OS v1.0\nBuilt from scratch in 35 days!\n");
-        }
-        else if (strcmp(cmd_buffer, "cat") == 0) {
-            int fd = sys_open("hello.txt");
-            if (fd == -1) {
-                sys_print("Error: hello.txt not found.\n");
-            } else {
-                char file_buf[128];
-                for(int i=0; i<128; i++) file_buf[i] = 0;
-                sys_read(fd, file_buf, 100);
-                sys_print("--- File Content ---\n");
-                sys_print(file_buf);
-                sys_print("\n--------------------\n");
-            }
-        }
-        else if (strcmp(cmd_buffer, "exit") == 0) {
+        else if (strcmp(cmd, "exit") == 0) {
             sys_print("Goodbye!\n");
             sys_exit();
         }
-        else if (strcmp(cmd_buffer, "fork") == 0) {
-            int pid = sys_fork();
+        // 【動態執行外部程式】
+        else {
+            // 自動幫指令加上 .elf 副檔名
+            char elf_name[32];
+            char* dest = elf_name;
+            char* src = cmd;
+            while(*src) *dest++ = *src++;
+            *dest++ = '.'; *dest++ = 'e'; *dest++ = 'l'; *dest++ = 'f'; *dest = '\0';
 
-            if (pid == 0) {
-                sys_print("\n[CHILD] Hello! I am the newborn process!\n");
-                sys_print("[CHILD] My work here is done, committing suicide...\n");
-                sys_exit();
-            } else {
-                sys_print("\n[PARENT] Magic! I just created a child process!\n");
-                sys_yield();
-                sys_yield();
-            }
-        }
-        // [Day35][新增] 測試 Fork-Exec 模型
-        else if (strcmp(cmd_buffer, "run") == 0) {
             int pid = sys_fork();
             if (pid == 0) {
-                // 準備傳遞給新程式的參數陣列 (最後必須是 0/NULL)
-                char* my_args[] = {"my_app.elf", "Hello", "From", "Parent!", 0};
-
-                sys_exec("my_app.elf", my_args);
-                sys_exit();
-            } else {
-                sys_print("\n[PARENT] Spawned child. Waiting for it to finish...\n");
-                sys_wait(pid);
-                sys_print("[PARENT] Child has finished! I am back in control.\n");
-            }
-        }
-        // [新增] 呼叫外部的 echo.elf
-        else if (strcmp(cmd_buffer, "echo") == 0) {
-            int pid = sys_fork();
-            if (pid == 0) {
-                // 準備要丟給 echo.elf 的參數 (最後必須是 0 結尾)
-                char* echo_args[] = {"echo.elf", "Hello", "Rick,", "Welcome", "to", "the", "Multiverse!", 0};
-
-                // 靈魂轉移！將子行程變成 echo.elf
-                int err = sys_exec("echo.elf", echo_args);
-
+                int err = sys_exec(elf_name, parsed_argv);
                 if (err == -1) {
-                    sys_print("Error: Exec failed to load echo.elf\n");
+                    sys_print("Command not found: ");
+                    sys_print(cmd);
+                    sys_print("\n");
                 }
                 sys_exit();
             } else {
                 sys_wait(pid);
             }
         }
-        else {
-            sys_print("Command not found: ");
-            sys_print(cmd_buffer);
-            sys_print("\n");
-        }
     }
-
-    return 0; // 配合 int main 的回傳值
+    return 0;
 }
+
+
+//     while (1) {
+//         sys_print("SimpleOS> ");
+
+//         // 讀取使用者輸入的指令
+//         read_line(cmd_buffer, 128);
+
+//         // 執行指令邏輯
+//         if (strcmp(cmd_buffer, "") == 0) {
+//             continue;
+//         }
+//         else if (strcmp(cmd_buffer, "help") == 0) {
+//             sys_print("Available commands:\n");
+//             sys_print("  help    - Show this message\n");
+//             sys_print("  cat     - Read 'hello.txt' from disk\n");
+//             sys_print("  about   - OS information\n");
+//             sys_print("  fork    - Test pure fork()\n");
+//             sys_print("  run     - Test fork() + exec() to spawn a new shell\n");
+//         }
+//         else if (strcmp(cmd_buffer, "about") == 0) {
+//             sys_print("Simple OS v1.0\nBuilt from scratch in 35 days!\n");
+//         }
+//         else if (strcmp(cmd_buffer, "cat") == 0) {
+//             int fd = sys_open("hello.txt");
+//             if (fd == -1) {
+//                 sys_print("Error: hello.txt not found.\n");
+//             } else {
+//                 char file_buf[128];
+//                 for(int i=0; i<128; i++) file_buf[i] = 0;
+//                 sys_read(fd, file_buf, 100);
+//                 sys_print("--- File Content ---\n");
+//                 sys_print(file_buf);
+//                 sys_print("\n--------------------\n");
+//             }
+//         }
+//         else if (strcmp(cmd_buffer, "exit") == 0) {
+//             sys_print("Goodbye!\n");
+//             sys_exit();
+//         }
+//         else if (strcmp(cmd_buffer, "fork") == 0) {
+//             int pid = sys_fork();
+
+//             if (pid == 0) {
+//                 sys_print("\n[CHILD] Hello! I am the newborn process!\n");
+//                 sys_print("[CHILD] My work here is done, committing suicide...\n");
+//                 sys_exit();
+//             } else {
+//                 sys_print("\n[PARENT] Magic! I just created a child process!\n");
+//                 sys_yield();
+//                 sys_yield();
+//             }
+//         }
+//         // [Day35][新增] 測試 Fork-Exec 模型
+//         else if (strcmp(cmd_buffer, "run") == 0) {
+//             int pid = sys_fork();
+//             if (pid == 0) {
+//                 // 準備傳遞給新程式的參數陣列 (最後必須是 0/NULL)
+//                 char* my_args[] = {"my_app.elf", "Hello", "From", "Parent!", 0};
+
+//                 sys_exec("my_app.elf", my_args);
+//                 sys_exit();
+//             } else {
+//                 sys_print("\n[PARENT] Spawned child. Waiting for it to finish...\n");
+//                 sys_wait(pid);
+//                 sys_print("[PARENT] Child has finished! I am back in control.\n");
+//             }
+//         }
+//         // [新增] 呼叫外部的 echo.elf
+//         else if (strcmp(cmd_buffer, "echo") == 0) {
+//             int pid = sys_fork();
+//             if (pid == 0) {
+//                 // 準備要丟給 echo.elf 的參數 (最後必須是 0 結尾)
+//                 char* echo_args[] = {"echo.elf", "Hello", "Rick,", "Welcome", "to", "the", "Multiverse!", 0};
+
+//                 // 靈魂轉移！將子行程變成 echo.elf
+//                 int err = sys_exec("echo.elf", echo_args);
+
+//                 if (err == -1) {
+//                     sys_print("Error: Exec failed to load echo.elf\n");
+//                 }
+//                 sys_exit();
+//             } else {
+//                 sys_wait(pid);
+//             }
+//         }
+//         else {
+//             sys_print("Command not found: ");
+//             sys_print(cmd_buffer);
+//             sys_print("\n");
+//         }
+//     }
+
+//     return 0; // 配合 int main 的回傳值
+// }

@@ -21,25 +21,20 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     simplefs_format(part_lba, 10000);
     simplefs_create_file(part_lba, "hello.txt", "This is the content of the very first file ever created on Simple OS!\n", 70);
 
-    // 【修改】動態讀取 GRUB 傳來的多個模組
+    // 【修改】自動巡覽所有模組並寫入 HDD
     if (mbd->mods_count > 0) {
         multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
+        char* filenames[] = {"my_app.elf", "echo.elf", "cat.elf"}; // 對應 GRUB 順序
 
-        // 第一個模組必定是 Shell (my_app.elf)
-        uint32_t app_size = mod[0].mod_end - mod[0].mod_start;
-        kprintf("[Kernel] Installing Shell to HDD (Size: %d bytes)...\n", app_size);
-        simplefs_create_file(part_lba, "my_app.elf", (char*)mod[0].mod_start, app_size);
-
-        // 如果有第二個模組，那就是我們的 Echo 程式！
-        if (mbd->mods_count > 1) {
-            uint32_t echo_size = mod[1].mod_end - mod[1].mod_start;
-            kprintf("[Kernel] Installing Echo to HDD (Size: %d bytes)...\n", echo_size);
-            simplefs_create_file(part_lba, "echo.elf", (char*)mod[1].mod_start, echo_size);
+        for(uint32_t i = 0; i < mbd->mods_count && i < 3; i++) {
+            uint32_t size = mod[i].mod_end - mod[i].mod_start;
+            kprintf("[Kernel] Installing [%s] to HDD (Size: %d bytes)...\n", filenames[i], size);
+            simplefs_create_file(part_lba, filenames[i], (char*)mod[i].mod_start, size);
         }
     }
 
     simplefs_list_files(part_lba);
-    
+
 }
 
 void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
