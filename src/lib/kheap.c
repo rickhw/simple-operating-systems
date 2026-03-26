@@ -11,15 +11,16 @@ block_header_t* first_block = 0;
 void init_kheap() {
     kprintf("[Heap] Initializing Kernel Heap at 0xC0000000...\n");
 
-    // 1. 批發 32 個實體分頁 (32 * 4KB = 128 KB)，這對目前的 OS 來說是一塊超大平原！
-    for (int i = 0; i < 32; i++) {
-        uint32_t phys_addr = pmm_alloc_page();
+    // 【升級】從 32 個分頁擴建到 512 個分頁 (512 * 4KB = 2 MB)！
+    for (int i = 0; i < 512; i++) {
+        // 加上 (uint32_t) 強制轉型，消除編譯警告
+        uint32_t phys_addr = (uint32_t) pmm_alloc_page();
         map_page(0xC0000000 + (i * 4096), phys_addr, 3);
     }
 
-    // 2. 在這塊平原的最開頭，插上第一塊地契
+    // 在這塊巨大的平原最開頭，插上第一塊地契
     first_block = (block_header_t*) 0xC0000000;
-    first_block->size = (32 * 4096) - sizeof(block_header_t); // 總空間扣掉地契本身的大小
+    first_block->size = (512 * 4096) - sizeof(block_header_t); // 總空間扣掉地契本身
     first_block->is_free = 1;
     first_block->next = 0;
 }

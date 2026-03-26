@@ -24,16 +24,17 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     // 【修改】自動巡覽所有模組並寫入 HDD
     if (mbd->mods_count > 0) {
         multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
-        char* filenames[] = {"shell.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf", "write.elf", "ls.elf", "rm.elf"};
+        char* filenames[] = {"shell.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf", "write.elf", "ls.elf", "rm.elf", "mkdir.elf"};
+        uint32_t expected_mods = sizeof(filenames) / sizeof(filenames[0]);
 
-        for(uint32_t i = 0; i < mbd->mods_count && i < 8; i++) {
+        for(uint32_t i = 0; i < mbd->mods_count && i < expected_mods; i++) {
             uint32_t size = mod[i].mod_end - mod[i].mod_start;
             kprintf("[Kernel] Installing [%s] to HDD (Size: %d bytes)...\n", filenames[i], size);
             simplefs_create_file(part_lba, filenames[i], (char*)mod[i].mod_start, size);
         }
     }
 
-    simplefs_list_files(part_lba);
+    // simplefs_list_files(part_lba);
 
 }
 

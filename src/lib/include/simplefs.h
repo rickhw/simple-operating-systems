@@ -8,6 +8,10 @@
 // SimpleFS 的魔法數字 ("SFS!" 的十六進位)
 #define SIMPLEFS_MAGIC 0x21534653
 
+// 定義檔案型態
+#define FS_FILE 0
+#define FS_DIR  1
+
 // Superblock 結構 (佔用一個 512 bytes 磁區，但只用前面幾個 bytes)
 typedef struct {
     uint32_t magic;         // 證明這是一個 SimpleFS 分區
@@ -17,11 +21,13 @@ typedef struct {
     uint8_t  padding[496];  // 補齊到 512 bytes
 } __attribute__((packed)) sfs_superblock_t;
 
-// 檔案目錄項目結構 (剛好 32 bytes，一個 512 bytes 磁區可以塞 16 個檔案)
+// 檔案目錄項目結構
 typedef struct {
-    char     filename[24];  // 檔案名稱 (包含結尾 \0)
+    char     filename[32];  // 檔案名稱 (包含結尾 \0)
     uint32_t start_lba;     // 檔案內容開始的相對 LBA
     uint32_t file_size;     // 檔案大小 (Bytes)
+    uint32_t type;         // 【新增】檔案型態：0=檔案, 1=目錄 (4 bytes)
+    uint32_t reserved[5];  // 保留空間，湊滿 64 bytes 完美對齊 (20 bytes)
 } __attribute__((packed)) sfs_file_entry_t;
 
 // disk utils

@@ -24,13 +24,6 @@ void read_line(char* buffer, int max_len) {
     buffer[i] = '\0'; // 字串結尾
 }
 
-// void yield() {
-//     __asm__ volatile ("int $0x80" : : "a"(6) : "memory");
-// }
-
-// void exit() {
-//     __asm__ volatile ("int $0x80" : : "a"(7) : "memory");
-// }
 
 int parse_args(char* input, char** argv) {
     int argc = 0, i = 0;
@@ -95,8 +88,8 @@ int main(int argc, char** argv) {
 
         // 內建指令 (Built-ins)
         if (strcmp(cmd, "help") == 0) {
-            printf("Built-in commands: help, about, exit\n");
-            printf("External apps    : echo, cat\n");
+            printf("Built-in commands: help, about, ipc, exit\n");
+            printf("External apps    : echo, cat, ping, pong, ls, write\n");
         }
         else if (strcmp(cmd, "about") == 0) {
             printf("Simple OS v1.0 - Dynamic Shell Edition\n");

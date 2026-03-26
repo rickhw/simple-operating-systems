@@ -8,8 +8,9 @@
 fs_node_t* fd_table[32] = {0};
 
 extern int vfs_create_file(char* filename, char* content);
-extern int vfs_readdir(int index, char* out_name, uint32_t* out_size);
+extern int vfs_readdir(int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
 extern int vfs_delete_file(char* filename);
+extern int vfs_mkdir(char* dirname);
 
 // ==========================================
 // IPC 訊息佇列 (Message Queue)
@@ -43,6 +44,8 @@ void init_syscalls(void) {
 void syscall_handler(registers_t *regs) {
     // Accumulator Register: 函式回傳值或 Syscall 編號
     uint32_t eax = regs->eax;
+
+    // kprintf("[syscall_handler] eax: [%d]\n", eax);
 
     if (eax == 2) {
         kprintf((char*)regs->ebx);
@@ -159,8 +162,10 @@ void syscall_handler(registers_t *regs) {
         char* out_name = (char*)regs->ecx;
         uint32_t* out_size = (uint32_t*)regs->edx;
 
+        uint32_t* out_type = (uint32_t*)regs->esi; // 【新增】從 ESI 暫存器拿出 out_type 指標！
+
         ipc_lock();
-        regs->eax = vfs_readdir(index, out_name, out_size);
+        regs->eax = vfs_readdir(index, out_name, out_size, out_type);   // 加入 out_type
         ipc_unlock();
     }
 
@@ -170,6 +175,16 @@ void syscall_handler(registers_t *regs) {
 
         ipc_lock(); // 上鎖！修改硬碟資料是非常危險的操作
         regs->eax = vfs_delete_file(filename);
+        ipc_unlock();
+    }
+
+    // Syscall 17: sys_mkdir (建立目錄)
+    else if (eax == 17) {
+        char* dirname = (char*)regs->ebx;
+        kprintf("[syscall_handler] sys_mkdir, filename: [%s]\n", dirname);
+
+        ipc_lock();
+        regs->eax = vfs_mkdir(dirname);
         ipc_unlock();
     }
 }
