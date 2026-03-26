@@ -1,19 +1,22 @@
 [bits 32]
 global switch_task
+global task_return_stub  ; [新增] 暴露給 C 語言使用
 
-; void switch_task(uint32_t *current_esp, uint32_t *next_esp);
 switch_task:
     pusha
     pushf
-
-    ; 【修復 3】精準計算 Stack 偏移量
-    ; pusha (32) + pushf (4) + 呼叫時的 ret EIP (4) = 40
     mov eax, [esp + 40]
     mov [eax], esp
-
     mov eax, [esp + 44]
     mov esp, [eax]
-
     popf
     popa
     ret
+
+; [新增] 新任務的第一個起點！
+; 當 switch_task 執行 ret 後，新任務會跳來這裡
+; 這裡的 Stack 狀態，被我們偽造得跟 ISR 準備結束時一模一樣！
+task_return_stub:
+    popa            ; 恢復 8 個通用暫存器
+    add esp, 8      ; 跳過 Error Code 和 Int Number (各 4 bytes)
+    iret            ; 完美降級至 Ring 3！
