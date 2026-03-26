@@ -4,29 +4,27 @@
 #include "utils.h"
 #include "gdt.h"
 #include "idt.h"
-#include "paging.h" // [新增]
+#include "paging.h"
+#include "timer.h"
 
 void kernel_main(void) {
     terminal_initialize();
 
-    kprintf("=== OS Kernel Booting ===\n");
-
     init_gdt();
-    kprintf("GDT loaded successfully.\n");
-
-    // 初始化神經系統 IDT
     init_idt();
-    kprintf("IDT loaded successfully.\n");
-
-    // 啟動記憶體分頁
     init_paging();
-    kprintf("Paging Enabled. Virtual Memory activated!\n");
 
-    // [關鍵] 執行 sti (Set Interrupt Flag) 開啟全域中斷
+    // [新增] 初始化計時器，設定為 100 Hz (每 10 毫秒觸發一次)
+    // 設定 1000, 印出 訊息速度越快
+    init_timer(100);
+    kprintf("Timer initialized at 100Hz.\n");
+
+    // 執行 sti (Set Interrupt Flag) 開啟全域中斷
     // 從這行開始，CPU 會開始接聽外部硬體的呼叫！
     __asm__ volatile ("sti");
 
-    kprintf("Interrupts Enabled. Waiting for keyboard input...\n");
+    kprintf("System is ready. Start typing!\n");
+    kprintf("> ");
 
     // 讓核心進入無限休眠迴圈，有中斷來才會醒來做事
     while (1) {

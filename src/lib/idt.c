@@ -11,6 +11,8 @@ idt_ptr_t   idt_ptr;
 // 外部組合語言函式：載入 IDT 與中斷處理入口
 extern void idt_flush(uint32_t);
 extern void isr0(); // 第 0 號中斷的 Assembly 進入點
+extern void isr32(); // 第 32 號中斷 (Timer IRQ 0)
+extern void isr33(); // 宣告組合語言的鍵盤跳板
 
 // 設定單一 IDT 條目的輔助函式
 static void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
@@ -59,7 +61,8 @@ void pic_remap() {
     // [關鍵設定] 遮罩設定：0 代表開啟，1 代表屏蔽
     // 我們目前只開啟 IRQ1 (鍵盤)，關閉其他所有硬體中斷 (避免 Timer 狂噴中斷干擾我們)
     // 0xFD 的二進位是 1111 1101 (第 1 個 bit 是 0，代表開啟鍵盤)
-    outb(0x21, 0xFD);
+    // 0xFC 的二進位是 1111 1100 (第 0 和第 1 個 bit 都是 0，代表開啟 Timer 與 Keyboard)
+    outb(0x21, 0xFC); // [修改] 從 0xFD 變成 0xFC
     outb(0xA1, 0xFF);
 }
 
@@ -81,7 +84,7 @@ void pic_remap() {
 // }
 
 
-extern void isr33(); // 宣告組合語言的鍵盤跳板
+
 
 void init_idt(void) {
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
@@ -100,6 +103,8 @@ void init_idt(void) {
     // [新增] 重新映射 PIC
     pic_remap();
 
+    // [新增] 掛載第 32 號中斷 (IRQ0 Timer)
+    idt_set_gate(32, (uint32_t)isr32, 0x08, 0x8E);
     // [新增] 掛載第 33 號中斷 (IRQ1 鍵盤)
     idt_set_gate(33, (uint32_t)isr33, 0x08, 0x8E);
 

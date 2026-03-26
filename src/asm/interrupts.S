@@ -1,7 +1,12 @@
 ; interrupts.S
 global idt_flush
+
 global isr0
 extern isr0_handler ; 告訴組譯器，這個函式在 C 語言裡
+
+global isr32
+extern timer_handler
+
 global isr33
 extern keyboard_handler
 
@@ -21,6 +26,14 @@ isr0:
 
     ; 恢復中斷並返回 (但因為我們在 handler 裡寫了 hlt，其實不會走到這裡)
     sti
+    iret
+
+
+; 第 32 號中斷 (Timer IRQ 0)
+isr32:
+    pusha
+    call timer_handler
+    popa
     iret
 
 ; 第 33 號中斷 (鍵盤)
