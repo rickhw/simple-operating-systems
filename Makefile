@@ -30,8 +30,12 @@ APP_CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protecto
 # -----------------------------------------------------------------------------
 
 # [Kernel]
-C_SOURCES   = $(wildcard $(KERNEL_LIB_DIR)/*.c)
-C_OBJS      = $(C_SOURCES:.c=.o)
+# 1. 抓取 kernel/lib 下的所有 .c
+C_LIB_SOURCES = $(wildcard $(KERNEL_LIB_DIR)/*.c)
+# 2. 【新增】抓取 kernel/ 目錄下直接存放的 .c (例如 kernel.c)
+C_CORE_SOURCES = $(wildcard $(KERNEL_DIR)/*.c)
+
+C_OBJS      = $(C_LIB_SOURCES:.c=.o) $(C_CORE_SOURCES:.c=.o)
 ASM_SOURCES = $(wildcard $(KERNEL_ASM_DIR)/*.S)
 ASM_OBJS    = $(ASM_SOURCES:.S=.o)
 
@@ -72,6 +76,10 @@ $(KERNEL_ASM_DIR)/%.o: $(KERNEL_ASM_DIR)/%.S
 
 $(KERNEL_LIB_DIR)/%.o: $(KERNEL_LIB_DIR)/%.c
 	@echo "==> 編譯 Kernel Lib: $<"
+	$(DOCKER_CMD) gcc $(CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
+
+$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.c
+	@echo "==> 編譯 Kernel Core: $<"
 	$(DOCKER_CMD) gcc $(CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
 ## [User 編譯]
