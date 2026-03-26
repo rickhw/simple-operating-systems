@@ -1,3 +1,5 @@
+// IDT: Interrupt Descriptor Table
+// ISR: Interrupt Service Routine
 #ifndef IDT_H
 #define IDT_H
 

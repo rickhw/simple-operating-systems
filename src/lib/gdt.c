@@ -1,3 +1,5 @@
+// GDT: Global Descriptor Table
+// TSS: Task State Segment
 #include <stdint.h>
 #include "gdt.h"
 #include "utils.h"
@@ -35,6 +37,8 @@ static void write_tss(int32_t num, uint16_t ss0, uint32_t esp0) {
     tss_entry.esp0 = esp0;  // 設定當前 Kernel 的 Stack 頂端
 }
 
+// --- 公開 API ---
+
 void init_gdt(void) {
     gdt_ptr.limit = (sizeof(gdt_entry_t) * 6) - 1;
     gdt_ptr.base  = (uint32_t)&gdt_entries;
@@ -67,13 +71,7 @@ void init_gdt(void) {
     tss_flush(); // 告訴 CPU：「逃生路線圖在這裡！」
 }
 
-// // 公開 API，讓排程器可以隨時更新 TSS 的 esp0 (Extended Stack Pointer)
-// void set_kernel_stack(uint32_t stack) {
-//     tss_entry.esp0 = stack;
-// }
-
 // 在 lib/gdt.c 檔案的下方新增這個函式：
-// (請根據你在 Day 17 定義的 TSS 變數名稱，將 tss_entry 替換成正確的名稱)
 void set_kernel_stack(uint32_t esp) {
     // 0x10 代表 Kernel Data Segment (你的 GDT 設定中，Data 段的 offset)
     tss_entry.ss0 = 0x10;

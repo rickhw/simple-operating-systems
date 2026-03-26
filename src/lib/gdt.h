@@ -1,3 +1,5 @@
+// GDT: Global Descriptor Table
+// TSS: Task State Segment
 #ifndef GDT_H
 #define GDT_H
 
@@ -33,7 +35,7 @@ typedef struct tss_entry_struct tss_entry_t;
 
 // 初始化 GDT 的公開函式
 void init_gdt(void);
-// void set_kernel_stack(uint32_t stack);
+
 // 新增在 lib/gdt.h
 void set_kernel_stack(uint32_t esp);
 

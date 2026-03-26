@@ -1,6 +1,6 @@
 [bits 32]
 global switch_task
-global task_return_stub  ; [新增] 暴露給 C 語言使用
+global child_ret_stub
 
 switch_task:
     pusha
@@ -13,10 +13,20 @@ switch_task:
     popa
     ret
 
-; [新增] 新任務的第一個起點！
-; 當 switch_task 執行 ret 後，新任務會跳來這裡
-; 這裡的 Stack 狀態，被我們偽造得跟 ISR 準備結束時一模一樣！
-task_return_stub:
-    popa            ; 恢復 8 個通用暫存器
-    add esp, 8      ; 跳過 Error Code 和 Int Number (各 4 bytes)
-    iret            ; 完美降級至 Ring 3！
+; 【終極降落傘】所有 Ring 3 任務（包含初始 Shell 與 Fork 分身）都從這裡降落
+child_ret_stub:
+    mov ax, 0x23
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    ; 精準彈出我們在 C 語言中手工對齊的 4 個暫存器
+    pop edi
+    pop esi
+    pop ebx
+    pop ebp
+
+    mov eax, 0 ; 【核心魔法】小孩拿到回傳值 0！
+
+    iret       ; 彈出 IRET 幀，完美降落

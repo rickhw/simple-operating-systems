@@ -6,6 +6,9 @@
 
 uint32_t mounted_part_lba = 0; // 記錄目前掛載的分區起點
 
+
+// --- 公開 API ---
+
 void simplefs_mount(uint32_t part_lba) {
     mounted_part_lba = part_lba;
     kprintf("[SimpleFS] Mounted at LBA %d\n", part_lba);
@@ -96,8 +99,7 @@ fs_node_t* simplefs_find(char* filename) {
     return 0;
 }
 
-// [Day29] add -- start
-// [升級版] 寫入大檔案
+// 寫入檔案
 int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t size) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(512);
     ata_read_sector(part_lba + 1, dir_buf);
@@ -121,7 +123,7 @@ int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t
 
     if (empty_idx == -1) { kfree(dir_buf); return -1; }
 
-    // [修改] 跨磁區寫入資料
+    // 跨磁區寫入資料
     uint32_t sectors_needed = (size + 511) / 512;
     for (uint32_t i = 0; i < sectors_needed; i++) {
         uint8_t temp[512] = {0}; // 清空暫存區
@@ -143,7 +145,7 @@ int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t
     return 0;
 }
 
-// [升級版] 讀取大檔案
+// 讀取大檔案
 uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
     uint32_t file_lba = node->impl + node->inode;
     uint32_t actual_size = size;
@@ -174,5 +176,3 @@ uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t 
     kfree(temp_buf);
     return bytes_read;
 }
-
-// [Day29] add -- end

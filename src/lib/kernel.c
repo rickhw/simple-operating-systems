@@ -11,7 +11,7 @@
 #include "vfs.h"
 #include "simplefs.h"
 #include "elf.h"
-#include "task.h"       // Day 31/32 加入的多工作業
+#include "task.h"
 #include "multiboot.h"
 
 // [重構] 將檔案系統的初始化與安裝過程獨立出來
@@ -75,24 +75,16 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
         uint32_t entry_point = elf_load((elf32_ehdr_t*)app_buffer);
 
         if (entry_point != 0) {
-            kprintf("Creating TWO independent User Tasks (Ring 3)...\n\n");
+            kprintf("Creating ONE Initial User Task (Init Process)...\n\n");
 
             init_multitasking();
 
-            // 為 App 1 分配專屬 User Stack (0x083FF000)
-            // [修復 Warning] 加上 (uint32_t) 強制轉型
+            // 為唯一的 Shell 分配 User Stack
             uint32_t ustack1_phys = (uint32_t) pmm_alloc_page();
             map_page(0x083FF000, ustack1_phys, 7);
 
-            // 為 App 2 分配專屬 User Stack
-            // 【關鍵修復】從 0x084FF000 改為 0x083FE000！
-            // 讓它和 App 1 待在同一個安全的 4MB 區域內，避開跨界分配的 Bug！
-            uint32_t ustack2_phys = (uint32_t) pmm_alloc_page();
-            map_page(0x083FE000, ustack2_phys, 7);
-
-            // 建立兩個 Ring 3 任務
+            // 建立 Ring 3 主任務
             create_user_task(entry_point, 0x083FF000 + 4096);
-            create_user_task(entry_point, 0x083FE000 + 4096); // 對應新位址
 
             kprintf("Kernel dropping to idle state. Have fun!\n");
             schedule();

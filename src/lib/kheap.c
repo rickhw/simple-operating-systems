@@ -4,14 +4,9 @@
 #include "utils.h"
 #include "tty.h"
 
-// 記憶體區塊的標頭 (類似地契，記錄這塊地有多大、有沒有人住)
-typedef struct block_header {
-    uint32_t size;
-    uint8_t is_free;
-    struct block_header* next;
-} block_header_t;
-
 block_header_t* first_block = 0;
+
+// --- 公開 API ---
 
 void init_kheap() {
     kprintf("[Heap] Initializing Kernel Heap at 0xC0000000...\n");

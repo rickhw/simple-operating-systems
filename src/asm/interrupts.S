@@ -55,26 +55,14 @@ isr33:
 
 ; 第 128 號中斷 (System Call 窗口)
 isr128:
-    ; 按照 C 語言 (cdecl) 的呼叫慣例，參數是【從右到左】 push 進堆疊的。
-    ; 我們的 C 語言函式長這樣：
-    ; void syscall_handler(edi, esi, ebp, esp, ebx, edx, ecx, eax);
+    pusha           ; 1. 備份所有通用暫存器 (32 bytes)
 
-    push eax
-    push ecx
-    push edx
-    push ebx
-    push esp
-    push ebp
-    push esi
-    push edi
+    ; 此刻 esp 指向暫存器結構的開頭 (也就是 registers_t 的位址)
+    push esp        ; 2. 把 esp 當作參數傳給 syscall_handler!
 
-    ; 呼叫 C 語言的處理中心
     call syscall_handler
 
-    ; 清理堆疊！我們剛才 push 了 8 個 32-bit (4 bytes) 的暫存器
-    ; 8 * 4 = 32 bytes。所以把 esp 加上 32，丟棄剛才 push 的參數
-    add esp, 32
+    add esp, 4      ; 3. 清理剛才壓入的 esp 參數
 
-    ; ！！！關鍵魔法！！！
-    ; 這裡我們【絕對不能】使用 popa 來恢復暫存器！
+    popa            ; 4. 完美恢復所有暫存器 (包含 C 語言寫入 eax 的回傳值)
     iret

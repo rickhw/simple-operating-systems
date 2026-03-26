@@ -1,3 +1,10 @@
+// 封裝 sys_fork
+int sys_fork() {
+    int pid;
+    __asm__ volatile ("int $0x80" : "=a"(pid) : "a"(8) : "memory");
+    return pid;
+}
+
 // 系統呼叫封裝
 void sys_print(char* msg) {
     __asm__ volatile ("int $0x80" : : "a"(2), "b"(msg) : "memory");
@@ -43,12 +50,12 @@ void read_line(char* buffer, int max_len) {
     buffer[i] = '\0'; // 字串結尾
 }
 
-// [新增] 封裝 sys_yield
+// 封裝 sys_yield
 void sys_yield() {
     __asm__ volatile ("int $0x80" : : "a"(6) : "memory");
 }
 
-// [新增] 封裝 sys_exit
+// 封裝 sys_exit
 void sys_exit() {
     __asm__ volatile ("int $0x80" : : "a"(7) : "memory");
 }
@@ -97,6 +104,26 @@ void _start() {
             // [新增] 處理 exit 指令
             sys_print("Goodbye!\n");
             sys_exit(); // 呼叫核心，了結自己！
+        }
+
+        else if (strcmp(cmd_buffer, "fork") == 0) {
+            int pid = sys_fork();
+
+            if (pid == 0) {
+                // 我是剛出生的分身！
+                sys_print("\n[CHILD] Hello! I am the newborn process!\n");
+                sys_print("[CHILD] My work here is done, committing suicide...\n");
+                sys_exit(); // 小孩登出
+            } else {
+                // 我是老爸！
+                sys_print("\n[PARENT] Magic! I just created a child process!\n");
+
+                // 【關鍵】老爸印完字後，主動讓出 CPU！
+                // 這樣排程器必定會切換到小孩，讓小孩能順利印字並執行 exit，
+                // 而不會兩個人同時在搶終端機的畫面！
+                sys_yield();
+                sys_yield(); // 為了保險，多讓幾次
+            }
         }
         else {
             sys_print("Command not found: ");
