@@ -11,18 +11,43 @@
 ;    |--> [ 核心停止 ] (若 C 返回，則進入 cli/hlt 無限迴圈)
 
 
-; === 定義 Multiboot 1 的常數 ===
-MBALIGN  equ  1 << 0            ; 請求 GRUB 將載入的模組對齊 4KB 邊界
-MEMINFO  equ  1 << 1            ; 請求 GRUB 提供記憶體資訊 (包含模組位址)
-MAGIC    equ  0x1BADB002        ; [關鍵] Multiboot 1 的專屬魔法數字
-FLAGS    equ  MBALIGN | MEMINFO ; 組合旗標 (通常是 3)
-CHECKSUM equ -(MAGIC + FLAGS)   ; 檢查碼，證明這是一個合法的標頭
+; ==========================================
+; Multiboot Header 升級為圖形模式
+; ==========================================
+MAGIC       equ 0x1BADB002
+; Flag Bit 0: Align (對齊)
+; Flag Bit 1: MemInfo (記憶體資訊)
+; Flag Bit 2: VideoMode (影片模式)  <-- 【新增】我們需要這個！
+FLAGS       equ 0x00000007
+CHECKSUM    equ -(MAGIC + FLAGS)
 
 section .multiboot
 align 4
     dd MAGIC
     dd FLAGS
     dd CHECKSUM
+    ; AOUT kludge 位址欄位 (不使用，但因為啟用了 Bit 2，必須填 5 個 0 佔位)
+    dd 0, 0, 0, 0, 0
+
+    ; 【新增】VBE (VESA BIOS Extensions) 圖形模式設定
+    dd 0    ; mode_type: 0 代表線性圖形模式 (Linear Graphics)
+    dd 800  ; width: 寬度 800 像素
+    dd 600  ; height: 高度 600 像素
+    dd 32   ; depth: 色彩深度 32-bit (ARGB)
+
+
+; === 定義 Multiboot 1 的常數 ===
+; MBALIGN  equ  1 << 0            ; 請求 GRUB 將載入的模組對齊 4KB 邊界
+; MEMINFO  equ  1 << 1            ; 請求 GRUB 提供記憶體資訊 (包含模組位址)
+; MAGIC    equ  0x1BADB002        ; [關鍵] Multiboot 1 的專屬魔法數字
+; FLAGS    equ  MBALIGN | MEMINFO ; 組合旗標 (通常是 3)
+; CHECKSUM equ -(MAGIC + FLAGS)   ; 檢查碼，證明這是一個合法的標頭
+
+; section .multiboot
+; align 4
+;     dd MAGIC
+;     dd FLAGS
+;     dd CHECKSUM
 
 ; === 定義未初始化的資料區段 (BSS) 來存放堆疊 ===
 section .bss

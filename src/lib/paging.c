@@ -8,21 +8,24 @@ uint32_t page_directory[1024] __attribute__((aligned(4096)));
 uint32_t first_page_table[1024] __attribute__((aligned(4096)));
 uint32_t second_page_table[1024] __attribute__((aligned(4096)));
 uint32_t third_page_table[1024] __attribute__((aligned(4096)));
+
 uint32_t user_page_table[1024] __attribute__((aligned(4096)));
-// [Day43] 新增初代宇宙的 Heap 表
-uint32_t user_heap_page_table[1024] __attribute__((aligned(4096)));
+uint32_t user_heap_page_table[1024] __attribute__((aligned(4096))); // [Day43] 新增初代宇宙的 Heap 表
+
+uint32_t vram_page_table[1024] __attribute__((aligned(4096))); // [Day51][Add]
 
 // ====================================================================
 // 【神級捷徑】預先分配 16 個宇宙的空間！
 // ====================================================================
 uint32_t universe_pds[16][1024] __attribute__((aligned(4096)));
 uint32_t universe_pts[16][1024] __attribute__((aligned(4096)));
-// [Day43] 新增平行宇宙的 Heap 表陣列
-uint32_t universe_heap_pts[16][1024] __attribute__((aligned(4096)));
+uint32_t universe_heap_pts[16][1024] __attribute__((aligned(4096)));    // [Day43] 新增平行宇宙的 Heap 表陣列
+
 int next_universe_id = 0;
 
 // 在全域變數區新增一個陣列，記錄哪個宇宙被使用了
 int universe_used[16] = {0};
+
 
 extern void load_page_directory(uint32_t*);
 extern void enable_paging(void);
@@ -144,3 +147,18 @@ void free_page_directory(uint32_t pd_phys) {
         }
     }
 }
+
+
+// [Day51] add -- start
+void map_vram(uint32_t virt, uint32_t phys) {
+    uint32_t pd_idx = virt >> 22;
+    uint32_t pt_idx = (virt >> 12) & 0x03FF;
+
+    if ((page_directory[pd_idx] & 1) == 0) {
+        uint32_t pt_phys = (uint32_t)vram_page_table;
+        for (int i = 0; i < 1024; i++) vram_page_table[i] = 0;
+        page_directory[pd_idx] = pt_phys | 7;
+    }
+    vram_page_table[pt_idx] = phys | 7;
+}
+// [Day51] add -- end

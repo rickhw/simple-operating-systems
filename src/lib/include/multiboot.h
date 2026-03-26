@@ -15,16 +15,39 @@ typedef struct {
 } multiboot_module_t;
 
 // Multiboot 資訊結構 (MBI)
-// 這裡面包含非常多硬體資訊，我們目前只需要關心 flags, mods_count 和 mods_addr
-typedef struct {
-    uint32_t flags;        // 旗標，用來判斷哪些欄位是有效的
+typedef struct multiboot_info {
+    uint32_t flags;
     uint32_t mem_lower;
     uint32_t mem_upper;
     uint32_t boot_device;
     uint32_t cmdline;
-    uint32_t mods_count;   // GRUB 幫我們載入了幾個模組 (檔案)
-    uint32_t mods_addr;    // 模組資訊陣列的起始實體位址
-    // ... 為了維持簡單，後面還有很多欄位我們先省略不寫 ...
-} multiboot_info_t;
+    uint32_t mods_count;
+    uint32_t mods_addr;
+    uint32_t syms[4];
+    uint32_t mmap_length;
+    uint32_t mmap_addr;
+    uint32_t drives_length;
+    uint32_t drives_addr;
+    uint32_t config_table;
+    uint32_t boot_loader_name;
+    uint32_t apm_table;
+    uint32_t vbe_control_info;
+    uint32_t vbe_mode_info;
+    uint16_t vbe_mode;
+    uint16_t vbe_interface_seg;
+    uint16_t vbe_interface_off;
+    uint16_t vbe_interface_len;
+
+    // ==========================================
+    // 【新增】Multiboot Framebuffer 資訊
+    // ==========================================
+    uint64_t framebuffer_addr;   // 畫布的實體記憶體起點
+    uint32_t framebuffer_pitch;  // 每一橫列的位元組數 (Bytes per line)
+    uint32_t framebuffer_width;  // 畫布寬度 (Pixels)
+    uint32_t framebuffer_height; // 畫布高度 (Pixels)
+    uint8_t  framebuffer_bpp;    // 色彩深度 (Bits per pixel，例如 32)
+    uint8_t  framebuffer_type;
+    uint8_t  color_info[6];
+} __attribute__((packed)) multiboot_info_t;
 
 #endif
