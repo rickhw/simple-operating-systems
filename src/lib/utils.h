@@ -1,9 +1,9 @@
-// utils.h
 #ifndef UTILS_H
 #define UTILS_H
 
 #include <stdint.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 void* memcpy(void* dstptr, const void* srcptr, size_t size);
