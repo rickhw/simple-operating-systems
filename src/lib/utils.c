@@ -140,3 +140,23 @@ void outw(uint16_t port, uint16_t data) {
     __asm__ volatile ("outw %1, %0" : : "dN" (port), "a" (data));
 }
 // [Day21] add -- end
+
+
+// [Day27] add -- start
+int strcmp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}
+
+char *strcpy(char *dest, const char *src) {
+    char *saved = dest;
+    while (*src) {
+        *dest++ = *src++;
+    }
+    *dest = '\0';
+    return saved;
+}
+// [Day27] add -- end

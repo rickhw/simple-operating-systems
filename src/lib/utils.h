@@ -19,4 +19,9 @@ uint16_t inw(uint16_t port);
 void outw(uint16_t port, uint16_t data);
 // [Day21] add -- end
 
+// [Day27] add -- start
+int strcmp(const char *s1, const char *s2);
+char *strcpy(char *dest, const char *src);
+// [Day27] add -- end
+
 #endif

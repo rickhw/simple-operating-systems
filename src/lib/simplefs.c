@@ -125,3 +125,66 @@ void simplefs_list_files(uint32_t part_lba) {
     kfree(dir_buf);
 }
 // [Day26] add -- end
+
+// [Day27] add -- start
+// === 1. 符合 VFS 介面的讀取實作 ===
+uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+    // 從 node 偷藏的變數中拿回 LBA 資訊
+    // 我們約定：node->impl 存分區起始 LBA，node->inode 存檔案的相對 LBA
+    uint32_t file_lba = node->impl + node->inode;
+
+    // 讀取該檔案所在的實體磁區 (為了簡單，目前只支援 1 個磁區 512 bytes)
+    uint8_t* temp_buf = (uint8_t*) kmalloc(512);
+    ata_read_sector(file_lba, temp_buf);
+
+    // 計算實際能讀取的大小 (防止越界)
+    uint32_t actual_size = size;
+    if (offset >= node->length) {
+        actual_size = 0; // offset 已經超過檔案大小
+    } else if (offset + size > node->length) {
+        actual_size = node->length - offset; // 只能讀到檔案結尾
+    }
+
+    // 把資料從硬碟緩衝區，精準複製到使用者提供的 buffer
+    if (actual_size > 0) {
+        memcpy(buffer, temp_buf + offset, actual_size);
+    }
+
+    kfree(temp_buf);
+    return actual_size; // 回傳真正讀出的 bytes 數
+}
+
+// === 2. 尋找檔案並包裝成 VFS 節點 ===
+fs_node_t* simplefs_find(uint32_t part_lba, char* filename) {
+    uint8_t* dir_buf = (uint8_t*) kmalloc(512);
+    ata_read_sector(part_lba + 1, dir_buf); // 讀取根目錄
+
+    sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
+
+    for (int i = 0; i < 16; i++) {
+        // 如果檔名有字，且比對相符
+        if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, filename) == 0) {
+
+            // 找到檔案了！配置一個 VFS 節點來代表它
+            fs_node_t* node = (fs_node_t*) kmalloc(sizeof(fs_node_t));
+            strcpy(node->name, entries[i].filename);
+            node->flags = FS_FILE;
+            node->length = entries[i].file_size;
+
+            // 把 LBA 資訊藏在節點裡，讓 simplefs_read 以後可以用
+            node->inode = entries[i].start_lba;
+            node->impl = part_lba;
+
+            // [多型魔法核心] 綁定專屬的讀取函式！
+            node->read = simplefs_read;
+            node->write = 0; // 暫時不實作 VFS 寫入
+
+            kfree(dir_buf);
+            return node;
+        }
+    }
+
+    kfree(dir_buf);
+    return 0; // 找不到檔案
+}
+// [Day27] add -- end

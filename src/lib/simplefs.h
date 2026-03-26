@@ -3,6 +3,7 @@
 #define SIMPLEFS_H
 
 #include <stdint.h>
+#include "vfs.h" // [Day27][新增] 為了使用 fs_node_t
 
 // SimpleFS 的魔法數字 ("SFS!" 的十六進位)
 #define SIMPLEFS_MAGIC 0x21534653
@@ -32,6 +33,9 @@ int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t
 
 // [Day26][新增] 列出目錄下的所有檔案 (類似 ls 指令)
 void simplefs_list_files(uint32_t part_lba);
+
+// [Day27][新增] 透過檔名尋找檔案，並回傳 VFS 標準節點
+fs_node_t* simplefs_find(uint32_t part_lba, char* filename);
 
 #endif
 // [Day25] add -- end
