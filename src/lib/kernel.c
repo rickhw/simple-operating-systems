@@ -24,7 +24,7 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     // 【修改】自動巡覽所有模組並寫入 HDD
     if (mbd->mods_count > 0) {
         multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
-        char* filenames[] = {"my_app.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf"};
+        char* filenames[] = {"shell.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf"};
 
         for(uint32_t i = 0; i < mbd->mods_count && i < 5; i++) {
             uint32_t size = mod[i].mod_end - mod[i].mod_start;
@@ -65,8 +65,8 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
 
     // [Day35] start
     // --- 應用程式載入與排程 ---
-    kprintf("[Kernel] Fetching 'my_app.elf' from Virtual File System...\n");
-    fs_node_t* app_node = simplefs_find("my_app.elf");
+    kprintf("[Kernel] Fetching 'shell.elf' from Virtual File System...\n");
+    fs_node_t* app_node = simplefs_find("shell.elf");
 
     if (app_node != 0) {
         uint8_t* app_buffer = (uint8_t*) kmalloc(app_node->length);
@@ -93,7 +93,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
             exit_task();
         }
     } else {
-        kprintf("[Kernel] Error: Shell (my_app.elf) not found on disk.\n");
+        kprintf("[Kernel] Error: Shell (shell.elf) not found on disk.\n");
     }
     // [Day35] end
 
