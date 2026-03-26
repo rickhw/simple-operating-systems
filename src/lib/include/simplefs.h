@@ -41,4 +41,7 @@ fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* filename);
 int simplefs_create_file(uint32_t dir_lba_rel, char* filename, char* data, uint32_t size);
 uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
+// 【新增】VFS 需要的 VFS 通用 API 宣告
+// int vfs_getcwd(uint32_t dir_lba, char* buffer);
+
 #endif

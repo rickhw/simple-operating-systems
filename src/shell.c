@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
 
         // 內建指令 (Built-ins)
         if (strcmp(cmd, "help") == 0) {
-            printf("Built-in commands: help, about, ipc, cd, exit\n");
+            printf("Built-in commands: help, about, ipc, cd, pwd, exit\n");
             printf("External commands: echo, cat, ping, pong, ls, touch, mkdir\n");
         }
         else if (strcmp(cmd, "about") == 0) {
@@ -110,6 +110,13 @@ int main(int argc, char** argv) {
             }
         }
         // [Day48] add -- end
+        // [Day50] add -- start
+        else if (strcmp(cmd, "pwd") == 0) {
+            char path_buf[256];
+            getcwd(path_buf);
+            printf("%s\n", path_buf);
+        }
+        // [Day50] add -- end
         // [Day39] add -- start
         else if (strcmp(cmd_buffer, "ipc") == 0) {
             printf("\n--- Starting IPC Queue Test ---\n");

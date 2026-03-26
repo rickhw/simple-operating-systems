@@ -16,5 +16,5 @@ int remove(const char* filename);
 
 int mkdir(const char* dirname);
 int chdir(const char* dirname);
-
+int getcwd(char* buffer);
 #endif

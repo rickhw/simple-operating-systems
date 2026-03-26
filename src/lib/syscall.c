@@ -13,7 +13,8 @@ extern int vfs_create_file(uint32_t dir_lba, char* filename, char* content);
 extern int vfs_readdir(uint32_t dir_lba, int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
 extern int vfs_delete_file(uint32_t dir_lba, char* filename);
 extern int vfs_mkdir(uint32_t dir_lba, char* dirname);
-
+// extern int vfs_getcwd(char* buffer);
+extern int vfs_getcwd(uint32_t dir_lba, char* buffer);
 extern uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* dirname); // [Day48][Add]
 extern uint32_t mounted_part_lba;   // [Day48][Add]
 
@@ -224,5 +225,16 @@ void syscall_handler(registers_t *regs) {
         }
         ipc_unlock();
     }
+    // Syscall 19: sys_getcwd (取得當前路徑)
+    else if (eax == 19) {
+        char* buffer = (char*)regs->ebx;
 
+        // 【新增】由 Syscall 層負責查出目前的目錄 LBA
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
+
+        ipc_lock();
+        // 【修改】把 current_dir 傳入 VFS
+        regs->eax = vfs_getcwd(current_dir, buffer);
+        ipc_unlock();
+    }
 }

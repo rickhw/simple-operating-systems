@@ -31,3 +31,7 @@ int mkdir(const char* filename) {
 int chdir(const char* dirname) {
     return syscall(18, (int)dirname, 0, 0, 0, 0);
 }
+
+int getcwd(char* buffer) {
+    return syscall(19, (int)buffer, 0, 0, 0, 0);
+}
