@@ -1,93 +1,78 @@
-// TTY: TeleTYpewriter
 #include <stdint.h>
 #include <stddef.h>
-#include <stdarg.h>
-#include <stdbool.h>
 #include "tty.h"
-#include "io.h"
 #include "utils.h"
+#include "gfx.h" // 引入我們強大的圖形引擎
 
-volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
-const size_t VGA_COLS = 80;
-const size_t VGA_ROWS = 25;
+// 設定終端機的字體顏色為白色 (0xFFFFFF)，背景為純黑 (0x000000)
+#define TERM_FG 0xFFFFFF
+#define TERM_BG 0x000000
 
-size_t terminal_row;
-size_t terminal_column;
-uint8_t terminal_color;
+// 記錄目前打字游標的 (X, Y) 像素座標
+static int term_x = 0;
+static int term_y = 0;
 
-// --- 公開 API ---
+// 假設解析度是 800x600 (你可以未來把它變成從 gfx.h 讀取)
+#define SCREEN_WIDTH  800
+#define SCREEN_HEIGHT 600
+#define FONT_WIDTH    8
+#define FONT_HEIGHT   8
 
 void terminal_initialize(void) {
-    terminal_row = 0;
-    terminal_column = 0;
-    terminal_color = 0x0F;
-    for (size_t y = 0; y < VGA_ROWS; y++) {
-        for (size_t x = 0; x < VGA_COLS; x++) {
-            terminal_putentryat(' ', terminal_color, x, y);
-        }
-    }
-    update_cursor(terminal_column, terminal_row);
+    term_x = 0;
+    term_y = 0;
+    // 用圖形引擎把整個螢幕塗黑，當作清空畫面
+    draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, TERM_BG);
 }
 
 void terminal_putchar(char c) {
+    // 處理換行符號
     if (c == '\n') {
-        terminal_column = 0;
-        terminal_row++;
-    } else {
-        terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
-        terminal_column++;
-        if (terminal_column == VGA_COLS) {
-            terminal_column = 0;
-            terminal_row++;
+        term_x = 0;
+        term_y += FONT_HEIGHT;
+        // 換行時檢查是否超出螢幕底部
+        if (term_y >= SCREEN_HEIGHT) {
+            terminal_initialize(); // 超出底部就清空畫面重來
         }
-    }
-    if (terminal_row == VGA_ROWS) {
-        terminal_scroll();
+        return;
     }
 
-    // [新增] 每次印出字元或換行後，更新硬體游標的位置！
-    update_cursor(terminal_column, terminal_row);
+    // 處理退格鍵 (Backspace)
+    if (c == '\b') {
+        if (term_x >= FONT_WIDTH) {
+            term_x -= FONT_WIDTH;
+            draw_char(' ', term_x, term_y, TERM_FG, TERM_BG); // 用空白蓋掉舊字元
+        } else if (term_y >= FONT_HEIGHT) {
+            // 退到上一行 (這裡簡化處理，直接退到上一行最右邊)
+            term_y -= FONT_HEIGHT;
+            term_x = SCREEN_WIDTH - FONT_WIDTH;
+            draw_char(' ', term_x, term_y, TERM_FG, TERM_BG);
+        }
+        return;
+    }
+
+    // 呼叫圖形引擎畫出字元！
+    draw_char(c, term_x, term_y, TERM_FG, TERM_BG);
+
+    // 畫完之後，游標往右移
+    term_x += FONT_WIDTH;
+
+    // 如果超過螢幕寬度，就自動換行
+    if (term_x >= SCREEN_WIDTH) {
+        term_x = 0;
+        term_y += FONT_HEIGHT;
+        if (term_y >= SCREEN_HEIGHT) {
+            terminal_initialize();
+        }
+    }
+}
+
+void terminal_write(const char* data, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+        terminal_putchar(data[i]);
+    }
 }
 
 void terminal_writestring(const char* data) {
-    size_t index = 0;
-    while (data[index] != '\0') {
-        terminal_putchar(data[index]);
-        index++;
-    }
-}
-
-void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
-    const size_t index = y * VGA_COLS + x;
-    vga_buffer[index] = ((uint16_t)color << 8) | c;
-}
-
-void terminal_scroll() {
-    // 1. 把第 1~24 行的資料，直接「整塊」複製到第 0~23 行的位置
-    // 每個字元佔 2 bytes，所以大小是 (VGA_ROWS - 1) * VGA_COLS * 2
-    size_t bytes_to_copy = (VGA_ROWS - 1) * VGA_COLS * 2;
-    memcpy((void*)vga_buffer, (void*)(vga_buffer + VGA_COLS), bytes_to_copy);
-
-    // 2. 清空最後一行 (使用我們原本的迴圈，或者你未來也可以進階寫個 memclr)
-    for (size_t x = 0; x < VGA_COLS; x++) {
-        terminal_putentryat(' ', terminal_color, x, VGA_ROWS - 1);
-    }
-    terminal_row = VGA_ROWS - 1;
-}
-
-// 控制 VGA 硬體游標
-void update_cursor(int x, int y) {
-    // 游標位置是一維陣列的索引 (0 ~ 1999)
-    uint16_t pos = y * VGA_COLS + x;
-
-    // VGA 控制器的 Port 0x3D4 是「索引暫存器」，用來告訴 VGA 我們要設定什麼
-    // VGA 控制器的 Port 0x3D5 是「資料暫存器」，用來寫入實際的值
-
-    // 設定游標位置的低 8 bits (暫存器 0x0F)
-    outb(0x3D4, 0x0F);
-    outb(0x3D5, (uint8_t) (pos & 0xFF));
-
-    // 設定游標位置的高 8 bits (暫存器 0x0E)
-    outb(0x3D4, 0x0E);
-    outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
+    terminal_write(data, strlen(data));
 }

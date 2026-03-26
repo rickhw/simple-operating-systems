@@ -1,6 +1,7 @@
 #include "gfx.h"
 #include "paging.h"
 #include "tty.h"
+#include "font8x8.h"
 
 // 圖形引擎的私有狀態
 static uint8_t* fb_addr = 0;
@@ -53,3 +54,27 @@ void draw_rect(int start_x, int start_y, int width, int height, uint32_t color) 
         }
     }
 }
+
+
+// [Day52] add -- start
+// 用像素點陣畫出一個 ASCII 字元
+void draw_char(char c, int x, int y, uint32_t fg_color, uint32_t bg_color) {
+    // 過濾掉我們字型庫沒有的控制字元或怪異字元
+    if (c < 32 || c > 126) return;
+
+    // 取得這個字母對應的 8 Bytes 像素點陣圖 (ASCII 32 對應陣列第 0 個)
+    const uint8_t* glyph = font8x8[c - 32];
+
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+            // 利用位元遮罩 (Bitmask) 檢查這個像素是 1 還是 0
+            // 字型點陣通常是從左到右，最高位元 (0x80) 在最左邊
+            if (glyph[row] & (0x80 >> col)) {
+                put_pixel(x + col, y + row, fg_color); // 畫筆畫上字型顏色
+            } else {
+                put_pixel(x + col, y + row, bg_color); // 塗上背景色 (蓋掉原本的畫面)
+            }
+        }
+    }
+}
+// [Day52] add -- end

@@ -59,11 +59,11 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
 
     // [Day51] add -- start
     // 用全新的 API 畫出我們的藍色與紅色方塊！
-    draw_rect(100, 100, 200, 200, 0x0000FF); // 藍色方塊
-    draw_rect(600, 50, 100, 100, 0xFF0000);  // 紅色方塊
+    // draw_rect(100, 100, 200, 200, 0x0000FF); // 藍色方塊
+    // draw_rect(600, 50, 100, 100, 0xFF0000);  // 紅色方塊
     // [Day51] add -- end
 
-    // kprintf("=== OS Subsystems Ready ===\n\n");
+    kprintf("=== OS Subsystems Ready ===\n\n");
 
     while (1) { __asm__ volatile ("hlt"); }
 }
