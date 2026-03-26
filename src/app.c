@@ -1,60 +1,92 @@
 // 系統呼叫封裝
+void sys_print(char* msg) {
+    __asm__ volatile ("int $0x80" : : "a"(2), "b"(msg) : "memory");
+}
+
 int sys_open(char* filename) {
     int fd;
-    __asm__ volatile (
-        "int $0x80"
-        : "=a" (fd)             // 輸出：執行完後，把 eax 的值放進 fd
-        : "a" (3),              // 輸入：執行前，把 3 放進 eax
-          "b" (filename)        // 輸入：執行前，把 filename 放進 ebx
-        : "memory"              // 告訴編譯器記憶體可能被改變
-    );
+    __asm__ volatile ("int $0x80" : "=a"(fd) : "a"(3), "b"(filename) : "memory");
     return fd;
 }
 
 int sys_read(int fd, char* buffer, int size) {
-    int bytes_read;
-    __asm__ volatile (
-        "int $0x80"
-        : "=a" (bytes_read)     // 輸出：把 eax 的值放進 bytes_read
-        : "a" (4),              // 輸入：eax = 4
-          "b" (fd),             // 輸入：ebx = fd
-          "c" (buffer),         // 輸入：ecx = buffer
-          "d" (size)            // 輸入：edx = size
-        : "memory"
-    );
-    return bytes_read;
+    int bytes;
+    __asm__ volatile ("int $0x80" : "=a"(bytes) : "a"(4), "b"(fd), "c"(buffer), "d"(size) : "memory");
+    return bytes;
 }
 
-void sys_print(char* msg) {
-    __asm__ volatile (
-        "int $0x80"
-        :                       // 沒有輸出變數
-        : "a" (2),              // 輸入：eax = 2
-          "b" (msg)             // 輸入：ebx = msg
-        : "memory"
-    );
+char sys_getchar() {
+    int c;
+    __asm__ volatile ("int $0x80" : "=a"(c) : "a"(5) : "memory");
+    return (char)c;
+}
+
+// User Space 專用的字串比對工具
+int strcmp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) { s1++; s2++; }
+    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}
+
+// 讀取一整行指令
+void read_line(char* buffer, int max_len) {
+    int i = 0;
+    while (i < max_len - 1) {
+        char c = sys_getchar();
+        if (c == '\n') {
+            break; // 使用者按下了 Enter
+        } else if (c == '\b') {
+            if (i > 0) i--; // 處理倒退鍵 (Backspace)
+        } else {
+            buffer[i++] = c;
+        }
+    }
+    buffer[i] = '\0'; // 字串結尾
 }
 
 void _start() {
-    sys_print("[User App] Hello! I am running in Ring 3!\n");
-    sys_print("[User App] Requesting Kernel to open 'hello.txt'...\n");
+    sys_print("\n======================================\n");
+    sys_print("      Welcome to Simple OS Shell!     \n");
+    sys_print("======================================\n");
+    sys_print("Type 'help' to see available commands.\n\n");
 
-    int fd = sys_open("hello.txt");
+    char cmd_buffer[128];
 
-    if (fd == -1) {
-        sys_print("[User App] Failed to open file!\n");
-    } else {
-        sys_print("[User App] File opened! FD received. Reading data...\n");
+    while (1) {
+        sys_print("SimpleOS> ");
 
-        char buffer[128];
-        for(int i=0; i<128; i++) buffer[i] = 0; // 清空
+        // 讀取使用者輸入的指令
+        read_line(cmd_buffer, 128);
 
-        sys_read(fd, buffer, 100);
-
-        sys_print("[User App] File Content -> ");
-        sys_print(buffer);
-        sys_print("\n");
+        // 執行指令邏輯
+        if (strcmp(cmd_buffer, "") == 0) {
+            continue;
+        }
+        else if (strcmp(cmd_buffer, "help") == 0) {
+            sys_print("Available commands:\n");
+            sys_print("  help    - Show this message\n");
+            sys_print("  cat     - Read 'hello.txt' from disk\n");
+            sys_print("  about   - OS information\n");
+        }
+        else if (strcmp(cmd_buffer, "about") == 0) {
+            sys_print("Simple OS v1.0\nBuilt from scratch in 30 days!\n");
+        }
+        else if (strcmp(cmd_buffer, "cat") == 0) {
+            int fd = sys_open("hello.txt");
+            if (fd == -1) {
+                sys_print("Error: hello.txt not found.\n");
+            } else {
+                char file_buf[128];
+                for(int i=0; i<128; i++) file_buf[i] = 0;
+                sys_read(fd, file_buf, 100);
+                sys_print("--- File Content ---\n");
+                sys_print(file_buf);
+                sys_print("\n--------------------\n");
+            }
+        }
+        else {
+            sys_print("Command not found: ");
+            sys_print(cmd_buffer);
+            sys_print("\n");
+        }
     }
-
-    while(1);
 }

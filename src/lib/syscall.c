@@ -2,6 +2,7 @@
 #include "tty.h"
 #include "utils.h"
 #include "simplefs.h" // [Day28] add - 為了使用 simplefs_find
+#include "keyboard.h" // [Day30] [新增] 為了使用 keyboard_getchar()
 
 void init_syscalls(void) {
     kprintf("System Calls initialized on Interrupt 0x80 (128).\n");
@@ -55,6 +56,16 @@ void syscall_handler(uint32_t edi, uint32_t esi, uint32_t ebp, uint32_t esp,
         } else {
             __asm__ volatile("mov $-1, %%eax" : :);
         }
+    }
+    // [Day30][新增] Syscall 5: 讀取一個鍵盤字元
+    else if (eax == 5) {
+        char c = keyboard_getchar();
+
+        // 為了讓 Shell 有互動感，使用者打什麼，Kernel 就幫忙印在螢幕上 (Echo)
+        char str[2] = {c, '\0'};
+        kprintf(str);
+
+        __asm__ volatile("mov %0, %%eax" : : "r"((uint32_t)c));
     }
 }
 // [Day28] add -- end
