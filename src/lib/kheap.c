@@ -4,83 +4,69 @@
 #include "utils.h"
 #include "tty.h"
 
-// 為了方便管理，我們將 Kernel Heap 的起始虛擬位址固定在 0xC0000000 (3GB 的位置)
-#define KHEAP_START 0xC0000000
+// 記憶體區塊的標頭 (類似地契，記錄這塊地有多大、有沒有人住)
+typedef struct block_header {
+    uint32_t size;
+    uint8_t is_free;
+    struct block_header* next;
+} block_header_t;
 
-// 記憶體區塊標頭結構
-typedef struct heap_block {
-    size_t size;               // 這個區塊的可用資料大小
-    uint8_t is_free;           // 1 代表空閒，0 代表使用中
-    struct heap_block* next;   // 指向下一個區塊
-} heap_block_t;
+block_header_t* first_block = 0;
 
-// 指向 Heap 第一個區塊的指標
-heap_block_t* heap_head = NULL;
+void init_kheap() {
+    kprintf("[Heap] Initializing Kernel Heap at 0xC0000000...\n");
 
-void init_kheap(void) {
-    // 1. 向地政事務所批發一整塊 4KB 實體記憶體
-    void* phys_ptr = pmm_alloc_page();
+    // 1. 批發 32 個實體分頁 (32 * 4KB = 128 KB)，這對目前的 OS 來說是一塊超大平原！
+    for (int i = 0; i < 32; i++) {
+        uint32_t phys_addr = pmm_alloc_page();
+        map_page(0xC0000000 + (i * 4096), phys_addr, 3);
+    }
 
-    // 2. 施展虛實縫合魔法，把它映射到 0xC0000000
-    map_page(KHEAP_START, (uint32_t)phys_ptr, 3);
-
-    // 3. 建立第一個「大區塊」的標頭
-    heap_head = (heap_block_t*)KHEAP_START;
-
-    // 扣掉標頭本身佔用的空間，剩下的就是可以裝資料的大小
-    heap_head->size = 4096 - sizeof(heap_block_t);
-    heap_head->is_free = 1;
-    heap_head->next = NULL;
+    // 2. 在這塊平原的最開頭，插上第一塊地契
+    first_block = (block_header_t*) 0xC0000000;
+    first_block->size = (32 * 4096) - sizeof(block_header_t); // 總空間扣掉地契本身的大小
+    first_block->is_free = 1;
+    first_block->next = 0;
 }
 
-void* kmalloc(size_t size) {
-    heap_block_t* current = heap_head;
+void* kmalloc(uint32_t size) {
+    // 記憶體對齊：為了硬體效能，申請的大小必須是 4 的倍數
+    uint32_t aligned_size = (size + 3) & ~3;
 
-    // 尋找第一個「夠大」且「空閒」的區塊 (First-Fit Algorithm)
-    while (current != NULL) {
-        if (current->is_free && current->size >= size) {
+    block_header_t* current = first_block;
 
-            // [切割邏輯] 如果這塊地比我們需要的還要大很多，就把它切成兩塊！
-            // 條件：剩餘的空間必須至少還塞得下一個 Header + 1 byte 的資料
-            if (current->size > size + sizeof(heap_block_t)) {
-
-                // 計算出新空地 Header 的起始記憶體位址
-                // (注意：要把 current 轉成 uint8_t* 才能精準加上 byte 數)
-                heap_block_t* new_block = (heap_block_t*)((uint8_t*)current + sizeof(heap_block_t) + size);
-
-                // 設定新空地的資訊
-                new_block->size = current->size - size - sizeof(heap_block_t);
+    while (current != 0) {
+        if (current->is_free && current->size >= aligned_size) {
+            // 【關鍵修復：切割邏輯】
+            // 如果這塊空地很大，我們不能全給他，要把剩下的切出來當新空地！
+            if (current->size > aligned_size + sizeof(block_header_t) + 16) {
+                // 計算新地契的位置
+                block_header_t* new_block = (block_header_t*)((uint32_t)current + sizeof(block_header_t) + aligned_size);
                 new_block->is_free = 1;
+                new_block->size = current->size - aligned_size - sizeof(block_header_t);
                 new_block->next = current->next;
 
-                // 縮小原本區塊的大小，並將它連向新空地
-                current->size = size;
+                current->size = aligned_size;
                 current->next = new_block;
             }
 
-            // 標記為使用中
+            // 把地契標記為使用中，並回傳可用空間的起始位址
             current->is_free = 0;
-
-            // 回傳「資料區」的起始位址 (也就是 Header 的正後方)
-            return (void*)(current + 1);
+            return (void*)((uint32_t)current + sizeof(block_header_t));
         }
         current = current->next;
     }
 
-    // 如果找不到夠大的空間 (在完整的系統中，這裡應該要呼叫 pmm 擴充 Heap)
-    kprintf("PANIC: Kernel Heap Out of Memory!\n");
-    return NULL;
+    kprintf("PANIC: Kernel Heap Out of Memory! (Req: %d bytes)\n", size);
+    return 0;
 }
 
 void kfree(void* ptr) {
-    if (!ptr) return;
+    if (ptr == 0) return;
 
-    // 往回推算，找出這塊資料對應的 Header 位址
-    heap_block_t* block = (heap_block_t*)ptr - 1;
-
-    // 將它標記回空閒狀態
+    // 往回退一點，找到這塊地的地契，把它標記為空閒
+    block_header_t* block = (block_header_t*)((uint32_t)ptr - sizeof(block_header_t));
     block->is_free = 1;
 
-    // (實務上的 malloc 還會在這裡實作「合併 Coalesce」邏輯：
-    // 如果下一個區塊也是空的，就把兩塊拼成一大塊，以防記憶體碎片化。今天先省略以保持簡單。)
+    // (在簡單版 OS 中，我們暫時省略把相鄰空地合併的邏輯，128KB 夠我們隨便花了)
 }

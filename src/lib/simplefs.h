@@ -39,6 +39,7 @@ void simplefs_list_files(uint32_t part_lba);
 fs_node_t* simplefs_find(char* filename); // [Day28] add
 
 void simplefs_mount(uint32_t part_lba); // [Day28] add
+uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
 #endif
 // [Day25] add -- end

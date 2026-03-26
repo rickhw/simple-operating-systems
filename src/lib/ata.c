@@ -29,7 +29,18 @@ static void ata_wait_drq() {
     }
 }
 
+// 產生約 400ns 的延遲，讓硬碟有時間更新狀態
+static void ata_delay() {
+    inb(ATA_PORT_STATUS);
+    inb(ATA_PORT_STATUS);
+    inb(ATA_PORT_STATUS);
+    inb(ATA_PORT_STATUS);
+}
+
+
 void ata_read_sector(uint32_t lba, uint8_t* buffer) {
+    ata_wait_bsy(); // [新增] 開始前先確認硬碟有空
+
     outb(ATA_PORT_DRV_HEAD, 0xE0 | ((lba >> 24) & 0x0F));
     outb(ATA_PORT_SECT_COUNT, 1);
     outb(ATA_PORT_LBA_LOW, (uint8_t) lba);
@@ -37,6 +48,7 @@ void ata_read_sector(uint32_t lba, uint8_t* buffer) {
     outb(ATA_PORT_LBA_HIGH, (uint8_t)(lba >> 16));
     outb(ATA_PORT_COMMAND, 0x20); // 讀取
 
+    ata_delay();    // [新增] 給硬碟一點時間掛上 BSY 旗標
     // 讀取前，等待硬碟說「我有資料要給你」(DRQ=1)
     ata_wait_drq();
 
@@ -44,17 +56,21 @@ void ata_read_sector(uint32_t lba, uint8_t* buffer) {
     for (int i = 0; i < 256; i++) {
         ptr[i] = inw(ATA_PORT_DATA);
     }
+
+    ata_wait_bsy(); // [新增] 讀完後確認硬碟收尾完成
 }
 
 void ata_write_sector(uint32_t lba, uint8_t* buffer) {
+    ata_wait_bsy();
+
     outb(ATA_PORT_DRV_HEAD, 0xE0 | ((lba >> 24) & 0x0F));
     outb(ATA_PORT_SECT_COUNT, 1);
     outb(ATA_PORT_LBA_LOW, (uint8_t) lba);
     outb(ATA_PORT_LBA_MID, (uint8_t)(lba >> 8));
     outb(ATA_PORT_LBA_HIGH, (uint8_t)(lba >> 16));
-    outb(ATA_PORT_COMMAND, 0x30); // 寫入
+    outb(ATA_PORT_COMMAND, 0x30);
 
-    // 寫入前，等待硬碟說「我準備好接你的資料了」(DRQ=1)
+    ata_delay();
     ata_wait_drq();
 
     uint16_t* ptr = (uint16_t*) buffer;
@@ -62,10 +78,14 @@ void ata_write_sector(uint32_t lba, uint8_t* buffer) {
         outw(ATA_PORT_DATA, ptr[i]);
     }
 
-    // 強制寫入碟片
+    // 【終極修復】：必須先等硬碟把剛才的資料寫完（BSY 清零）！
+    ata_delay();
+    ata_wait_bsy();
+
+    // 現在才可以安全地下達 Cache Flush
     outb(ATA_PORT_COMMAND, 0xE7);
 
-    // [關鍵修復] 這裡只要等硬碟不忙就好，不能等 DRQ！
+    // 再次等待 Flush 完成
+    ata_delay();
     ata_wait_bsy();
 }
-// [Day21] add -- end
