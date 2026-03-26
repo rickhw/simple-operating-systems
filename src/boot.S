@@ -1,29 +1,38 @@
 section .multiboot
 align 8
 header_start:
-    dd 0xe85250d6                ; Multiboot2 魔法數字
-    dd 0                         ; 架構 0 (代表 i386)
-    dd header_end - header_start ; 標頭總長度
-    ; 檢查碼 (Checksum) = -(魔法數字 + 架構 + 長度)
+    dd 0xe85250d6
+    dd 0
+    dd header_end - header_start
     dd 0x100000000 - (0xe85250d6 + 0 + (header_end - header_start))
-
-    ; === 這裡是新增的結束標籤 (End tag) ===
     align 8
-    dw 0    ; type = 0
-    dw 0    ; flags = 0
-    dd 8    ; size = 8
+    dw 0
+    dw 0
+    dd 8
 header_end:
 
+; === 新增：定義未初始化的資料區段 (BSS) 來存放堆疊 ===
+section .bss
+align 16
+stack_bottom:
+    resb 16384 ; 保留 16 KB 的空間 (16 * 1024 bytes)
+stack_top:
+
+; === 修改：系統進入點 ===
 section .text
+extern kernel_main ; 告訴組譯器：我們等一下會呼叫一個在外面用 C 寫的函式
+
 global _start
 _start:
-    ; VGA 文字模式的記憶體起始位置是 0xb8000
-    mov dword [0xb8000], 0x2f4b2f4f
+    ; 1. 設定堆疊指標 (Stack Pointer) 指向堆疊頂部
+    ; x86 的堆疊是往下長的，所以要指向最高位址的 stack_top
+    mov esp, stack_top
 
-    ; 關閉硬體中斷
+    ; 2. 呼叫 C 語言的進入點
+    call kernel_main
+
+    ; 3. 如果 C 函式意外 Return 了，關閉中斷並讓 CPU 休眠
     cli
-
 .hang:
-    ; 讓 CPU 進入休眠狀態
     hlt
     jmp .hang
