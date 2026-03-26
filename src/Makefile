@@ -12,7 +12,7 @@ ASM_OBJS = $(ASM_SOURCES:.S=.o)
 # 把所有 .o 檔統整起來 (注意 boot.o 必須在前面，雖然 linker.ld 裡有指定 ENTRY，但放前面更保險)
 OBJS = asm/boot.o $(filter-out asm/boot.o, $(ASM_OBJS)) $(C_OBJS)
 
-all: build-env my_app.elf echo.elf myos.iso
+all: build-env shell.elf echo.elf myos.iso
 
 build-env:
 	docker build -t os-builder .
@@ -46,9 +46,9 @@ pong.o: pong.c
 		$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c pong.c -o pong.o
 
 ## Link -----------------------------------------------------------------------
-my_app.elf: crt0.o app.o
+shell.elf: crt0.o app.o
 	@echo "==> 連結 Shell..."
-	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o app.o -o my_app.elf
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o app.o -o shell.elf
 
 echo.elf: crt0.o echo.o
 	@echo "==> 連結 Echo 程式..."
@@ -69,16 +69,16 @@ pong.elf: crt0.o pong.o
 # -----------------------------------------------------------------------------
 # 專屬清理 User App 的指令
 clean-app:
-	rm -f crt0.o app.o my_app.elf echo.o echo.elf cat.o cat.elf ping.o ping.elf pong.o pong.elf
+	rm -f crt0.o app.o shell.elf echo.o echo.elf cat.o cat.elf ping.o ping.elf pong.o pong.elf
 	@echo "==> User Apps 已清除。"
 
 # -----------------------------------------------------------------------------
 # --- OS ISO 建置規則 ---
-myos.iso: myos.bin grub.cfg my_app.elf echo.elf cat.elf ping.elf pong.elf
+myos.iso: myos.bin grub.cfg shell.elf echo.elf cat.elf ping.elf pong.elf
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg
-	cp my_app.elf isodir/boot/my_app.elf  # 把執行檔塞進虛擬光碟
+	cp shell.elf isodir/boot/shell.elf  # 把執行檔塞進虛擬光碟
 	cp echo.elf isodir/boot/echo.elf      # 【新增】把 echo.elf 塞進光碟
 	cp cat.elf isodir/boot/cat.elf
 	cp ping.elf isodir/boot/ping.elf
@@ -114,8 +114,8 @@ clean: clean-app
 	rm -f asm/*.o lib/*.o *.bin *.iso
 	rm -rf isodir
 
-run: myos.iso hdd.img my_app.elf cat.elf ping.elf pong.elf
+run: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf
 	qemu-system-i386 -cdrom myos.iso -monitor stdio -hda hdd.img -boot d
 
-debug: myos.iso hdd.img my_app.elf cat.elf ping.elf pong.elf
+debug: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf
 	qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d
