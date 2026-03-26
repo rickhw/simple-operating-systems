@@ -1,4 +1,3 @@
-// gdt.c
 #include <stdint.h>
 #include "gdt.h"
 

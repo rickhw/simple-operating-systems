@@ -30,4 +30,20 @@ typedef struct {
 // 宣告我們的解析函式
 bool elf_check_supported(elf32_ehdr_t* header);
 
+// [Day20] add - start
+typedef struct {
+    uint32_t type;   // 區段類型 (1 代表需要載入記憶體的 PT_LOAD)
+    uint32_t offset; // 該區段在檔案中的偏移量
+    uint32_t vaddr;  // [關鍵] 應用程式期望的虛擬位址！
+    uint32_t paddr;  // 實體位址 (通常忽略)
+    uint32_t filesz; // 區段在檔案中的大小
+    uint32_t memsz;  // 區段在記憶體中的大小
+    uint32_t flags;  // 讀/寫/執行權限
+    uint32_t align;  // 對齊要求
+} __attribute__((packed)) elf32_phdr_t;
+
+// 新增 Loader 宣告
+uint32_t elf_load(elf32_ehdr_t* header);
+// [Day20] add - end
+
 #endif

@@ -45,19 +45,36 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {// [修改] 接收 boot
     if (mbd->flags & (1 << 3)) {
         kprintf("Modules count: [%d]\n", mbd->mods_count);
 
+        // if (mbd->mods_count > 0) {
+        //     // 取得模組陣列的指標
+        //     multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
+
+        //     kprintf("Module 1 loaded at physical address: [0x%x] to [0x%x]\n", mod->mod_start, mod->mod_end);
+        //     kprintf("Module size: [%d] bytes\n", mod->mod_end - mod->mod_start);
+
+        //     // [精彩時刻] 把這塊實體記憶體當作 ELF 檔案，交給昨天的解析器！
+        //     elf32_ehdr_t* real_app = (elf32_ehdr_t*)mod->mod_start;
+
+        //     kprintf("\nPassing module to ELF Parser...\n");
+        //     elf_check_supported(real_app);
+        // }
+        // [Day20] add - start
         if (mbd->mods_count > 0) {
-            // 取得模組陣列的指標
             multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
-
-            kprintf("Module 1 loaded at physical address: [0x%x] to [0x%x]\n", mod->mod_start, mod->mod_end);
-            kprintf("Module size: [%d] bytes\n", mod->mod_end - mod->mod_start);
-
-            // [精彩時刻] 把這塊實體記憶體當作 ELF 檔案，交給昨天的解析器！
             elf32_ehdr_t* real_app = (elf32_ehdr_t*)mod->mod_start;
 
-            kprintf("\nPassing module to ELF Parser...\n");
-            elf_check_supported(real_app);
+            kprintf("\nLoading ELF Module...\n");
+            uint32_t entry_point = elf_load(real_app);
+
+            if (entry_point != 0) {
+                kprintf("Dropping to Ring 3 and executing app at 0x%x...\n", entry_point);
+
+                // 帶入我們 Day 17 寫好的跳板函式！
+                extern void enter_user_mode(uint32_t user_function_ptr);
+                enter_user_mode(entry_point);
+            }
         }
+        // [Day20] add - end
     } else {
         kprintf("No modules were loaded by GRUB.\n");
     }

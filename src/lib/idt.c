@@ -1,4 +1,3 @@
-// idt.c
 #include "idt.h"
 #include "io.h"
 
@@ -10,10 +9,10 @@ idt_ptr_t   idt_ptr;
 
 // 外部組合語言函式：載入 IDT 與中斷處理入口
 extern void idt_flush(uint32_t);
-extern void isr0(); // 第 0 號中斷的 Assembly 進入點
-extern void isr32(); // 第 32 號中斷 (Timer IRQ 0)
-extern void isr33(); // 宣告組合語言的鍵盤跳板
-extern void isr128(); // system calls
+extern void isr0();     // 第 0  號中斷：的 Assembly 進入點
+extern void isr32();    // 第 32 號中斷：Timer IRQ 0
+extern void isr33();    // 第 33 號中斷：宣告組合語言的鍵盤跳板
+extern void isr128();   // 第 128 號中斷：system calls
 
 // 設定單一 IDT 條目的輔助函式
 static void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
@@ -66,25 +65,6 @@ void pic_remap() {
     outb(0x21, 0xFC); // [修改] 從 0xFD 變成 0xFC
     outb(0xA1, 0xFF);
 }
-
-// 鍵盤按下時會觸發這個函式
-// void keyboard_handler() {
-//     // 從 Port 0x60 讀取鍵盤掃描碼 (Scan Code)
-//     uint8_t scancode = inb(0x60);
-
-//     // 最高位元 (第7位) 如果是 1，代表按鍵被「放開 (Release)」
-//     // 如果是 0，代表按鍵被「按下 (Press)」
-//     if (!(scancode & 0x80)) {
-//         // 為了驗證，我們先簡單印出十六進位的掃描碼
-//         kprintf("Key Pressed! Scancode: 0x%x\n", scancode);
-//     }
-
-//     // [非常重要] 告訴 PIC 秘書：「這個中斷我處理完了，你可以送下一個來了」
-//     // 也就是發送 EOI (End of Interrupt) 訊號給 Master PIC (Port 0x20)
-//     outb(0x20, 0x20);
-// }
-
-
 
 
 void init_idt(void) {

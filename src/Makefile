@@ -17,7 +17,7 @@ all: build-env myos.iso
 build-env:
 	docker build -t os-builder .
 
-myos.iso: myos.bin grub.cfg my_app.elfs
+myos.iso: myos.bin grub.cfg my_app.elf
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg

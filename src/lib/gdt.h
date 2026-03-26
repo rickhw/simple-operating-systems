@@ -1,4 +1,3 @@
-// gdt.h
 #ifndef GDT_H
 #define GDT_H
 
@@ -22,7 +21,6 @@ struct gdt_ptr_struct {
 } __attribute__((packed));
 typedef struct gdt_ptr_struct gdt_ptr_t;
 
-// 在 gdt.h 中新增 TSS 結構
 struct tss_entry_struct {
     uint32_t prev_tss;   // 舊的 TSS (不用理它)
     uint32_t esp0;       // [極重要] Ring 0 的堆疊指標
@@ -35,7 +33,6 @@ typedef struct tss_entry_struct tss_entry_t;
 
 // 初始化 GDT 的公開函式
 void init_gdt(void);
-
 void set_kernel_stack(uint32_t stack);
 
 #endif
