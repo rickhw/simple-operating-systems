@@ -27,32 +27,30 @@ void kernel_main(void) {
 
     kprintf("Kernel subsystems initialized.\n\n");
 
-    // === Day 25: SimpleFS 格式化與掛載測試 ===
-    kprintf("--- Initializing File System ---\n");
-
-    // 1. 解析 MBR，取得第一塊分區的起點 (預期是 2048)
+    // Start of Day26
+    // 解析 MBR 取得分區
     uint32_t part_lba = parse_mbr();
 
     if (part_lba != 0) {
-        // 2. 在這個分區上格式化 SimpleFS！(假設分區大小夠大，這裡偷懶塞個假 size)
+        // 為了確保環境乾淨，我們先重新格式化一次
         simplefs_format(part_lba, 10000);
 
-        // 3. 驗證：立刻把剛才寫入的 Superblock 讀出來檢查魔法數字
-        kprintf("\n[Verification] Reading Superblock from LBA %d...\n", part_lba);
-        sfs_superblock_t* verify_sb = (sfs_superblock_t*) kmalloc(512);
-        ata_read_sector(part_lba, (uint8_t*)verify_sb);
+        // === Day 26: 建立檔案測試 ===
+        kprintf("\n[Test] Writing files to disk...\n");
 
-        if (verify_sb->magic == SIMPLEFS_MAGIC) {
-            kprintf("[Verification] SUCCESS! SimpleFS Magic Number (0x%x) matches!\n", verify_sb->magic);
-        } else {
-            kprintf("[Verification] FAILED. Read magic: 0x%x\n", verify_sb->magic);
-        }
-        kfree(verify_sb);
+        char* data1 = "This is the content of the very first file ever created on Simple OS!";
+        simplefs_create_file(part_lba, "hello.txt", data1, 70); // 假設長度約 70 bytes
+
+        char* data2 = "OS config: vga_mode=text, ring3_enabled=true, fs=simplefs";
+        simplefs_create_file(part_lba, "config.sys", data2, 58);
+
+        // 呼叫 ls 功能！
+        simplefs_list_files(part_lba);
 
     } else {
         kprintf("No valid partition found on disk.\n");
     }
-    // End of Day25
+    // End of Day26
 
     kprintf("\nSystem is ready.\n> ");
     while (1) { __asm__ volatile ("hlt"); }

@@ -46,6 +46,7 @@ clean-disk:
 	$(DOCKER_CMD) nasm -f elf32 $< -o $@
 
 clean:
+	rm -f hdd.img
 	rm -f asm/*.o lib/*.o *.bin *.iso
 	rm -rf isodir
 

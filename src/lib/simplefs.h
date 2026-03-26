@@ -26,5 +26,12 @@ typedef struct {
 // 格式化指定的分區
 void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count);
 
+// [Day26][新增] 建立檔案並寫入資料
+// 為了簡單起見，我們這版先限制檔案大小不能超過 512 bytes (一個磁區)
+int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t size);
+
+// [Day26][新增] 列出目錄下的所有檔案 (類似 ls 指令)
+void simplefs_list_files(uint32_t part_lba);
+
 #endif
 // [Day25] add -- end
