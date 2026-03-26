@@ -28,3 +28,6 @@ boot.o: boot.S
 clean:
 	rm -f *.o *.bin *.iso
 	rm -rf isodir
+
+run: myos.iso
+	qemu-system-i386 -cdrom myos.iso -monitor stdio -boot d
