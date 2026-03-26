@@ -1,17 +1,17 @@
 #ifndef TASK_H
 #define TASK_H
-
 #include <stdint.h>
 
-// 任務控制區塊 (Task Control Block, TCB)
+// 任務控制區塊 (TCB)
 typedef struct task {
-    uint32_t esp;       // [最重要] 記錄這個任務專屬的 Stack Pointer
-    uint32_t stack_top; // 記錄這個任務配置到的記憶體頂端 (用來釋放記憶體)
-    int id;             // 任務的 ID
-    struct task* next;  // 指向下一個任務 (用於實作排程的 Linked List)
+    uint32_t esp;       // 儲存這個任務的堆疊指標
+    uint32_t id;        // 任務 ID
+    uint32_t *stack;    // 分配給這個任務的實體堆疊記憶體 (方便日後回收)
+    struct task *next;  // 指向下一個任務 (形成環狀連結串列)
 } task_t;
 
-// 宣告切換任務的組合語言函式
-extern void switch_task(uint32_t* old_esp_ptr, uint32_t new_esp);
+void init_multitasking();
+void create_kernel_thread(void (*entry_point)());
+void schedule();
 
 #endif
