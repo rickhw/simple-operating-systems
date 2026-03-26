@@ -80,3 +80,47 @@
 | **Reverse Resolution**| Reverse Path Resolution | 反向路徑解析 (爬樹法)| 50 | 正統 UNIX 實作 `pwd` 的魔法。透過尋找當前目錄的 `..` 不斷往上層爬，並反向推導出絕對路徑，確保路徑永遠準確。 |
 | **Path Resolution** | Path Resolution Engine | 路徑解析引擎 | 50 | 檔案系統的核心大腦。負責將人類可讀的路徑（如 `/folder/a.txt`）逐層拆解，並轉換為實體的磁區位置 (LBA)。 |
 | **Block Allocator** | Block Allocator | 磁區分配器 | 49 | 解決多資料夾空間重疊危機的全域管理者。透過記錄與更新 Superblock 的 `data_start_lba`，確保新檔案寫入安全的空間。 |
+
+
+
+
+```mermaid
+flowchart TD
+    %% (保留前面的 classDef 與 Phase 1~5 子圖)
+    classDef app fill:#e8f4f8,stroke:#6fa8dc,stroke-width:2px,color:#000
+    classDef gui fill:#fff2cc,stroke:#d6b656,stroke-width:3px,color:#000
+    classDef hw fill:#f9d0c4,stroke:#e06666,stroke-width:2px,color:#000
+    classDef buffer fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000,stroke-dasharray: 5 5
+
+    %% 圖形化介面與視窗管理 (Day 51-59)
+    subgraph Phase6 ["6. 圖形介面與視窗管理 (GUI & Compositor)"]
+        Mouse(("PS/2 滑鼠\n(IRQ 12)")):::hw -->|"狀態更新"| MouseHandler["mouse_handler()\n[記錄座標與點擊]"]:::app
+        MouseHandler -->|"AABB 碰撞偵測"| WindowMgr["Window Manager\n(視窗焦點、拖曳與 UI 攔截)"]:::gui
+        
+        Keyboard(("鍵盤 (IRQ 1)")):::hw --> TTY["圖形化 TTY 引擎\n(綁定特定視窗)"]:::app
+        TTY -->|"寫入文字陣列"| TextBuffer[("Text Buffer\n(網格記憶體)")]:::buffer
+        
+        Timer(("PIT 時鐘\n(IRQ 0)")):::hw -->|"觸發渲染"| AsyncRender["非同步合成器\n(gui_handle_timer)"]:::gui
+        
+        MouseHandler -.->|"標記 Dirty"| AsyncRender
+        WindowMgr -.->|"標記 Dirty"| AsyncRender
+        TTY -.->|"標記 Dirty"| AsyncRender
+        
+        AsyncRender -->|"1. 畫背景/工作列\n2. 畫底層視窗\n3. 畫焦點視窗\n4. 疊加 TTY 文字\n5. 畫游標"| BackBuffer[("隱形畫布\n(Double Buffer)")]:::buffer
+        BackBuffer -->|"Swap (消除閃爍)"| VRAM(("顯示卡 VRAM\n(LFB 模式)")):::hw
+    end
+```
+
+
+#### 圖形與視窗系統概念 (Graphics & Window Management)
+
+| 縮寫 | 全名 | 繁體中文名 | Day | 用途與說明 |
+| --- | --- | --- | --- | --- |
+| **LFB** | Linear Framebuffer | 線性幀緩衝區 | 51 | 顯示卡在實體記憶體中開闢的一塊巨大連續空間。寫入這塊記憶體就能直接控制螢幕上的每一顆像素。 |
+| **MMIO** | Memory-Mapped I/O | 記憶體映射輸出入 | 51 | 將硬體裝置（如顯示卡 VRAM）的控制暫存器映射到 CPU 的實體記憶體位址上，讓 CPU 像讀寫 RAM 一樣控制硬體。 |
+| **Bitmap Font** | Bitmap Font | 點陣字型 | 52 | 以二進位像素矩陣（如 8x8）來定義字元形狀的字型格式。透過位元遮罩 (Bitmask) 來判斷像素是否該上色。 |
+| **Double Buffering**| Double Buffering | 雙重緩衝技術 | 55 | 電腦圖學消除畫面閃爍 (Flickering) 的核心技術。在記憶體中建立一塊「隱形畫布 (Back Buffer)」，畫完後再一次性複製 (Swap) 到螢幕上。 |
+| **Compositor** | Display Compositor | 畫面合成器 | 55 | 現代作業系統（如 Windows DWM, Wayland）的核心元件。負責將桌布、多個視窗、UI 疊加並計算遮擋關係後，融合成一張最終畫面。 |
+| **Async Rendering** | Asynchronous Rendering | 非同步渲染迴圈 | 58 | 將「資料狀態更新（打字/動滑鼠）」與「畫面繪製」脫鉤。利用系統時鐘 (Timer) 定期檢查「髒標記 (Dirty Flag)」來批次更新畫面，極大化系統效能。 |
+| **Z-Order** | Z-Order / Z-Index | Z 軸排序 (深度) | 56 | 決定多個視窗重疊時「誰蓋住誰」的順序。通常結合畫家演算法 (Painter's Algorithm)，先畫底層，最後畫取得焦點 (Focus) 的視窗。 |
+| **RTC / CMOS** | Real-Time Clock | 即時時鐘 | 58 | 主機板上由獨立電池供電的計時晶片，即使關機也會繼續走動。透過 I/O Port 0x70/0x71 讀取時間。 |
