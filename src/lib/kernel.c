@@ -10,16 +10,9 @@
 #include "kheap.h"
 #include "ata.h"
 #include "mbr.h"
-#include "vfs.h" // [新增]
+#include "vfs.h"
+#include "simplefs.h"
 
-// === 1. 撰寫一個假的底層驅動程式讀取邏輯 ===
-uint32_t dummy_read_func(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
-    // 假裝我們從某個硬體讀出了資料
-    char* msg = "Hello from the Dummy Device via VFS Magic!";
-    memcpy(buffer, msg, 43);
-    kprintf("[Dummy Driver] Read requested for node: %s (Offset: %d)\n", node->name, offset);
-    return 43; // 回傳讀取的 bytes 數
-}
 
 void kernel_main(void) {
     terminal_initialize();
@@ -34,31 +27,32 @@ void kernel_main(void) {
 
     kprintf("Kernel subsystems initialized.\n\n");
 
-    // === Day 24: VFS 抽象層測試 ===
-    kprintf("--- VFS Abstraction Test ---\n");
+    // === Day 25: SimpleFS 格式化與掛載測試 ===
+    kprintf("--- Initializing File System ---\n");
 
-    // 2. 建立一個虛擬節點 (把它想像成 /dev/dummy)
-    fs_node_t* dummy_node = (fs_node_t*) kmalloc(sizeof(fs_node_t));
-    memcpy(dummy_node->name, "dummy_device", 13);
-    dummy_node->flags = FS_CHARDEVICE; // 標記為字元裝置
+    // 1. 解析 MBR，取得第一塊分區的起點 (預期是 2048)
+    uint32_t part_lba = parse_mbr();
 
-    // [關鍵魔法] 將 VFS 的 read 指標，綁定到我們寫好的 dummy_read_func！
-    dummy_node->read = dummy_read_func;
-    dummy_node->write = 0; // 不支援寫入
+    if (part_lba != 0) {
+        // 2. 在這個分區上格式化 SimpleFS！(假設分區大小夠大，這裡偷懶塞個假 size)
+        simplefs_format(part_lba, 10000);
 
-    // 3. 應用程式 (或 Kernel) 來要資料了！它不需要知道這是什麼裝置，統一呼叫 vfs_read
-    uint8_t* read_buf = (uint8_t*) kmalloc(128);
+        // 3. 驗證：立刻把剛才寫入的 Superblock 讀出來檢查魔法數字
+        kprintf("\n[Verification] Reading Superblock from LBA %d...\n", part_lba);
+        sfs_superblock_t* verify_sb = (sfs_superblock_t*) kmalloc(512);
+        ata_read_sector(part_lba, (uint8_t*)verify_sb);
 
-    kprintf("Kernel calling vfs_read()...\n");
-    uint32_t bytes_read = vfs_read(dummy_node, 0, 100, read_buf);
+        if (verify_sb->magic == SIMPLEFS_MAGIC) {
+            kprintf("[Verification] SUCCESS! SimpleFS Magic Number (0x%x) matches!\n", verify_sb->magic);
+        } else {
+            kprintf("[Verification] FAILED. Read magic: 0x%x\n", verify_sb->magic);
+        }
+        kfree(verify_sb);
 
-    read_buf[bytes_read] = '\0'; // 確保字串結尾
-    kprintf("VFS returned: %s\n", (char*)read_buf);
-
-    // 4. 測試呼叫不支援的 write
-    kprintf("\nKernel calling vfs_write()...\n");
-    vfs_write(dummy_node, 0, 10, read_buf); // 這應該要被 VFS 優雅地擋下來並印出 Error
-    // End of Day24
+    } else {
+        kprintf("No valid partition found on disk.\n");
+    }
+    // End of Day25
 
     kprintf("\nSystem is ready.\n> ");
     while (1) { __asm__ volatile ("hlt"); }

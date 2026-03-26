@@ -14,6 +14,6 @@ typedef struct {
 } __attribute__((packed)) mbr_partition_t;
 
 // 解析 MBR 的函式
-void parse_mbr(void);
+uint32_t parse_mbr(void);
 
 #endif
