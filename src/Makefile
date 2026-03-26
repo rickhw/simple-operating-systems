@@ -15,19 +15,22 @@ myos.iso: myos.bin grub.cfg
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 
-# 將 kernel.o 也加入連結清單中
-myos.bin: boot.o kernel.o
-	$(DOCKER_CMD) ld -m elf_i386 -n -T linker.ld -o myos.bin boot.o kernel.o
+# 將 gdt_flush.o 與 gdt.o 加入編譯鏈
+myos.bin: boot.o kernel.o gdt.o gdt_flush.o
+	$(DOCKER_CMD) ld -m elf_i386 -n -T linker.ld -o myos.bin boot.o kernel.o gdt.o gdt_flush.o
 
-kernel.o: kernel.c
-	$(DOCKER_CMD) gcc $(CFLAGS) -c kernel.c -o kernel.o
+# 編譯 C 檔案的通用規則
+%.o: %.c
+	$(DOCKER_CMD) gcc $(CFLAGS) -c $< -o $@
 
-boot.o: boot.S
-	$(DOCKER_CMD) nasm -f elf32 boot.S -o boot.o
+# 編譯 Assembly 檔案的通用規則
+%.o: %.S
+	$(DOCKER_CMD) nasm -f elf32 $< -o $@
 
 clean:
 	rm -f *.o *.bin *.iso
 	rm -rf isodir
+
 
 run: myos.iso
 	qemu-system-i386 -cdrom myos.iso -monitor stdio -boot d

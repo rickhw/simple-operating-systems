@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdarg.h>   // [新增] 用於處理不定長度引數
 #include <stdbool.h>  // [新增] 支援 bool 型別
+#include "gdt.h"
 
 volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
 const size_t VGA_COLS = 80;
@@ -257,19 +258,11 @@ void kprintf(const char* format, ...) {
 void kernel_main(void) {
     terminal_initialize();
 
-    // 現在我們有強大的 kprintf 可以用了！
     kprintf("=== OS Kernel Booting ===\n");
-    kprintf("Module: %s loaded successfully.\n", "VGA Driver");
 
-    int ram_mb = 16;
-    kprintf("System RAM detected: %d MB\n", ram_mb);
+    // 初始化 GDT
+    init_gdt();
+    kprintf("GDT loaded successfully.\n");
 
-    // 測試十六進位與記憶體位址輸出
-    int magic_number = 3735928559; // 猜猜這是什麼？
-    kprintf("Magic Number in Hex: %x\n", magic_number);
-
-    // 印出 VGA buffer 的記憶體位址
-    kprintf("VGA Buffer starts at address: %x\n", (int)vga_buffer);
-
-    kprintf("Initialization %d%% complete.\n", 100);
+    kprintf("Initialization complete. System is stable.\n");
 }
