@@ -1,96 +1,126 @@
-# 設定原始碼目錄變數，方便後續維護
-SRC_DIR = src
-SCRIPT_DIR = scripts
+# -----------------------------------------------------------------------------
+# 目錄定義
+# -----------------------------------------------------------------------------
+SRC_DIR     = src
+SCRIPT_DIR  = scripts
 
-# 修改 Docker 掛載與工作目錄：掛載根目錄，但工作目錄設在 src 內
+# Kernel 相關目錄
+KERNEL_DIR     = $(SRC_DIR)/kernel
+KERNEL_ASM_DIR = $(KERNEL_DIR)/asm
+KERNEL_LIB_DIR = $(KERNEL_DIR)/lib
+KERNEL_INC     = -Ikernel/include -Ikernel/lib  # 相對於 Docker 工作目錄 (src)
+
+# User 相關目錄
+USER_DIR     = $(SRC_DIR)/user
+USER_ASM_DIR = $(USER_DIR)/asm
+USER_LIB_DIR = $(USER_DIR)/lib
+USER_INC     = -Iuser/include -Iuser/lib        # 相對於 Docker 工作目錄 (src)
+
+# Docker 指令：工作目錄設在 src 內
 DOCKER_CMD = docker run --platform linux/amd64 --rm -v $(PWD):/workspace -w /workspace/$(SRC_DIR) os-builder
 
-# --- 編譯參數修正：標頭檔路徑需相對於編譯時的工作目錄 (src) ---
-CFLAGS = -m32 -ffreestanding -O2 -Wall -Wextra -Ilib/include
-APP_CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -Ilibc/include
+# -----------------------------------------------------------------------------
+# 編譯參數
+# -----------------------------------------------------------------------------
+CFLAGS     = -m32 -ffreestanding -O2 -Wall -Wextra $(KERNEL_INC)
+APP_CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector $(USER_INC)
 
-# --- 路徑抓取修正：加上 $(SRC_DIR)/ 前綴 ---
-C_SOURCES = $(wildcard $(SRC_DIR)/lib/*.c)
-C_OBJS = $(C_SOURCES:.c=.o)
-ASM_SOURCES = $(wildcard $(SRC_DIR)/asm/*.S)
-ASM_OBJS = $(ASM_SOURCES:.S=.o)
+# -----------------------------------------------------------------------------
+# 檔案選取
+# -----------------------------------------------------------------------------
 
-LIBC_SOURCES = $(wildcard $(SRC_DIR)/libc/*.c)
-LIBC_OBJS = $(LIBC_SOURCES:.c=.o)
+# [Kernel]
+C_SOURCES   = $(wildcard $(KERNEL_LIB_DIR)/*.c)
+C_OBJS      = $(C_SOURCES:.c=.o)
+ASM_SOURCES = $(wildcard $(KERNEL_ASM_DIR)/*.S)
+ASM_OBJS    = $(ASM_SOURCES:.S=.o)
 
 # 核心物件檔案清單 (boot.o 必須在最前面)
-OBJS = $(SRC_DIR)/asm/boot.o $(filter-out $(SRC_DIR)/asm/boot.o, $(ASM_OBJS)) $(C_OBJS)
+OBJS = $(KERNEL_ASM_DIR)/boot.o $(filter-out $(KERNEL_ASM_DIR)/boot.o, $(ASM_OBJS)) $(C_OBJS)
 
-# 定義所有的 User App 目標
-APPS = $(SRC_DIR)/shell.elf $(SRC_DIR)/echo.elf $(SRC_DIR)/cat.elf \
-       $(SRC_DIR)/ping.elf $(SRC_DIR)/pong.elf $(SRC_DIR)/touch.elf \
-       $(SRC_DIR)/ls.elf $(SRC_DIR)/rm.elf $(SRC_DIR)/mkdir.elf
+# [User]
+# 假設 crt0.S 移到了 user/asm/
+CRT0_OBJ    = $(USER_ASM_DIR)/crt0.o
 
+# 使用者庫 (原本的 libc 現在應該在 user/lib/)
+USER_LIB_SRCS = $(wildcard $(USER_LIB_DIR)/*.c)
+USER_LIB_OBJS = $(USER_LIB_SRCS:.c=.o)
+
+# 使用者應用程式 (在 user/ 下的 .c)
+USER_APPS_C = $(wildcard $(USER_DIR)/*.c)
+APPS        = $(USER_APPS_C:.c=.elf)
+
+# -----------------------------------------------------------------------------
+# 主要目標
+# -----------------------------------------------------------------------------
 all: build-env $(APPS) myos.iso
 
 build-env:
 	docker build -t os-builder .
 
-.PRECIOUS: %.o $(SRC_DIR)/%.o $(SRC_DIR)/libc/%.o
-
+# 防止 Make 自動刪除 .o 檔
+.PRECIOUS: %.o $(SRC_DIR)/%.o $(KERNEL_DIR)/%.o $(USER_DIR)/%.o
 
 # -----------------------------------------------------------------------------
 # Compile Rules
 # -----------------------------------------------------------------------------
 
-## Kernel
-$(SRC_DIR)/asm/%.o: $(SRC_DIR)/asm/%.S
+## [Kernel 編譯]
+$(KERNEL_ASM_DIR)/%.o: $(KERNEL_ASM_DIR)/%.S
 	@echo "==> 編譯 Kernel ASM: $<"
 	$(DOCKER_CMD) nasm -f elf32 $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
-$(SRC_DIR)/lib/%.o: $(SRC_DIR)/lib/%.c
+$(KERNEL_LIB_DIR)/%.o: $(KERNEL_LIB_DIR)/%.c
 	@echo "==> 編譯 Kernel Lib: $<"
 	$(DOCKER_CMD) gcc $(CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
-## User App (libc & apps)
-$(SRC_DIR)/libc/%.o: $(SRC_DIR)/libc/%.c
-	@echo "==> 編譯 libc 組件: $<"
+## [User 編譯]
+# 1. crt0 (user/asm)
+$(USER_ASM_DIR)/%.o: $(USER_ASM_DIR)/%.S
+	@echo "==> 編譯 User CRT0: $<"
+	$(DOCKER_CMD) nasm -f elf32 $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
+
+# 2. User Lib (user/lib - 原 libc)
+$(USER_LIB_DIR)/%.o: $(USER_LIB_DIR)/%.c
+	@echo "==> 編譯 User Lib: $<"
 	$(DOCKER_CMD) gcc $(APP_CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
-$(SRC_DIR)/crt0.o: $(SRC_DIR)/crt0.S
-	@echo "==> 編譯 crt0.S..."
-	$(DOCKER_CMD) nasm -f elf32 crt0.S -o crt0.o
-
-# 通用 User App 編譯規則 (.c -> .o)
-$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
+# 3. User Apps (user/*.c)
+$(USER_DIR)/%.o: $(USER_DIR)/%.c
 	@echo "==> 編譯 User App: $<"
 	$(DOCKER_CMD) gcc $(APP_CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
-# 通用 User App 連結規則 (.o -> .elf)
-$(SRC_DIR)/%.elf: $(SRC_DIR)/crt0.o $(SRC_DIR)/%.o $(LIBC_OBJS)
+# -----------------------------------------------------------------------------
+# Link Rules
+# -----------------------------------------------------------------------------
+
+# 通用 User App 連結規則
+$(USER_DIR)/%.elf: $(CRT0_OBJ) $(USER_DIR)/%.o $(USER_LIB_OBJS)
 	@echo "==> 連結 User App: $@"
-	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o $(subst $(SRC_DIR)/,,$*.o) $(subst $(SRC_DIR)/,,$(LIBC_OBJS)) -o $(subst $(SRC_DIR)/,,$@)
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 \
+		$(subst $(SRC_DIR)/,,$(CRT0_OBJ)) \
+		$(subst $(SRC_DIR)/,,$(USER_DIR)/$*.o) \
+		$(subst $(SRC_DIR)/,,$(USER_LIB_OBJS)) \
+		-o $(subst $(SRC_DIR)/,,$@)
 
 # -----------------------------------------------------------------------------
-# --- OS ISO 建置規則 ---
+# ISO & Bin
 # -----------------------------------------------------------------------------
 
 myos.iso: $(SRC_DIR)/myos.bin $(SCRIPT_DIR)/grub.cfg $(APPS)
-	# 1. 在實體機的 src 底下建立臨時目錄 (確保 Docker 看得到)
 	mkdir -p $(SRC_DIR)/isodir/boot/grub
-
-	# 2. 複製檔案到該目錄
 	cp $(SRC_DIR)/myos.bin $(SRC_DIR)/isodir/boot/myos.bin
 	cp $(SCRIPT_DIR)/grub.cfg $(SRC_DIR)/isodir/boot/grub/grub.cfg
-	cp $(SRC_DIR)/*.elf $(SRC_DIR)/isodir/boot/
-
-	# 3. 執行 grub-mkrescue
-	# 注意：我們的工作目錄是 /workspace/src，所以路徑直接寫 isodir 即可
-	# 產出的 iso 會放在 /workspace/ (即根目錄)
+	cp $(USER_DIR)/*.elf $(SRC_DIR)/isodir/boot/
 	$(DOCKER_CMD) grub-mkrescue -o ../$@ isodir
-
-	# 4. 清理臨時目錄
 	rm -rf $(SRC_DIR)/isodir
 
 $(SRC_DIR)/myos.bin: $(OBJS)
 	$(DOCKER_CMD) ld -m elf_i386 -n -T ../$(SCRIPT_DIR)/linker.ld -o myos.bin $(subst $(SRC_DIR)/,,$(OBJS))
 
-# --- 其他工具 ---
+# -----------------------------------------------------------------------------
+# 工具
+# -----------------------------------------------------------------------------
 hdd.img:
 	dd if=/dev/zero of=hdd.img bs=1M count=10
 	docker run --rm -i --platform linux/amd64 -v $(PWD):/workspace -w /workspace alpine sh -c "apk add --no-cache util-linux && echo -e 'o\nn\np\n1\n\n\nw' | fdisk hdd.img"
