@@ -17,7 +17,7 @@ LIBC_OBJS = $(LIBC_SOURCES:.c=.o)
 # 把所有 .o 檔統整起來 (注意 boot.o 必須在前面，雖然 linker.ld 裡有指定 ENTRY，但放前面更保險)
 OBJS = asm/boot.o $(filter-out asm/boot.o, $(ASM_OBJS)) $(C_OBJS)
 
-all: build-env shell.elf echo.elf cat.elf ping.elf pong.elf write.elf myos.iso
+all: build-env shell.elf echo.elf cat.elf ping.elf pong.elf write.elf ls.elf myos.iso
 
 build-env:
 	docker build -t os-builder .
@@ -61,21 +61,16 @@ crt0.o: crt0.S
 # -----------------------------------------------------------------------------
 # 專屬清理 User App 的指令
 clean-app:
-	rm -f crt0.o app.o shell.elf echo.o echo.elf cat.o cat.elf ping.o ping.elf pong.o pong.elf libc/*.o
+	rm -f crt0.o *.o *.elf libc/*.o
 	@echo "==> User Apps 已清除。"
 
 # -----------------------------------------------------------------------------
 # --- OS ISO 建置規則 ---
-myos.iso: myos.bin grub.cfg shell.elf echo.elf cat.elf ping.elf pong.elf
+myos.iso: myos.bin grub.cfg shell.elf echo.elf cat.elf ping.elf pong.elf write.elf ls.elf
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg
-	cp shell.elf isodir/boot/shell.elf
-	cp echo.elf isodir/boot/echo.elf
-	cp cat.elf isodir/boot/cat.elf
-	cp ping.elf isodir/boot/ping.elf
-	cp pong.elf isodir/boot/pong.elf
-	cp write.elf isodir/boot/write.elf
+	cp *.elf isodir/boot
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 
@@ -101,8 +96,8 @@ clean: clean-app
 	rm -f asm/*.o lib/*.o *.bin *.iso
 	rm -rf isodir
 
-run: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf write.elf
+run: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf write.elf ls.elf
 	qemu-system-i386 -cdrom myos.iso -monitor stdio -hda hdd.img -boot d
 
-debug: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf write.elf
+debug: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf write.elf ls.elf
 	qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d

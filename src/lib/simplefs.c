@@ -185,3 +185,66 @@ int vfs_create_file(char* filename, char* content) {
     simplefs_create_file(mounted_part_lba, filename, content, len);
     return 0;
 }
+
+
+// [Day45] add -- start
+// 【新增】讀取第 index 個檔案的資訊
+int simplefs_readdir(uint32_t part_lba, int index, char* out_name, uint32_t* out_size) {
+    // 假設我們的根目錄位在 part_lba + 1 (這取決於你當時 simplefs_format 的設計)
+    // 通常根目錄就是一個 block，我們把它讀出來
+    uint8_t* dir_buffer = (uint8_t*) kmalloc(4096);
+    ata_read_sector(part_lba + 1, dir_buffer); // 讀取第一個目錄磁區
+
+    // 【神級轉換】直接把一整塊記憶體轉型成結構陣列！
+    sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buffer;
+    int max_entries = 4096 / sizeof(sfs_file_entry_t);
+
+    int valid_count = 0;
+    for (int i = 0; i < max_entries; i++) {
+        if (entries[i].filename[0] != '\0') {
+            if (valid_count == index) {
+                // 現在編譯器會精準抓到正確的 offset，再也不會讀到隔壁的字串了！
+                for(int j=0; j<32; j++) out_name[j] = entries[i].filename[j];
+                *out_size = entries[i].file_size;
+
+                kfree(dir_buffer);
+                return 1;
+            }
+            valid_count++;
+        }
+    }
+    kfree(dir_buffer);
+    return 0;
+    // 假設每個 file_entry_t 是 64 bytes (32 bytes 檔名 + 32 bytes 屬性)
+    // int valid_count = 0;
+    // for (int i = 0; i < 512 / 64; i++) {
+    //     uint8_t* entry = dir_buffer + (i * 64);
+
+    //     // 如果檔名的第一個字元不是 0，代表這是一個有效的檔案
+    //     if (entry[0] != '\0') {
+    //         if (valid_count == index) {
+    //             // 找到了！把檔名拷貝到 User 傳進來的緩衝區
+    //             for (int j = 0; j < 32; j++) {
+    //                 out_name[j] = entry[j];
+    //             }
+    //             // 取出檔案大小 (假設放在檔名後面的 offset 32 處)
+    //             *out_size = *(uint32_t*)(entry + 32);
+
+    //             kfree(dir_buffer);
+    //             return 1; // 成功找到並回傳
+    //         }
+    //         valid_count++;
+    //     }
+    // }
+
+    // kfree(dir_buffer);
+    // return 0; // 找不到 (通常代表目錄到底了)
+}
+
+// 【新增】VFS 層的封裝
+int vfs_readdir(int index, char* out_name, uint32_t* out_size) {
+    if (mounted_part_lba == 0) return -1;
+    return simplefs_readdir(mounted_part_lba, index, out_name, out_size);
+}
+
+// [Day45] add -- end

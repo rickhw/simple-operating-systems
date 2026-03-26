@@ -8,6 +8,7 @@
 fs_node_t* fd_table[32] = {0};
 
 extern int vfs_create_file(char* filename, char* content);
+extern int vfs_readdir(int index, char* out_name, uint32_t* out_size);
 
 // ==========================================
 // IPC 訊息佇列 (Message Queue)
@@ -149,6 +150,16 @@ void syscall_handler(registers_t *regs) {
 
         ipc_lock(); // 上鎖，防止寫入硬碟時被排程器打斷！
         regs->eax = vfs_create_file(filename, content);
+        ipc_unlock();
+    }
+    // Syscall 15: sys_readdir (讀取目錄內容)
+    else if (eax == 15) {
+        int index = (int)regs->ebx;
+        char* out_name = (char*)regs->ecx;
+        uint32_t* out_size = (uint32_t*)regs->edx;
+
+        ipc_lock();
+        regs->eax = vfs_readdir(index, out_name, out_size);
         ipc_unlock();
     }
 }

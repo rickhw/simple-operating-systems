@@ -16,3 +16,7 @@ void* sbrk(int increment) {
 int create_file(const char* filename, const char* content) {
     return syscall(14, (int)filename, (int)content, 0, 0, 0);
 }
+
+int readdir(int index, char* out_name, int* out_size) {
+    return syscall(15, index, (int)out_name, (int)out_size, 0, 0);
+}
