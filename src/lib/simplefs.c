@@ -195,9 +195,9 @@ int simplefs_readdir(uint32_t part_lba, int index, char* out_name, uint32_t* out
     uint8_t* dir_buffer = (uint8_t*) kmalloc(4096);
     ata_read_sector(part_lba + 1, dir_buffer); // 讀取第一個目錄磁區
 
-    // 【神級轉換】直接把一整塊記憶體轉型成結構陣列！
+    // 【轉換】直接把一整塊記憶體轉型成結構陣列！
     sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buffer;
-    int max_entries = 4096 / sizeof(sfs_file_entry_t);
+    int max_entries = 512 / sizeof(sfs_file_entry_t);
 
     int valid_count = 0;
     for (int i = 0; i < max_entries; i++) {
@@ -215,30 +215,6 @@ int simplefs_readdir(uint32_t part_lba, int index, char* out_name, uint32_t* out
     }
     kfree(dir_buffer);
     return 0;
-    // 假設每個 file_entry_t 是 64 bytes (32 bytes 檔名 + 32 bytes 屬性)
-    // int valid_count = 0;
-    // for (int i = 0; i < 512 / 64; i++) {
-    //     uint8_t* entry = dir_buffer + (i * 64);
-
-    //     // 如果檔名的第一個字元不是 0，代表這是一個有效的檔案
-    //     if (entry[0] != '\0') {
-    //         if (valid_count == index) {
-    //             // 找到了！把檔名拷貝到 User 傳進來的緩衝區
-    //             for (int j = 0; j < 32; j++) {
-    //                 out_name[j] = entry[j];
-    //             }
-    //             // 取出檔案大小 (假設放在檔名後面的 offset 32 處)
-    //             *out_size = *(uint32_t*)(entry + 32);
-
-    //             kfree(dir_buffer);
-    //             return 1; // 成功找到並回傳
-    //         }
-    //         valid_count++;
-    //     }
-    // }
-
-    // kfree(dir_buffer);
-    // return 0; // 找不到 (通常代表目錄到底了)
 }
 
 // 【新增】VFS 層的封裝
@@ -248,3 +224,38 @@ int vfs_readdir(int index, char* out_name, uint32_t* out_size) {
 }
 
 // [Day45] add -- end
+
+
+// [Day46] add -- start
+// 【新增】實作檔案刪除邏輯
+int simplefs_delete_file(uint32_t part_lba, char* filename) {
+    uint8_t* dir_buffer = (uint8_t*) kmalloc(4096);
+    ata_read_sector(part_lba + 1, dir_buffer); // 讀取目錄磁區
+
+    sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buffer;
+    int max_entries = 512 / sizeof(sfs_file_entry_t);
+
+    for (int i = 0; i < max_entries; i++) {
+        // 如果這個格子有檔案，而且名字完全符合
+        if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, filename) == 0) {
+            // 【死亡宣告】把檔名第一個字元變成 0，代表這個格子空出來了！
+            entries[i].filename[0] = '\0';
+
+            // 【極度重要】把修改後的目錄，重新寫回實體硬碟！
+            ata_write_sector(part_lba + 1, dir_buffer);
+
+            kfree(dir_buffer);
+            return 0; // 刪除成功
+        }
+    }
+
+    kfree(dir_buffer);
+    return -1; // 找不到檔案
+}
+
+// 【新增】VFS 層的封裝
+int vfs_delete_file(char* filename) {
+    if (mounted_part_lba == 0) return -1;
+    return simplefs_delete_file(mounted_part_lba, filename);
+}
+// [Day46] add -- end

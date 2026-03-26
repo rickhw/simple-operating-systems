@@ -9,6 +9,7 @@ fs_node_t* fd_table[32] = {0};
 
 extern int vfs_create_file(char* filename, char* content);
 extern int vfs_readdir(int index, char* out_name, uint32_t* out_size);
+extern int vfs_delete_file(char* filename);
 
 // ==========================================
 // IPC 訊息佇列 (Message Queue)
@@ -160,6 +161,15 @@ void syscall_handler(registers_t *regs) {
 
         ipc_lock();
         regs->eax = vfs_readdir(index, out_name, out_size);
+        ipc_unlock();
+    }
+
+    // Syscall 16: sys_remove (刪除檔案)
+    else if (eax == 16) {
+        char* filename = (char*)regs->ebx;
+
+        ipc_lock(); // 上鎖！修改硬碟資料是非常危險的操作
+        regs->eax = vfs_delete_file(filename);
         ipc_unlock();
     }
 }

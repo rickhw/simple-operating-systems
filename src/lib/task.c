@@ -64,6 +64,12 @@ void exit_task() {
         }
         temp = temp->next;
     }
+
+    // [Day46]【新增】如果死的不是老爸 (Kernel 原始宇宙)，就把它專屬的宇宙回收！
+    if (current_task->page_directory != (uint32_t)page_directory) {
+        free_page_directory(current_task->page_directory);
+    }
+
     current_task->state = TASK_DEAD;
     schedule();
 }

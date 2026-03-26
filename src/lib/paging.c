@@ -21,6 +21,9 @@ uint32_t universe_pts[16][1024] __attribute__((aligned(4096)));
 uint32_t universe_heap_pts[16][1024] __attribute__((aligned(4096)));
 int next_universe_id = 0;
 
+// 在全域變數區新增一個陣列，記錄哪個宇宙被使用了
+int universe_used[16] = {0};
+
 extern void load_page_directory(uint32_t*);
 extern void enable_paging(void);
 
@@ -94,12 +97,23 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
 }
 
 uint32_t create_page_directory() {
-    if (next_universe_id >= 16) {
+    // if (next_universe_id >= 16) {
+    //     kprintf("Error: Max universes reached!\n");
+    //     while(1) __asm__ volatile("hlt");
+    // }
+    int id = -1;
+    // 尋找空閒的宇宙
+    for (int i = 0; i < 16; i++) {
+        if (!universe_used[i]) { id = i; break; }
+    }
+    if (id == -1) {
         kprintf("Error: Max universes reached!\n");
         while(1) __asm__ volatile("hlt");
     }
 
-    int id = next_universe_id++;
+    universe_used[id] = 1; // 標記為使用中
+
+    // int id = next_universe_id++;
     uint32_t* new_pd = universe_pds[id];
     uint32_t* new_pt = universe_pts[id];
     uint32_t* new_heap_pt = universe_heap_pts[id]; // [Day43] 拿出這個宇宙專屬的 Heap 表
@@ -118,4 +132,15 @@ uint32_t create_page_directory() {
     new_pd[64] = ((uint32_t)new_heap_pt) | 7;
 
     return (uint32_t)new_pd;
+}
+
+
+// [Day46]【新增】提供給 sys_exit 呼叫的回收函式
+void free_page_directory(uint32_t pd_phys) {
+    for (int i = 0; i < 16; i++) {
+        if ((uint32_t)universe_pds[i] == pd_phys) {
+            universe_used[i] = 0; // 解除佔用，讓給下一個程式！
+            return;
+        }
+    }
 }

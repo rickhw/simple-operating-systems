@@ -20,3 +20,7 @@ int create_file(const char* filename, const char* content) {
 int readdir(int index, char* out_name, int* out_size) {
     return syscall(15, index, (int)out_name, (int)out_size, 0, 0);
 }
+
+int remove(const char* filename) {
+    return syscall(16, (int)filename, 0, 0, 0, 0);
+}
