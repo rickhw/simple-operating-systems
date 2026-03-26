@@ -22,20 +22,6 @@ void* memset(void* bufptr, int value, size_t size) {
     return bufptr;
 }
 
-// void* memset(void* dest, int val, uint32_t len) {
-//     uint8_t* ptr = (uint8_t*)dest;
-//     while (len-- > 0) {
-//         *ptr++ = val;
-//     }
-//     return dest;
-// }
-
-
-
-// ==========================================
-// [新增] 5. 字串與數字處理工具
-// ==========================================
-
 // 輔助函式：反轉字串
 void reverse_string(char* str, int length) {
     int start = 0;
@@ -86,11 +72,7 @@ void itoa(int value, char* str, int base) {
     reverse_string(str, i);
 }
 
-// ==========================================
-// [新增] 6. 核心專屬格式化輸出 (kprintf)
-// ==========================================
-
-// 簡易版的 printf
+// Kernel 專屬格式化輸出 (kprintf)
 void kprintf(const char* format, ...) {
     va_list args;
     va_start(args, format); // 初始化不定參數列表
@@ -112,14 +94,6 @@ void kprintf(const char* format, ...) {
                 terminal_writestring(buffer);
                 break;
             }
-            // case 'x': { // 十六進位整數
-            //     int num = va_arg(args, int);
-            //     char buffer[32];
-            //     terminal_writestring("0x"); // 加上 0x 前綴
-            //     itoa(num, buffer, 16);
-            //     terminal_writestring(buffer);
-            //     break;
-            // }
             case 'x': { // 十六進位整數
                 // [關鍵] 改用 unsigned int 取出參數
                 unsigned int num = va_arg(args, unsigned int);
@@ -153,3 +127,16 @@ void kprintf(const char* format, ...) {
 
     va_end(args); // 清理不定參數列表
 }
+
+
+// [Day21] add -- start
+uint16_t inw(uint16_t port) {
+    uint16_t ret;
+    __asm__ volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
+    return ret;
+}
+
+void outw(uint16_t port, uint16_t data) {
+    __asm__ volatile ("outw %1, %0" : : "dN" (port), "a" (data));
+}
+// [Day21] add -- end

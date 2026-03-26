@@ -1,11 +1,8 @@
-// tty.h
 #ifndef TTY_H
 #define TTY_H
 
 #include <stdint.h>
 #include <stddef.h>
-// #include <stdarg.h>
-// #include <stdbool.h>
 
 void update_cursor(int x, int y);
 void terminal_putentryat(char c, uint8_t color, size_t x, size_t y);

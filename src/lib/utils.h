@@ -14,4 +14,9 @@ void reverse_string(char* str, int length);
 void itoa(int value, char* str, int base);
 void kprintf(const char* format, ...);
 
+// [Day21] add -- start
+uint16_t inw(uint16_t port);
+void outw(uint16_t port, uint16_t data);
+// [Day21] add -- end
+
 #endif
