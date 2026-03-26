@@ -20,10 +20,9 @@ void init_gui(void);
 // 註冊一個新視窗
 int create_window(int x, int y, int width, int height, const char* title);
 
-// 畫面合成器 (Compositor)：重繪整個桌面與所有視窗
-void gui_render(void);
-
 // 取得全域視窗陣列的指標 (給滑鼠偵測用)
 window_t* get_windows(void);
+
+void gui_render(int mouse_x, int mouse_y);
 
 #endif

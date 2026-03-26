@@ -6,24 +6,30 @@
 
 // 設定終端機的字體顏色為白色 (0xFFFFFF)，背景為純黑 (0x000000)
 #define TERM_FG 0xFFFFFF
-// #define TERM_BG 0x000000
 #define TERM_BG 0x008080    // 把這行原本的黑色換成深青色 (Teal)
-
-// 記錄目前打字游標的 (X, Y) 像素座標
-static int term_x = 0;
-static int term_y = 0;
 
 // 假設解析度是 800x600 (你可以未來把它變成從 gfx.h 讀取)
 #define SCREEN_WIDTH  800
 #define SCREEN_HEIGHT 600
 #define FONT_WIDTH    8
 #define FONT_HEIGHT   8
+#define MAX_ROWS (SCREEN_HEIGHT / 8) // 75 行
+#define MAX_COLS (SCREEN_WIDTH / 8) // 100 列
+
+// 記錄目前打字游標的 (X, Y) 像素座標
+static int term_x = 0;
+static int term_y = 0;
+static char text_buffer[MAX_ROWS][MAX_COLS];
 
 void terminal_initialize(void) {
     term_x = 0;
     term_y = 0;
-    // 用圖形引擎把整個螢幕塗黑，當作清空畫面
-    draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, TERM_BG);
+    // 清空文字緩衝區
+    for (int r = 0; r < MAX_ROWS; r++) {
+        for (int c = 0; c < MAX_COLS; c++) {
+            text_buffer[r][c] = '\0';
+        }
+    }
 }
 
 void terminal_putchar(char c) {
@@ -40,31 +46,21 @@ void terminal_putchar(char c) {
 
     // 處理退格鍵 (Backspace)
     if (c == '\b') {
-        if (term_x >= FONT_WIDTH) {
-            term_x -= FONT_WIDTH;
-            draw_char(' ', term_x, term_y, TERM_FG, TERM_BG); // 用空白蓋掉舊字元
-        } else if (term_y >= FONT_HEIGHT) {
-            // 退到上一行 (這裡簡化處理，直接退到上一行最右邊)
-            term_y -= FONT_HEIGHT;
-            term_x = SCREEN_WIDTH - FONT_WIDTH;
-            draw_char(' ', term_x, term_y, TERM_FG, TERM_BG);
+        if (term_x >= 8) {
+            term_x -= 8;
+            text_buffer[term_y / 8][term_x / 8] = '\0'; // 抹除記憶
         }
         return;
     }
 
-    // 呼叫圖形引擎畫出字元！
-    draw_char(c, term_x, term_y, TERM_FG, TERM_BG);
+    // 記在陣列裡，不再直接畫！
+    text_buffer[term_y / 8][term_x / 8] = c;
+    term_x += 8;
 
-    // 畫完之後，游標往右移
-    term_x += FONT_WIDTH;
-
-    // 如果超過螢幕寬度，就自動換行
-    if (term_x >= SCREEN_WIDTH) {
+    if (term_x >= 800) {
         term_x = 0;
-        term_y += FONT_HEIGHT;
-        if (term_y >= SCREEN_HEIGHT) {
-            terminal_initialize();
-        }
+        term_y += 8;
+        if (term_y >= 600) terminal_initialize();
     }
 }
 
@@ -76,4 +72,16 @@ void terminal_write(const char* data, size_t size) {
 
 void terminal_writestring(const char* data) {
     terminal_write(data, strlen(data));
+}
+
+// 【新增】把記憶體裡的字，畫在目前的畫布上
+void tty_render(void) {
+    for (int r = 0; r < MAX_ROWS; r++) {
+        for (int c = 0; c < MAX_COLS; c++) {
+            char ch = text_buffer[r][c];
+            if (ch != '\0' && ch != ' ') {
+                draw_char_transparent(ch, c * 8, r * 8, TERM_FG);
+            }
+        }
+    }
 }

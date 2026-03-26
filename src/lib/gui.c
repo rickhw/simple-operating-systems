@@ -35,17 +35,17 @@ window_t* get_windows(void) {
     return windows;
 }
 
-// 【畫面合成器 Compositor】這就是我們的 2D Render Loop！
-void gui_render(void) {
-    // 1. 清空背景 (畫上桌面底色)
+
+// 【終極遊戲渲染迴圈】
+void gui_render(int mouse_x, int mouse_y) {
+    // 1. 畫背景 (Clear Screen)
     draw_rect(0, 0, 800, 600, TERM_BG);
 
-    // 2. 畫出所有活躍的視窗 (Painter's Algorithm：先畫的會在底層)
+    // 2. 畫視窗 (Draw Sprites)
     for (int i = 0; i < MAX_WINDOWS; i++) {
         if (windows[i].is_active) {
             draw_window(windows[i].x, windows[i].y, windows[i].width, windows[i].height, windows[i].title);
 
-            // 為了示範，我們幫第一個視窗寫死一些內容
             if (i == 0) {
                 draw_string(windows[i].x + 10, windows[i].y + 30, "CPU: x86 32-bit", 0x000000, 0xC0C0C0);
                 draw_string(windows[i].x + 10, windows[i].y + 50, "Memory: 16 MB", 0x000000, 0xC0C0C0);
@@ -53,4 +53,13 @@ void gui_render(void) {
             }
         }
     }
+
+    // 3. 畫終端機文字 (Draw UI Layer)
+    tty_render();
+
+    // 4. 畫滑鼠游標 (Draw Cursor On Top)
+    draw_cursor(mouse_x, mouse_y);
+
+    // 5. 瞬間交換畫布！(Swap Buffers)
+    gfx_swap_buffers();
 }

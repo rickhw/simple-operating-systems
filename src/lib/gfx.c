@@ -2,6 +2,7 @@
 #include "paging.h"
 #include "tty.h"
 #include "font8x8.h"
+#include "utils.h"
 
 // 圖形引擎的私有狀態
 static uint8_t* fb_addr = 0;
@@ -10,11 +11,9 @@ static uint32_t fb_width = 0;
 static uint32_t fb_height = 0;
 static uint8_t  fb_bpp = 0;
 
-// [Day53] add -- start
-// 滑鼠游標系統 (Mouse Cursor System)
-static int cursor_x = 400;
-static int cursor_y = 300;
-static uint32_t cursor_bg[100]; // 儲存游標底下的 10x10 背景像素
+// [Day55]【核心魔法】隱形畫布 (Back Buffer)
+// 800x600 * 4 Bytes = 約 1.92 MB。我們把它放在 BSS 區段，既安全又快速！
+static uint32_t back_buffer[800 * 600];
 
 // 10x10 游標點陣圖 (1: 白色邊框, 2: 黑色填滿, 0: 透明)
 static const uint8_t cursor_bmp[10][10] = {
@@ -29,7 +28,6 @@ static const uint8_t cursor_bmp[10][10] = {
     {1,1,1,0,0,0,0,0,0,0},
     {1,0,0,0,0,0,0,0,0,0}
 };
-// [Day53] add -- end
 
 void init_gfx(multiboot_info_t* mbd) {
     if (mbd->flags & (1 << 12)) {
@@ -55,17 +53,24 @@ void init_gfx(multiboot_info_t* mbd) {
     }
 }
 
+// 【修改】現在所有的畫筆，都畫在隱形的 back_buffer 上！
 void put_pixel(int x, int y, uint32_t color) {
-    if (fb_addr == 0) return;
-
-    // 邊界保護 (非常重要，否則畫錯會 Page Fault！)
     if (x < 0 || (uint32_t)x >= fb_width || y < 0 || (uint32_t)y >= fb_height) return;
+    back_buffer[y * fb_width + x] = color;
+}
 
-    uint32_t offset = (y * fb_pitch) + (x * (fb_bpp / 8));
+uint32_t get_pixel(int x, int y) {
+    if (x < 0 || (uint32_t)x >= fb_width || y < 0 || (uint32_t)y >= fb_height) return 0;
+    return back_buffer[y * fb_width + x];
+}
 
-    fb_addr[offset]     = color & 0xFF;         // Blue
-    fb_addr[offset + 1] = (color >> 8) & 0xFF;  // Green
-    fb_addr[offset + 2] = (color >> 16) & 0xFF; // Red
+// 【新增】瞬間交換畫布！(消除閃爍的終極武器)
+void gfx_swap_buffers() {
+    if (fb_addr == 0) return;
+    // 逐行將 back_buffer 複製到實體的 Framebuffer
+    for (uint32_t y = 0; y < fb_height; y++) {
+        memcpy(fb_addr + (y * fb_pitch), &back_buffer[y * fb_width], fb_width * 4);
+    }
 }
 
 void draw_rect(int start_x, int start_y, int width, int height, uint32_t color) {
@@ -76,9 +81,6 @@ void draw_rect(int start_x, int start_y, int width, int height, uint32_t color) 
     }
 }
 
-
-// [Day52] add -- start
-// 用像素點陣畫出一個 ASCII 字元
 void draw_char(char c, int x, int y, uint32_t fg_color, uint32_t bg_color) {
     // 過濾掉我們字型庫沒有的控制字元或怪異字元
     if (c < 32 || c > 126) return;
@@ -98,48 +100,17 @@ void draw_char(char c, int x, int y, uint32_t fg_color, uint32_t bg_color) {
         }
     }
 }
-// [Day52] add -- end
 
-
-// [Day53] add -- start
-// 【新增】取得螢幕上特定座標的像素顏色
-uint32_t get_pixel(int x, int y) {
-    if (fb_addr == 0 || x < 0 || (uint32_t)x >= fb_width || y < 0 || (uint32_t)y >= fb_height) return 0;
-    uint32_t offset = (y * fb_pitch) + (x * (fb_bpp / 8));
-    // 組合 BGRA 成為 32-bit 顏色
-    uint32_t color = fb_addr[offset] | (fb_addr[offset + 1] << 8) | (fb_addr[offset + 2] << 16);
-    return color;
-}
-
-// 【新增】畫出滑鼠游標 (並處理背景還原)
+// 【修改】滑鼠游標現在不需要備份背景了！直接畫上去！
 void draw_cursor(int new_x, int new_y) {
-    // 1. 先把「舊位置」的背景還原
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            put_pixel(cursor_x + j, cursor_y + i, cursor_bg[i * 10 + j]);
-        }
-    }
-
-    // 2. 更新最新座標
-    cursor_x = new_x;
-    cursor_y = new_y;
-
-    // 3. 備份「新位置」的背景，然後畫上游標
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            // 備份背景
-            cursor_bg[i * 10 + j] = get_pixel(cursor_x + j, cursor_y + i);
-
-            // 畫游標
-            if (cursor_bmp[i][j] == 1) put_pixel(cursor_x + j, cursor_y + i, 0xFFFFFF); // 白邊
-            else if (cursor_bmp[i][j] == 2) put_pixel(cursor_x + j, cursor_y + i, 0x000000); // 黑底
+            if (cursor_bmp[i][j] == 1) put_pixel(new_x + j, new_y + i, 0xFFFFFF);
+            else if (cursor_bmp[i][j] == 2) put_pixel(new_x + j, new_y + i, 0x000000);
         }
     }
 }
-// [Day53] add -- end
 
-// [Day54] add -- start
-// 【新增】在指定座標畫出連續字串
 void draw_string(int x, int y, const char* str, uint32_t fg_color, uint32_t bg_color) {
     int curr_x = x;
     for (int i = 0; str[i] != '\0'; i++) {
@@ -148,7 +119,6 @@ void draw_string(int x, int y, const char* str, uint32_t fg_color, uint32_t bg_c
     }
 }
 
-// 【新增】畫出帶有標題列的復古視窗！
 void draw_window(int x, int y, int width, int height, const char* title) {
     // 1. 視窗主體 (經典的亮灰色 0xC0C0C0)
     draw_rect(x, y, width, height, 0xC0C0C0);
@@ -169,4 +139,17 @@ void draw_window(int x, int y, int width, int height, const char* title) {
     // 微調座標讓字體置中於標題列
     draw_string(x + 6, y + 7, title, 0xFFFFFF, 0x000080);
 }
-// [Day54] add -- end
+
+
+// 【新增】畫透明底色的字元 (給終端機疊加在背景上用)
+void draw_char_transparent(char c, int x, int y, uint32_t fg_color) {
+    if (c < 32 || c > 126) return;
+    const uint8_t* glyph = font8x8[c - 32];
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+            if (glyph[row] & (0x80 >> col)) {
+                put_pixel(x + col, y + row, fg_color);
+            }
+        }
+    }
+}

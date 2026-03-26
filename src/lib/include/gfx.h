@@ -21,4 +21,8 @@ void draw_char(char c, int x, int y, uint32_t fg_color, uint32_t bg_color);
 uint32_t get_pixel(int x, int y);   // [Day53]
 void draw_cursor(int x, int y);     // [Day53]
 
+void gfx_swap_buffers(void);        // [Day55]
+void draw_char_transparent(char c, int x, int y, uint32_t fg_color);    // [Day55]
+
+
 #endif

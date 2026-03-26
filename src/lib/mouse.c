@@ -122,36 +122,17 @@ void mouse_handler(void) {
                         wins[dragged_window_id].y -= dy;
 
                         // 視窗位置改變了，通知合成器重繪整個畫面！
-                        gui_render();
+                        // gui_render();
+                        gui_render(mouse_x, mouse_y);
                     }
                 } else {
                     // 左鍵放開，停止拖曳
                     dragged_window_id = -1;
                 }
 
-                // 畫布重繪後，最後再把游標補上去 (蓋在最上層)
-                draw_cursor(mouse_x, mouse_y);
+                // 【修改】不管有沒有拖曳，只要滑鼠動了，就觸發整個世界的重繪！
+                gui_render(mouse_x, mouse_y);
                 break;
-                // mouse_byte[2] = mouse_in;
-                // mouse_cycle = 0;
-
-                // // 取出 X 和 Y 的位移量
-                // int dx = mouse_byte[1];
-                // int dy = mouse_byte[2];
-
-                // // 更新座標 (Y 軸在電腦螢幕是往下遞增，所以要減 dy)
-                // mouse_x += dx;
-                // mouse_y -= dy;
-
-                // // 邊界碰撞測試 (避免游標跑出螢幕)
-                // if (mouse_x < 0) mouse_x = 0;
-                // if (mouse_x > 790) mouse_x = 790; // 保留 10 像素給游標本身
-                // if (mouse_y < 0) mouse_y = 0;
-                // if (mouse_y > 590) mouse_y = 590;
-
-                // // 重畫游標！
-                // draw_cursor(mouse_x, mouse_y);
-                // break;
         }
         status = inb(0x64); // 繼續讀取直到清空
     }

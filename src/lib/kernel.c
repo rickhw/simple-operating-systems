@@ -62,7 +62,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     create_window(50, 50, 350, 250, "Simple OS Terminal"); // 多開一個視窗試試！
 
     // 首次渲染全畫面
-    gui_render();
+    gui_render(400, 300);
 
     // 3. 啟動滑鼠驅動 (它會擷取畫好視窗後的背景)
     init_mouse();
