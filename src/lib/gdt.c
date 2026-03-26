@@ -2,15 +2,12 @@
 #include <stdint.h>
 #include "gdt.h"
 
-// 擴充為 6 個元素：Null, KCode, KData, UCode, UData, TSS
-gdt_entry_t gdt_entries[6];
+gdt_entry_t gdt_entries[6]; // 6 個元素：Null, KCode, KData, UCode, UData, TSS
 gdt_ptr_t   gdt_ptr;
 tss_entry_t tss_entry;
 
-// 外部組合語言函式，用來載入 GDT
-extern void gdt_flush(uint32_t);
-// 新增一個外部的組合語言函式，用來載入 TSS
-extern void tss_flush(void);
+extern void gdt_flush(uint32_t);    // 外部組合語言函式，用來載入 GDT (Global Descriptor Table)
+extern void tss_flush(void);        // 外部組合語言函式，用來載入 TSS (Task State Segment)
 
 // 設定單一 GDT 條目的輔助函式
 static void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
@@ -25,7 +22,7 @@ static void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t acc
     gdt_entries[num].access      = access;
 }
 
-// [新增] 初始化 TSS 的輔助函式
+// 初始化 TSS (Task State Segment) 的輔助函式
 static void write_tss(int32_t num, uint16_t ss0, uint32_t esp0) {
     uint32_t base = (uint32_t) &tss_entry;
     uint32_t limit = sizeof(tss_entry_t);
@@ -70,8 +67,7 @@ void init_gdt(void) {
     tss_flush(); // 告訴 CPU：「逃生路線圖在這裡！」
 }
 
-
-// [新增] 一個公開的 API，讓排程器可以隨時更新 TSS 的 esp0
+// 公開 API，讓排程器可以隨時更新 TSS 的 esp0 (Extended Stack Pointer)
 void set_kernel_stack(uint32_t stack) {
     tss_entry.esp0 = stack;
 }

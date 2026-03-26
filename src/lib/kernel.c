@@ -9,27 +9,7 @@
 #include "pmm.h"
 #include "kheap.h"
 #include "syscall.h"
-
-extern void enter_user_mode(uint32_t user_function_ptr);
-
-// 宣告一個函數：這將是我們歷史上第一個在 Ring 3 跑起來的「應用程式」！
-void my_first_user_app() {
-    // [注意！] 我們現在是平民 (Ring 3) 了。
-    // 如果你在這裡直接呼叫 kprintf(...)，系統會立刻因為權限不足 (Page Fault) 當機！
-
-    char* msg = "Hello from Ring 3 User Space!";
-
-    // 我們只能乖乖敲打防彈玻璃，呼叫昨天寫好的 Syscall 2
-    __asm__ volatile (
-        "mov $2, %%eax\n"
-        "mov %0, %%ebx\n"
-        "int $0x80\n"
-        : : "r" (msg) : "eax", "ebx"
-    );
-
-    // User App 的無限迴圈 (注意：平民連執行 hlt 讓 CPU 休息的權限都沒有，只能用 while(1))
-    while (1) {}
-}
+#include "elf.h" // [新增]
 
 void kernel_main(void) {
     terminal_initialize();
@@ -42,17 +22,38 @@ void kernel_main(void) {
     init_kheap();
     init_syscalls();
 
-    // [極度重要] 在離開 Kernel 之前，把目前安全的核心 Stack 位址告訴 TSS。
-    // 這樣 User App 執行 int 0x80 時，CPU 才知道要跳回哪裡處理。
     uint32_t current_esp;
     __asm__ volatile ("mov %%esp, %0" : "=r" (current_esp));
     set_kernel_stack(current_esp);
 
-    kprintf("Kernel initialized. Dropping privileges to Ring 3...\n");
+    kprintf("Kernel subsystems initialized.\n\n");
 
-    // 啟動魔法！
-    enter_user_mode((uint32_t)my_first_user_app);
+    // === Day 18: 測試 ELF 解析器 ===
+    kprintf("--- ELF Parser Test ---\n");
 
-    // 這行永遠不會被印出來，因為權限已經交出去了！
-    kprintf("This should never print.\n");
+    // 偽造一份長度為 52 bytes 的假 ELF 檔案 (全部填 0)
+    uint8_t fake_file[52] = {0};
+
+    // 把這塊記憶體強制轉型成 ELF 標頭結構，方便我們修改
+    elf32_ehdr_t* fake_elf = (elf32_ehdr_t*)fake_file;
+
+    // 填寫合法的資訊騙過檢查器
+    fake_elf->magic = ELF_MAGIC;    // 0x7F 'E' 'L' 'F'
+    fake_elf->ident[0] = 1;         // 32-bit
+    fake_elf->type = 2;             // Executable
+    fake_elf->machine = 3;          // x86
+    fake_elf->entry = 0x08048000;   // 假設這是應用程式的進入點 (Linux 的標準起點)
+
+    // 把假檔案丟給解析器檢查！
+    elf_check_supported(fake_elf);
+
+    // 試試看故意搞破壞
+    kprintf("\nNow corrupting the file...\n");
+    fake_elf->machine = 8; // 故意改成 8 (MIPS 架構)
+    elf_check_supported(fake_elf);
+
+    __asm__ volatile ("sti");
+    kprintf("\nSystem is ready.\n> ");
+
+    while (1) { __asm__ volatile ("hlt"); }
 }
