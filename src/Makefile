@@ -19,7 +19,7 @@ build-env:
 
 # --- User App 建置規則 (取代原本的 build-app.sh) ---
 
-# 【修改 1】新增 crt0.o 的編譯規則，使用 NASM
+## Compile --------------------------------------------------------------------
 crt0.o: crt0.S
 	@echo "==> 編譯 User App 啟動跳板 (crt0.S)..."
 	$(DOCKER_CMD) nasm -f elf32 crt0.S -o crt0.o
@@ -37,7 +37,15 @@ echo.o: echo.c
 	@echo "==> 編譯 Echo 程式 (echo.c)..."
 	$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c echo.c -o echo.o
 
-# Link
+ping.o: ping.c
+	@echo "==> 編譯 Ping 程式..."
+	$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c ping.c -o ping.o
+
+pong.o: pong.c
+		@echo "==> 編譯 Pong 程式..."
+		$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c pong.c -o pong.o
+
+## Link -----------------------------------------------------------------------
 my_app.elf: crt0.o app.o
 	@echo "==> 連結 Shell..."
 	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o app.o -o my_app.elf
@@ -50,20 +58,31 @@ cat.elf: crt0.o cat.o
 	@echo "==> 連結 Cat 程式..."
 	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o cat.o -o cat.elf
 
+ping.elf: crt0.o ping.o
+	@echo "==> 連結 Ping 程式..."
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o ping.o -o ping.elf
+
+pong.elf: crt0.o pong.o
+	@echo "==> 連結 Pong 程式..."
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o pong.o -o pong.elf
+
+# -----------------------------------------------------------------------------
 # 專屬清理 User App 的指令
 clean-app:
-	rm -f crt0.o app.o my_app.elf echo.o echo.elf  # 加入 echo.o 和 echo.elf
+	rm -f crt0.o app.o my_app.elf echo.o echo.elf cat.o cat.elf ping.o ping.elf pong.o pong.elf
 	@echo "==> User Apps 已清除。"
 
+# -----------------------------------------------------------------------------
 # --- OS ISO 建置規則 ---
-# 注意：這裡依賴了 my_app.elf，所以只要打 make myos.iso，它就會自動先去編譯 App
-myos.iso: myos.bin grub.cfg my_app.elf echo.elf cat.elf
+myos.iso: myos.bin grub.cfg my_app.elf echo.elf cat.elf ping.elf pong.elf
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg
 	cp my_app.elf isodir/boot/my_app.elf  # 把執行檔塞進虛擬光碟
 	cp echo.elf isodir/boot/echo.elf      # 【新增】把 echo.elf 塞進光碟
 	cp cat.elf isodir/boot/cat.elf
+	cp ping.elf isodir/boot/ping.elf
+	cp pong.elf isodir/boot/pong.elf
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 
@@ -95,8 +114,8 @@ clean: clean-app
 	rm -f asm/*.o lib/*.o *.bin *.iso
 	rm -rf isodir
 
-run: myos.iso hdd.img my_app.elf cat.elf
+run: myos.iso hdd.img my_app.elf cat.elf ping.elf pong.elf
 	qemu-system-i386 -cdrom myos.iso -monitor stdio -hda hdd.img -boot d
 
-debug: myos.iso hdd.img my_app.elf cat.elf
+debug: myos.iso hdd.img my_app.elf cat.elf ping.elf pong.elf
 	qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d

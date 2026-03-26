@@ -214,68 +214,6 @@ int sys_fork(registers_t *regs) {
     return child->id;
 }
 
-// int sys_exec(registers_t *regs) {
-//     char* filename = (char*)regs->ebx;
-//     char** argv = (char**)regs->ecx;
-
-//     fs_node_t* file_node = simplefs_find(filename);
-//     if (file_node == 0) { return -1; }
-
-//     uint8_t* buffer = (uint8_t*) kmalloc(file_node->length);
-//     vfs_read(file_node, 0, file_node->length, buffer);
-//     uint32_t entry_point = elf_load((elf32_ehdr_t*)buffer);
-//     kfree(buffer);
-
-//     if (entry_point == 0) return -1;
-
-//     uint32_t clean_user_stack_top = 0x083FF000 - (current_task->id * 4096) + 4096;
-//     uint32_t stack_ptr = clean_user_stack_top - 64;
-
-//     int argc = 0;
-//     if (argv != 0 && (uint32_t)argv > 0x08000000) {
-//         while (argv[argc] != 0) argc++;
-//     }
-
-//     uint32_t argv_ptrs[16] = {0};
-
-//     if (argc > 0) {
-//         for (int i = argc - 1; i >= 0; i--) {
-//             int len = strlen(argv[i]) + 1;
-//             stack_ptr -= len;
-//             memcpy((void*)stack_ptr, argv[i], len);
-//             argv_ptrs[i] = stack_ptr;
-//         }
-
-//         stack_ptr = stack_ptr & ~3;
-
-//         stack_ptr -= 4;
-//         *(uint32_t*)stack_ptr = 0;
-//         for (int i = argc - 1; i >= 0; i--) {
-//             stack_ptr -= 4;
-//             *(uint32_t*)stack_ptr = argv_ptrs[i];
-//         }
-//         uint32_t argv_base = stack_ptr;
-
-//         stack_ptr -= 4;
-//         *(uint32_t*)stack_ptr = argv_base;
-//         stack_ptr -= 4;
-//         *(uint32_t*)stack_ptr = argc;
-//     } else {
-//         stack_ptr -= 4;
-//         *(uint32_t*)stack_ptr = 0;
-//         stack_ptr -= 4;
-//         *(uint32_t*)stack_ptr = 0;
-//     }
-
-//     stack_ptr -= 4;
-//     *(uint32_t*)stack_ptr = 0;
-
-//     regs->eip = entry_point;
-//     regs->user_esp = stack_ptr;
-
-//     return 0;
-// }
-
 int sys_exec(registers_t *regs) {
     char* filename = (char*)regs->ebx;
     char** old_argv = (char**)regs->ecx;

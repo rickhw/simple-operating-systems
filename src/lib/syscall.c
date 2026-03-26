@@ -8,11 +8,18 @@
 // 【修復】拔掉 extern，讓它真正在這個檔案裡被分配記憶體空間！
 fs_node_t* fd_table[32] = {0};
 
+// ==========================================
+// 【新增】IPC 中央信箱 (Mailbox)
+// ==========================================
+char ipc_mailbox[256] = {0};
+int mailbox_has_msg = 0;
+
 void init_syscalls(void) {
     kprintf("System Calls initialized on Interrupt 0x80 (128).\n");
 }
 
 void syscall_handler(registers_t *regs) {
+    // Accumulator Register: 函式回傳值或 Syscall 編號
     uint32_t eax = regs->eax;
 
     if (eax == 2) {
@@ -62,4 +69,26 @@ void syscall_handler(registers_t *regs) {
     else if (eax == 10) {
         regs->eax = sys_wait(regs->ebx);
     }
+
+    // [Day39] Add -- start
+    // ==========================================
+    // 【新增】IPC 系統呼叫
+    // ==========================================
+    else if (eax == 11) { // Syscall 11: sys_send (傳送訊息)
+        char* msg = (char*)regs->ebx;
+        strcpy(ipc_mailbox, msg); // 將 User 宇宙的字串複製到 Kernel 的信箱裡
+        mailbox_has_msg = 1;
+        regs->eax = 0;
+    }
+    else if (eax == 12) { // Syscall 12: sys_recv (接收訊息)
+        char* buffer = (char*)regs->ebx;
+        if (mailbox_has_msg) {
+            strcpy(buffer, ipc_mailbox); // 將 Kernel 信箱的字串複製給另一個 User 宇宙
+            mailbox_has_msg = 0;
+            regs->eax = 1; // 回傳 1 代表有收到訊息
+        } else {
+            regs->eax = 0; // 回傳 0 代表信箱是空的
+        }
+    }
+    // [Day39] Add -- end
 }

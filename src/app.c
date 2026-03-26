@@ -125,6 +125,36 @@ int main(int argc, char** argv) {
             sys_print("Goodbye!\n");
             sys_exit();
         }
+        // [Day39] add -- start
+        else if (strcmp(cmd_buffer, "ipc") == 0) {
+            sys_print("\n--- Starting IPC Test ---\n");
+
+            // 1. 先創造 Pong (收信者)
+            int pid_pong = sys_fork();
+            if (pid_pong == 0) {
+                char* args[] = {"pong.elf", 0};
+                sys_exec("pong.elf", args);
+                sys_exit();
+            }
+
+            // 2. 讓 Pong 先跑一下，它會卡在 yield 等待
+            sys_yield();
+            sys_yield();
+
+            // 3. 再創造 Ping (發信者)
+            int pid_ping = sys_fork();
+            if (pid_ping == 0) {
+                char* args[] = {"ping.elf", 0};
+                sys_exec("ping.elf", args);
+                sys_exit();
+            }
+
+            // 4. 老爸乖乖等兩個小孩都死掉
+            sys_wait(pid_pong);
+            sys_wait(pid_ping);
+            sys_print("--- IPC Test Finished! ---\n\n");
+        }
+        // [Day39] add -- end
         // 【動態執行外部程式】
         else {
             // 自動幫指令加上 .elf 副檔名
