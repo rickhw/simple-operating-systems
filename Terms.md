@@ -81,37 +81,6 @@
 | **Path Resolution** | Path Resolution Engine | 路徑解析引擎 | 50 | 檔案系統的核心大腦。負責將人類可讀的路徑（如 `/folder/a.txt`）逐層拆解，並轉換為實體的磁區位置 (LBA)。 |
 | **Block Allocator** | Block Allocator | 磁區分配器 | 49 | 解決多資料夾空間重疊危機的全域管理者。透過記錄與更新 Superblock 的 `data_start_lba`，確保新檔案寫入安全的空間。 |
 
-
-
-
-```mermaid
-flowchart TD
-    %% (保留前面的 classDef 與 Phase 1~5 子圖)
-    classDef app fill:#e8f4f8,stroke:#6fa8dc,stroke-width:2px,color:#000
-    classDef gui fill:#fff2cc,stroke:#d6b656,stroke-width:3px,color:#000
-    classDef hw fill:#f9d0c4,stroke:#e06666,stroke-width:2px,color:#000
-    classDef buffer fill:#d9ead3,stroke:#93c47d,stroke-width:2px,color:#000,stroke-dasharray: 5 5
-
-    %% 圖形化介面與視窗管理 (Day 51-59)
-    subgraph Phase6 ["6. 圖形介面與視窗管理 (GUI & Compositor)"]
-        Mouse(("PS/2 滑鼠\n(IRQ 12)")):::hw -->|"狀態更新"| MouseHandler["mouse_handler()\n[記錄座標與點擊]"]:::app
-        MouseHandler -->|"AABB 碰撞偵測"| WindowMgr["Window Manager\n(視窗焦點、拖曳與 UI 攔截)"]:::gui
-        
-        Keyboard(("鍵盤 (IRQ 1)")):::hw --> TTY["圖形化 TTY 引擎\n(綁定特定視窗)"]:::app
-        TTY -->|"寫入文字陣列"| TextBuffer[("Text Buffer\n(網格記憶體)")]:::buffer
-        
-        Timer(("PIT 時鐘\n(IRQ 0)")):::hw -->|"觸發渲染"| AsyncRender["非同步合成器\n(gui_handle_timer)"]:::gui
-        
-        MouseHandler -.->|"標記 Dirty"| AsyncRender
-        WindowMgr -.->|"標記 Dirty"| AsyncRender
-        TTY -.->|"標記 Dirty"| AsyncRender
-        
-        AsyncRender -->|"1. 畫背景/工作列\n2. 畫底層視窗\n3. 畫焦點視窗\n4. 疊加 TTY 文字\n5. 畫游標"| BackBuffer[("隱形畫布\n(Double Buffer)")]:::buffer
-        BackBuffer -->|"Swap (消除閃爍)"| VRAM(("顯示卡 VRAM\n(LFB 模式)")):::hw
-    end
-```
-
-
 #### 圖形與視窗系統概念 (Graphics & Window Management)
 
 | 縮寫 | 全名 | 繁體中文名 | Day | 用途與說明 |
