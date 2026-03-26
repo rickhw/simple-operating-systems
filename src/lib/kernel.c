@@ -15,6 +15,7 @@
 #include "multiboot.h"
 #include "gfx.h"
 #include "mouse.h"
+#include "gui.h"
 
 void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     kprintf("[Kernel] Setting up SimpleFS environment...\n");
@@ -52,13 +53,25 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     init_pmm(16384);
     init_kheap();
 
-    // 啟動圖形引擎！
+    // 1. 初始化圖形引擎
     init_gfx(mbd);
+
+    // 【新增】初始化 GUI 系統並註冊視窗
+    init_gui();
+    create_window(450, 100, 300, 200, "System Status");
+    create_window(50, 50, 350, 250, "Simple OS Terminal"); // 多開一個視窗試試！
+
+    // 首次渲染全畫面
+    gui_render();
+
+    // 3. 啟動滑鼠驅動 (它會擷取畫好視窗後的背景)
     init_mouse();
 
     __asm__ volatile ("sti");
 
+    // 左上角的終端機文字會自然地印在藍綠色的桌面上
     kprintf("=== OS Subsystems Ready ===\n\n");
+    kprintf("Welcome to Simple OS Desktop Environment!\n");
 
     while (1) { __asm__ volatile ("hlt"); }
 }

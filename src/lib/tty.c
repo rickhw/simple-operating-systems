@@ -6,7 +6,8 @@
 
 // 設定終端機的字體顏色為白色 (0xFFFFFF)，背景為純黑 (0x000000)
 #define TERM_FG 0xFFFFFF
-#define TERM_BG 0x000000
+// #define TERM_BG 0x000000
+#define TERM_BG 0x008080    // 把這行原本的黑色換成深青色 (Teal)
 
 // 記錄目前打字游標的 (X, Y) 像素座標
 static int term_x = 0;

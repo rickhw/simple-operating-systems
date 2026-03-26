@@ -137,3 +137,36 @@ void draw_cursor(int new_x, int new_y) {
     }
 }
 // [Day53] add -- end
+
+// [Day54] add -- start
+// 【新增】在指定座標畫出連續字串
+void draw_string(int x, int y, const char* str, uint32_t fg_color, uint32_t bg_color) {
+    int curr_x = x;
+    for (int i = 0; str[i] != '\0'; i++) {
+        draw_char(str[i], curr_x, y, fg_color, bg_color);
+        curr_x += 8; // 每個字元寬 8 像素
+    }
+}
+
+// 【新增】畫出帶有標題列的復古視窗！
+void draw_window(int x, int y, int width, int height, const char* title) {
+    // 1. 視窗主體 (經典的亮灰色 0xC0C0C0)
+    draw_rect(x, y, width, height, 0xC0C0C0);
+
+    // 2. 視窗邊框 (簡單的立體陰影)
+    // 上邊與左邊 (白色反光)
+    draw_rect(x, y, width, 2, 0xFFFFFF);
+    draw_rect(x, y, 2, height, 0xFFFFFF);
+    // 下邊與右邊 (深灰色陰影)
+    draw_rect(x, y + height - 2, width, 2, 0x808080);
+    draw_rect(x + width - 2, y, 2, height, 0x808080);
+
+    // 3. 標題列 (經典的深藍色 0x000080)
+    // 留出邊框的空間 (x+2, y+2)，高度設為 18 像素
+    draw_rect(x + 2, y + 2, width - 4, 18, 0x000080);
+
+    // 4. 標題文字 (白色字，深藍色底)
+    // 微調座標讓字體置中於標題列
+    draw_string(x + 6, y + 7, title, 0xFFFFFF, 0x000080);
+}
+// [Day54] add -- end
