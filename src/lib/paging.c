@@ -6,7 +6,8 @@
 // 1. 宣告兩張分頁表 (必須對齊 4KB)
 uint32_t page_directory[1024] __attribute__((aligned(4096)));
 uint32_t first_page_table[1024] __attribute__((aligned(4096))); // 管 0MB ~ 4MB
-uint32_t second_page_table[1024] __attribute__((aligned(4096)));// [新增] 我們用這張表來管 2GB 附近的高階記憶體
+uint32_t second_page_table[1024] __attribute__((aligned(4096)));// 我們用這張表來管 2GB 附近的高階記憶體
+uint32_t third_page_table[1024] __attribute__((aligned(4096))); // 給 3GB (0xC0000000) 用
 
 // 宣告外部的組合語言函式
 extern void load_page_directory(uint32_t*);
@@ -32,11 +33,17 @@ void init_paging(void) {
         second_page_table[i] = 0;
     }
 
+    // 初始化第三張表 (全部設為不存在)
+    for(int i = 0; i < 1024; i++) {
+        third_page_table[i] = 0;
+    }
+
     // 將兩張表掛載到目錄上
     // 這樣 0x00000000 到 0x003FFFFF 的虛擬位址就會被翻譯到這裡
     page_directory[0] = ((uint32_t)first_page_table) | 3;
     // 0x80000000 除以 4MB (0x400000) = 512，所以 2GB 的位址是由目錄的第 512 項來管！
     page_directory[512] = ((uint32_t)second_page_table) | 3;
+    page_directory[768] = ((uint32_t)third_page_table) | 3; // [新增] 3GB 目錄項
 
     // 4. 呼叫組合語言，把目錄位址交給 CPU，並開啟 Paging
     load_page_directory(page_directory);
@@ -57,6 +64,8 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
         page_table = first_page_table;
     } else if (pd_idx == 512) {
         page_table = second_page_table;
+    } else if (pd_idx == 768) {
+        page_table = third_page_table; // [新增] 支援 3GB 映射
     } else {
         // 在一個完整的 OS 中，這裡應該要 pmm_alloc_page() 一個新的實體框，
         // 然後用遞迴映射 (Recursive Paging) 的黑魔法來初始化它。我們今天先跳過這塊深水區。
