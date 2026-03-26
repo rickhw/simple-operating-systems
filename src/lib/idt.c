@@ -13,6 +13,7 @@ extern void idt_flush(uint32_t);
 extern void isr0(); // 第 0 號中斷的 Assembly 進入點
 extern void isr32(); // 第 32 號中斷 (Timer IRQ 0)
 extern void isr33(); // 宣告組合語言的鍵盤跳板
+extern void isr128(); // system calls
 
 // 設定單一 IDT 條目的輔助函式
 static void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
@@ -107,6 +108,10 @@ void init_idt(void) {
     idt_set_gate(32, (uint32_t)isr32, 0x08, 0x8E);
     // [新增] 掛載第 33 號中斷 (IRQ1 鍵盤)
     idt_set_gate(33, (uint32_t)isr33, 0x08, 0x8E);
+
+    // [新增] 掛載第 128 號中斷 (System Call)
+    // 注意！旗標是 0xEE (允許 Ring 3 呼叫)
+    idt_set_gate(128, (uint32_t)isr128, 0x08, 0xEE);
 
     // 呼叫組合語言，正式套用新的 IDT
     idt_flush((uint32_t)&idt_ptr);

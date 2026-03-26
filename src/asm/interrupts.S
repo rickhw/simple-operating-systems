@@ -10,6 +10,10 @@ extern timer_handler
 global isr33
 extern keyboard_handler
 
+global isr128
+extern syscall_handler
+
+
 ; 載入 IDT (跟昨天的 lgdt 幾乎一樣)
 idt_flush:
     mov eax, [esp+4]  ; 取出 C 語言傳進來的 idt_ptr 位址
@@ -47,3 +51,22 @@ isr33:
     popa
 
     iret ; 中斷返回
+
+
+; 第 128 號中斷 (System Call 窗口)
+isr128:
+    pusha           ; 備份目前的暫存器狀態
+
+    ; 依照 C 語言的呼叫慣例 (cdecl)，參數要從右到左 push 進 Stack
+    ; 我們假設 User App 把 syscall_num 放 eax, arg1 放 ebx, arg2 放 ecx
+    push ecx        ; 參數 3 (arg2)
+    push ebx        ; 參數 2 (arg1)
+    push eax        ; 參數 1 (syscall_num)
+
+    call syscall_handler
+
+    ; 呼叫完畢後，清理剛剛 push 進去的 3 個參數 (3 * 4 = 12 bytes)
+    add esp, 12
+
+    popa            ; 恢復暫存器狀態
+    iret            ; 返回 User App

@@ -7,7 +7,8 @@
 #include "paging.h"
 #include "timer.h"
 #include "pmm.h"
-#include "kheap.h" // [新增]
+#include "kheap.h"
+#include "syscall.h"
 
 void kernel_main(void) {
     terminal_initialize();
@@ -17,30 +18,31 @@ void kernel_main(void) {
     init_idt();
     init_paging();
     init_pmm(16384);
-
-    // [新增] 初始化 Kernel Heap
     init_kheap();
-    kprintf("Kernel Heap initialized at 0xC0000000.\n");
-
-    // 測試 1：要一個長度為 16 bytes 的字串空間
-    char* str1 = (char*)kmalloc(16);
-    // 測試 2：再要一個長度為 32 bytes 的字串空間
-    char* str2 = (char*)kmalloc(32);
-
-    kprintf("Allocated str1 at: 0x%x\n", (uint32_t)str1);
-    kprintf("Allocated str2 at: 0x%x\n", (uint32_t)str2);
-
-    // 寫入資料測試
-    memcpy(str1, "Hello kmalloc!", 15);
-    str1[15] = '\0';
-    kprintf("Data in str1: %s\n", str1);
-
-    // 釋放記憶體
-    kfree(str1);
-    kfree(str2);
-    kprintf("Memory freed successfully.\n");
+    init_syscalls();    // [新增]
 
     __asm__ volatile ("sti");
+
+    kprintf("Testing System Calls...\n");
+
+    // 測試 Syscall 1：印出數字 99
+    // 透過 inline assembly 塞入暫存器，並觸發 0x80 中斷
+    __asm__ volatile (
+        "mov $1, %%eax\n"     // eax = 1 (Syscall Number)
+        "mov $99, %%ebx\n"    // ebx = 99 (arg1)
+        "int $0x80\n"         // 敲打防彈玻璃！
+        : : : "eax", "ebx"
+    );
+
+    // 測試 Syscall 2：印出字串
+    char* my_msg = "Hello from Syscall!";
+    __asm__ volatile (
+        "mov $2, %%eax\n"              // eax = 2
+        "mov %0, %%ebx\n"              // ebx = my_msg 的指標
+        "int $0x80\n"
+        : : "r" (my_msg) : "eax", "ebx"
+    );
+
     kprintf("\nSystem is ready.\n> ");
 
     while (1) { __asm__ volatile ("hlt"); }
