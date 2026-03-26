@@ -15,9 +15,9 @@ myos.iso: myos.bin grub.cfg
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 
-# 將 gdt_flush.o 與 gdt.o 加入編譯鏈
-myos.bin: boot.o kernel.o gdt.o gdt_flush.o
-	$(DOCKER_CMD) ld -m elf_i386 -n -T linker.ld -o myos.bin boot.o kernel.o gdt.o gdt_flush.o
+# 在 myos.bin 的依賴與 ld 指令中加入 idt.o 與 interrupts.o
+myos.bin: boot.o kernel.o gdt.o gdt_flush.o idt.o interrupts.o
+	$(DOCKER_CMD) ld -m elf_i386 -n -T linker.ld -o myos.bin boot.o kernel.o gdt.o gdt_flush.o idt.o interrupts.o
 
 # 編譯 C 檔案的通用規則
 %.o: %.c
@@ -27,10 +27,13 @@ myos.bin: boot.o kernel.o gdt.o gdt_flush.o
 %.o: %.S
 	$(DOCKER_CMD) nasm -f elf32 $< -o $@
 
+
+run:
+	qemu-system-i386 -cdrom myos.iso -monitor stdio
+
+debug:
+	qemu-system-i386 -cdrom myos.iso -d int -no-reboot
+
 clean:
 	rm -f *.o *.bin *.iso
 	rm -rf isodir
-
-
-run: myos.iso
-	qemu-system-i386 -cdrom myos.iso -monitor stdio -boot d

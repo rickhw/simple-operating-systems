@@ -3,6 +3,7 @@
 #include <stdarg.h>   // [新增] 用於處理不定長度引數
 #include <stdbool.h>  // [新增] 支援 bool 型別
 #include "gdt.h"
+#include "idt.h" // [新增]
 
 volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
 const size_t VGA_COLS = 80;
@@ -254,15 +255,26 @@ void kprintf(const char* format, ...) {
 // ==========================================
 // [修改] 主程式測試
 // ==========================================
-
 void kernel_main(void) {
     terminal_initialize();
 
     kprintf("=== OS Kernel Booting ===\n");
 
-    // 初始化 GDT
     init_gdt();
     kprintf("GDT loaded successfully.\n");
 
-    kprintf("Initialization complete. System is stable.\n");
+    // 初始化神經系統 IDT
+    init_idt();
+    kprintf("IDT loaded successfully.\n");
+
+    // [致命測試] 故意觸發除以零錯誤！
+    kprintf("Testing Divide by Zero Exception...\n");
+    int a = 10;
+    // int b = 0;
+    volatile int b = 0; // [關鍵修改] 加上 volatile
+    int c = a / b; // CPU 執行到這行會立刻拋出 0 號中斷！
+
+    // 如果 IDT 沒設定好，QEMU 會無限重啟。
+    // 如果設定好了，這行永遠不會印出來，系統會被我們的 ISR 攔截！
+    kprintf("Result: %d\n", c);
 }
