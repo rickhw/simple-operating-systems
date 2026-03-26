@@ -1,3 +1,14 @@
+; [目的] 中斷處理與 IDT 載入
+; [流程 - 以 System Call 為例]
+; 使用者執行 int 0x128
+;    |
+;    V
+; [ isr128 ]
+;    |--> [ pusha ] (備份所有通用暫存器)
+;    |--> [ call syscall_handler ] (執行 C 處理邏輯)
+;    |--> [ popa ] (恢復暫存器)
+;    |--> [ iret ] (返回使用者模式)
+
 global idt_flush
 global isr0
 extern isr0_handler

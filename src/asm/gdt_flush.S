@@ -1,4 +1,16 @@
-; gdt_flush.S
+; [目的] 套用新的 GDT 配置並更新 CPU 段暫存器
+; [流程]
+; C 語言呼叫 gdt_flush(ptr)
+;    |
+;    V
+; [ 載入 GDTR ] (使用 lgdt 指令)
+;    |
+;    |--> [ 更新 Data 段 ] (ds, es, fs, gs, ss 設為 0x10)
+;    |--> [ Far Jump ] ----> [ .flush 標籤 ] (更新 CS 為 0x08)
+;                               |
+;                               V
+;                         [ ret 返回 C ]
+
 global gdt_flush
 
 gdt_flush:

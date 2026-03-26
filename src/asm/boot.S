@@ -1,3 +1,16 @@
+; [目的] 核心進入點與環境初始化
+; [流程]
+; GRUB 載入器 -> 檢查 Multiboot Header -> 跳轉至 _start
+;                                        |
+;    +-----------------------------------+
+;    V
+; [ _start ]
+;    |--> [ 設定 ESP ] (指向 16KB 堆疊頂部)
+;    |--> [ 壓入參數 ] (eax=Magic, ebx=MBI)
+;    |--> [ call kernel_main ] (進入 C 語言世界)
+;    |--> [ 核心停止 ] (若 C 返回，則進入 cli/hlt 無限迴圈)
+
+
 ; === 定義 Multiboot 1 的常數 ===
 MBALIGN  equ  1 << 0            ; 請求 GRUB 將載入的模組對齊 4KB 邊界
 MEMINFO  equ  1 << 1            ; 請求 GRUB 提供記憶體資訊 (包含模組位址)
@@ -39,7 +52,7 @@ _start:
     add esp, 8
 
     ; 5. 安全降落區：如果 Kernel 意外結束，就在這裡無限休眠
-    cli
+    cli             ; Clear Interrupts
 .hang:
-    hlt
+    hlt             ; https://en.wikipedia.org/wiki/HLT_(x86_instruction)
     jmp .hang

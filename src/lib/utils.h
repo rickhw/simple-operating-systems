@@ -18,6 +18,7 @@ char *strcpy(char *dest, const char *src);
 // 核心工具：整數轉字串 (itoa)
 // value: 要轉換的數字, str: 存放結果的陣列, base: 進位制 (10或16)
 void itoa(int value, char* str, int base);
+int strlen(const char* str);
 
 // === IO Utils ===
 void kprintf(const char* format, ...);

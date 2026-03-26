@@ -1,3 +1,12 @@
+; [目的] 設定分頁目錄位址並啟動分頁保護模式
+; [流程]
+; 1. load_page_directory: 將 Page Dir 位址寫入 CR3 暫存器
+; 2. enable_paging:
+;    [ 讀取 CR0 ] -> [ bit 31 設為 1 ] -> [ 寫回 CR0 ]
+;                                            |
+;                                            V
+;                                     [ 虛擬記憶體啟動 ]
+
 global load_page_directory
 global enable_paging
 

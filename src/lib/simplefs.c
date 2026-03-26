@@ -11,11 +11,11 @@ uint32_t mounted_part_lba = 0; // 記錄目前掛載的分區起點
 
 void simplefs_mount(uint32_t part_lba) {
     mounted_part_lba = part_lba;
-    kprintf("[SimpleFS] Mounted at LBA %d\n", part_lba);
+    kprintf("[SimpleFS] Mounted at LBA [%d].\n", part_lba);
 }
 
 void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
-    kprintf("[SimpleFS] Formatting partition starting at LBA %d...\n", partition_start_lba);
+    // kprintf("[SimpleFS] Formatting partition starting at LBA [%d].\n", partition_start_lba);
 
     // 1. 準備 Superblock
     sfs_superblock_t* sb = (sfs_superblock_t*) kmalloc(512);
@@ -28,7 +28,7 @@ void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
 
     // 寫入 Superblock 到分區的起點
     ata_write_sector(partition_start_lba, (uint8_t*)sb);
-    kprintf("[SimpleFS] Superblock written.\n");
+    // kprintf("[SimpleFS] 1) Superblock written; ");
 
     // 2. 準備空白的根目錄 (填滿 0 即可，代表沒有任何檔案)
     uint8_t* empty_dir = (uint8_t*) kmalloc(512);
@@ -36,18 +36,18 @@ void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
 
     // 寫入根目錄到 Superblock 的下一個磁區
     ata_write_sector(partition_start_lba + sb->root_dir_lba, empty_dir);
-    kprintf("[SimpleFS] Empty root directory created.\n");
+    // kprintf("2) Empty root directory created.\n");
 
     // 清理記憶體
     kfree(sb);
     kfree(empty_dir);
 
-    kprintf("[SimpleFS] Format complete!\n");
+    kprintf("[SimpleFS] Format complete, at LBA [%d].\n", partition_start_lba);
 }
 
 // 列出檔案
 void simplefs_list_files(uint32_t part_lba) {
-    kprintf("\n--- SimpleFS Root Directory ---\n");
+    kprintf("\n[SimpleFS] List Root Directory\n");
 
     uint8_t* dir_buf = (uint8_t*) kmalloc(512);
     ata_read_sector(part_lba + 1, dir_buf);
@@ -56,7 +56,7 @@ void simplefs_list_files(uint32_t part_lba) {
     int file_count = 0;
     for (int i = 0; i < 16; i++) {
         if (entries[i].filename[0] != '\0') {
-            kprintf("[-] %s  (Size: %d bytes, LBA: %d)\n",
+            kprintf("- [%s]  (Size: [%d] bytes, LBA: [%d])\n",
                     entries[i].filename,
                     entries[i].file_size,
                     entries[i].start_lba);

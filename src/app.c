@@ -5,10 +5,17 @@ int sys_fork() {
     return pid;
 }
 
-// [Day35][新增] 封裝 sys_exec (Syscall 9)
-int sys_exec(char* filename) {
+// // [Day35][新增] 封裝 sys_exec (Syscall 9)
+// int sys_exec(char* filename) {
+//     int ret;
+//     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(9), "b"(filename) : "memory");
+//     return ret;
+// }
+
+int sys_exec(char* filename, char** argv) {
     int ret;
-    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(9), "b"(filename) : "memory");
+    // ebx 傳檔名，ecx 傳字串陣列指標
+    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(9), "b"(filename), "c"(argv) : "memory");
     return ret;
 }
 
@@ -72,11 +79,31 @@ void sys_exit() {
     __asm__ volatile ("int $0x80" : : "a"(7) : "memory");
 }
 
-void _start() {
+// 【修改】將 _start 改名為 main，並回傳 int
+int main(int argc, char** argv) {
     sys_print("\n======================================\n");
     sys_print("      Welcome to Simple OS Shell!     \n");
     sys_print("======================================\n");
-    sys_print("Type 'help' to see available commands.\n\n");
+
+    // 把接收到的參數印出來證明靈魂轉移成功！
+    if (argc > 0) {
+        sys_print("Awesome! I received arguments:\n");
+        for(int i = 0; i < argc; i++) {
+            sys_print("  Arg ");
+            char num[2] = {i + '0', '\0'};
+            sys_print(num);
+            sys_print(": ");
+
+            // 增加安全檢查，確保 argv[i] 不是 NULL
+            if (argv[i] != 0) {
+                sys_print(argv[i]);
+            } else {
+                sys_print("(null)");
+            }
+            sys_print("\n");
+        }
+        sys_print("\n");
+    }
 
     char cmd_buffer[128];
 
@@ -134,39 +161,34 @@ void _start() {
         // [Day35][新增] 測試 Fork-Exec 模型
         else if (strcmp(cmd_buffer, "run") == 0) {
             int pid = sys_fork();
-
-            // if (pid == 0) {
-            //     // 我是分身！我現在要洗掉自己的記憶體，轉生為一個全新的 Shell！
-            //     sys_print("\n[CHILD] Executing my_app.elf to replace my soul...\n");
-
-            //     // 執行變身魔法
-            //     sys_exec("my_app.elf");
-
-            //     // --- 以下的程式碼理論上「永遠不會」被執行到 ---
-            //     // 因為只要 exec 成功，整個記憶體與 EIP 就被覆蓋成新程式的起點了！
-            //     sys_print("[CHILD] ERROR: Exec failed! I am still the old me!\n");
-            //     sys_exit();
-            // } else {
-            //     // 我是老爸！
-            //     sys_print("\n[PARENT] Spawned a child to run a new instance of Shell.\n");
-            //     sys_yield();
-            //     sys_yield();
-            // }
             if (pid == 0) {
-                sys_print("\n[CHILD] Executing my_app.elf to replace my soul...\n");
-                sys_exec("my_app.elf");
+                // 準備傳遞給新程式的參數陣列 (最後必須是 0/NULL)
+                char* my_args[] = {"my_app.elf", "Hello", "From", "Parent!", 0};
+
+                sys_exec("my_app.elf", my_args);
                 sys_exit();
             } else {
-                // 我是老爸！
-                sys_print("\n[PARENT] Spawned child (PID ");
-                // 這裡簡化印出，直接告訴大家我在等
-                sys_print("). Waiting for it to finish...\n");
-
-                // 【終極魔法】老爸陷入沉睡，把鍵盤和螢幕全部讓給小孩！
+                sys_print("\n[PARENT] Spawned child. Waiting for it to finish...\n");
                 sys_wait(pid);
-
-                // 當執行到這裡時，代表小孩已經死了，老爸被喚醒了！
                 sys_print("[PARENT] Child has finished! I am back in control.\n");
+            }
+        }
+        // [新增] 呼叫外部的 echo.elf
+        else if (strcmp(cmd_buffer, "echo") == 0) {
+            int pid = sys_fork();
+            if (pid == 0) {
+                // 準備要丟給 echo.elf 的參數 (最後必須是 0 結尾)
+                char* echo_args[] = {"echo.elf", "Hello", "Rick,", "Welcome", "to", "the", "Multiverse!", 0};
+
+                // 靈魂轉移！將子行程變成 echo.elf
+                int err = sys_exec("echo.elf", echo_args);
+
+                if (err == -1) {
+                    sys_print("Error: Exec failed to load echo.elf\n");
+                }
+                sys_exit();
+            } else {
+                sys_wait(pid);
             }
         }
         else {
@@ -175,4 +197,6 @@ void _start() {
             sys_print("\n");
         }
     }
+
+    return 0; // 配合 int main 的回傳值
 }

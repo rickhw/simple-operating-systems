@@ -12,32 +12,50 @@ ASM_OBJS = $(ASM_SOURCES:.S=.o)
 # 把所有 .o 檔統整起來 (注意 boot.o 必須在前面，雖然 linker.ld 裡有指定 ENTRY，但放前面更保險)
 OBJS = asm/boot.o $(filter-out asm/boot.o, $(ASM_OBJS)) $(C_OBJS)
 
-all: build-env myos.iso
+all: build-env my_app.elf echo.elf myos.iso
 
 build-env:
 	docker build -t os-builder .
 
 # --- User App 建置規則 (取代原本的 build-app.sh) ---
+
+# 【修改 1】新增 crt0.o 的編譯規則，使用 NASM
+crt0.o: crt0.S
+	@echo "==> 編譯 User App 啟動跳板 (crt0.S)..."
+	$(DOCKER_CMD) nasm -f elf32 crt0.S -o crt0.o
+
 app.o: app.c
 	@echo "==> 編譯 User App (app.c)..."
 	$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c app.c -o app.o
 
-my_app.elf: app.o
+# 【新增】編譯 echo.c
+echo.o: echo.c
+	@echo "==> 編譯 Echo 程式 (echo.c)..."
+	$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c echo.c -o echo.o
+
+# 【修改 2】讓 my_app.elf 依賴 crt0.o 和 app.o，並且在連結時確保 crt0.o 放在最前面！
+my_app.elf: crt0.o app.o
 	@echo "==> 連結 User App，指定 Entry Point 於 0x08048000..."
-	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 app.o -o my_app.elf
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 crt0.o app.o -o my_app.elf
+
+# 【新增】連結 echo.elf (同樣必須把 crt0.o 放在最前面)
+echo.elf: crt0.o echo.o
+	@echo "==> 連結 Echo 程式..."
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08080000 crt0.o echo.o -o echo.elf
 
 # 專屬清理 User App 的指令
 clean-app:
-	rm -f app.o my_app.elf
-	@echo "==> User App 已清除。"
+	rm -f crt0.o app.o my_app.elf echo.o echo.elf  # 加入 echo.o 和 echo.elf
+	@echo "==> User Apps 已清除。"
 
 # --- OS ISO 建置規則 ---
 # 注意：這裡依賴了 my_app.elf，所以只要打 make myos.iso，它就會自動先去編譯 App
-myos.iso: myos.bin grub.cfg my_app.elf
+myos.iso: myos.bin grub.cfg my_app.elf echo.elf
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg
 	cp my_app.elf isodir/boot/my_app.elf  # 把執行檔塞進虛擬光碟
+	cp echo.elf isodir/boot/echo.elf      # 【新增】把 echo.elf 塞進光碟
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 

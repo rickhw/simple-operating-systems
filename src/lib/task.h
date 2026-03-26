@@ -2,7 +2,6 @@
 #define TASK_H
 #include <stdint.h>
 
-// 【核心魔法】這完美對應了 pusha 與硬體中斷壓入堆疊的順序！
 typedef struct {
     uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
     uint32_t eip, cs, eflags, user_esp, user_ss;
@@ -29,6 +28,8 @@ void schedule();
 void exit_task();
 int sys_fork(registers_t *regs);
 int sys_exec(registers_t *regs);
+
+// 【請確認這行存在！】
 int sys_wait(int pid);
 
 #endif
