@@ -4,6 +4,7 @@
 #include <stdbool.h>  // [新增] 支援 bool 型別
 #include "gdt.h"
 #include "idt.h" // [新增]
+#include "io.h"
 
 volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
 const size_t VGA_COLS = 80;
@@ -34,16 +35,6 @@ void* memset(void* bufptr, int value, size_t size) {
         buf[i] = (unsigned char) value;
     }
     return bufptr;
-}
-
-// ==========================================
-// [新增] 2. 硬體 I/O 通訊 (Inline Assembly)
-// ==========================================
-
-// outb: 向指定的硬體 Port 寫入 1 byte 的資料
-// 這裡使用了 GCC 的內嵌組合語言語法
-static inline void outb(uint16_t port, uint8_t val) {
-    __asm__ volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
 }
 
 // ==========================================
@@ -267,14 +258,14 @@ void kernel_main(void) {
     init_idt();
     kprintf("IDT loaded successfully.\n");
 
-    // [致命測試] 故意觸發除以零錯誤！
-    kprintf("Testing Divide by Zero Exception...\n");
-    int a = 10;
-    // int b = 0;
-    volatile int b = 0; // [關鍵修改] 加上 volatile
-    int c = a / b; // CPU 執行到這行會立刻拋出 0 號中斷！
+    // [關鍵] 執行 sti (Set Interrupt Flag) 開啟全域中斷
+    // 從這行開始，CPU 會開始接聽外部硬體的呼叫！
+    __asm__ volatile ("sti");
 
-    // 如果 IDT 沒設定好，QEMU 會無限重啟。
-    // 如果設定好了，這行永遠不會印出來，系統會被我們的 ISR 攔截！
-    kprintf("Result: %d\n", c);
+    kprintf("Interrupts Enabled. Waiting for keyboard input...\n");
+
+    // 讓核心進入無限休眠迴圈，有中斷來才會醒來做事
+    while (1) {
+        __asm__ volatile ("hlt");
+    }
 }
