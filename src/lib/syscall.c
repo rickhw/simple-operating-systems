@@ -5,28 +5,22 @@
 #include "keyboard.h"
 #include "task.h"
 
-fs_node_t* fd_table[32] = {0};
+#define MAX_MESSAGES 16 // IPC 訊息佇列 (Message Queue)
 
-// 記得更新最上方的 extern 宣告
 extern fs_node_t* simplefs_find(uint32_t dir_lba, char* filename);
 extern int vfs_create_file(uint32_t dir_lba, char* filename, char* content);
 extern int vfs_readdir(uint32_t dir_lba, int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
 extern int vfs_delete_file(uint32_t dir_lba, char* filename);
 extern int vfs_mkdir(uint32_t dir_lba, char* dirname);
-// extern int vfs_getcwd(char* buffer);
 extern int vfs_getcwd(uint32_t dir_lba, char* buffer);
-extern uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* dirname); // [Day48][Add]
-extern uint32_t mounted_part_lba;   // [Day48][Add]
-
-
-// ==========================================
-// IPC 訊息佇列 (Message Queue)
-// ==========================================
-#define MAX_MESSAGES 16
+extern uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* dirname);
+extern uint32_t mounted_part_lba;
 
 typedef struct {
     char data[128]; // 每則訊息最大 128 bytes
 } ipc_msg_t;
+
+fs_node_t* fd_table[32] = {0};
 
 // 環狀佇列 (Circular Buffer)
 ipc_msg_t mailbox_queue[MAX_MESSAGES];
@@ -34,8 +28,10 @@ int mb_head = 0;  // 讀取頭
 int mb_tail = 0;  // 寫入尾
 int mb_count = 0; // 目前信箱裡的信件數量
 
+
+// --- Internal API ----
 // Mutex for Single Processor (SMP)
-// 【新增】核心同步鎖：利用開關中斷來保護 Critical Section
+// 核心同步鎖：利用開關中斷來保護 Critical Section
 void ipc_lock() {
     __asm__ volatile("cli"); // 關閉中斷：誰都別想搶走我的 CPU！
 }
@@ -44,15 +40,17 @@ void ipc_unlock() {
     __asm__ volatile("sti"); // 開啟中斷：我用完了，大家可以繼續排隊了。
 }
 
+
+// --- Public API ----
+
 void init_syscalls(void) {
     kprintf("System Calls initialized on Interrupt 0x80 (128).\n");
 }
 
 void syscall_handler(registers_t *regs) {
     // Accumulator Register: 函式回傳值或 Syscall 編號
+    // 配合 asm/interrupt.S: IRS128
     uint32_t eax = regs->eax;
-
-    // kprintf("[syscall_handler] eax: [%d]\n", eax);
 
     if (eax == 2) {
         kprintf((char*)regs->ebx);
@@ -107,13 +105,13 @@ void syscall_handler(registers_t *regs) {
     }
 
     // ==========================================
-    // 【新增】IPC 系統呼叫
+    // IPC 系統呼叫
     // ==========================================
     // Syscall 11: sys_send (傳送訊息)
     else if (eax == 11) {
         char* msg = (char*)regs->ebx;
 
-        ipc_lock(); // 🔒 上鎖！進入危險區域
+        ipc_lock(); // LOCK: CRITICAL SECTION
 
         if (mb_count < MAX_MESSAGES) {
             strcpy(mailbox_queue[mb_tail].data, msg);
@@ -124,14 +122,13 @@ void syscall_handler(registers_t *regs) {
             regs->eax = -1; // Queue Full
         }
 
-        ipc_unlock(); // 🔓 解鎖！離開危險區域
+        ipc_unlock();   // UNLOCK
     }
     // Syscall 12: sys_recv (接收訊息)
     else if (eax == 12) {
         char* buffer = (char*)regs->ebx;
 
-        // START OF CRITICAL SECTION
-        ipc_lock(); // 🔒 上鎖！進入危險區域
+        ipc_lock();
 
         if (mb_count > 0) {
             strcpy(buffer, mailbox_queue[mb_head].data);
@@ -142,8 +139,7 @@ void syscall_handler(registers_t *regs) {
             regs->eax = 0;
         }
 
-        ipc_unlock(); // 🔓 解鎖！離開危險區域
-        // End OF CRITICAL SECTION
+        ipc_unlock();
     }
 
     // Syscall 13: sbrk (動態記憶體擴充)
@@ -168,18 +164,18 @@ void syscall_handler(registers_t *regs) {
         regs->eax = vfs_create_file(current_dir, filename, content);
         ipc_unlock();
     }
+
     // Syscall 15: sys_readdir (讀取目錄內容)
     else if (eax == 15) {
         int index = (int)regs->ebx;
         char* out_name = (char*)regs->ecx;
         uint32_t* out_size = (uint32_t*)regs->edx;
-        uint32_t* out_type = (uint32_t*)regs->esi; // 【新增】從 ESI 暫存器拿出 out_type 指標！
+        uint32_t* out_type = (uint32_t*)regs->esi; //從 ESI 暫存器拿出 out_type 指標！
 
         // 取得目前的目錄
         uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
         ipc_lock();
-        // 【修改】直接呼叫底層，並傳入 current_dir！
         regs->eax = simplefs_readdir(current_dir, index, out_name, out_size, out_type);
         ipc_unlock();
     }
@@ -189,7 +185,7 @@ void syscall_handler(registers_t *regs) {
         char* filename = (char*)regs->ebx;
         uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
-        ipc_lock(); // 上鎖！修改硬碟資料是非常危險的操作
+        ipc_lock();
         regs->eax = vfs_delete_file(current_dir, filename);
         ipc_unlock();
     }
@@ -217,7 +213,7 @@ void syscall_handler(registers_t *regs) {
         } else {
             uint32_t target_lba = simplefs_get_dir_lba(current_dir, dirname);
             if (target_lba != 0) {
-                current_task->cwd_lba = target_lba; // 【切換成功】更新任務的 CWD！
+                current_task->cwd_lba = target_lba; // 切換成功, 更新任務的 CWD！
                 regs->eax = 0;
             } else {
                 regs->eax = -1; // 找不到該目錄
@@ -229,11 +225,10 @@ void syscall_handler(registers_t *regs) {
     else if (eax == 19) {
         char* buffer = (char*)regs->ebx;
 
-        // 【新增】由 Syscall 層負責查出目前的目錄 LBA
+        // 由 Syscall 層負責查出目前的目錄 LBA
         uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
         ipc_lock();
-        // 【修改】把 current_dir 傳入 VFS
         regs->eax = vfs_getcwd(current_dir, buffer);
         ipc_unlock();
     }

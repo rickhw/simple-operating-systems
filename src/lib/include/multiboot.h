@@ -39,7 +39,7 @@ typedef struct multiboot_info {
     uint16_t vbe_interface_len;
 
     // ==========================================
-    // 【新增】Multiboot Framebuffer 資訊
+    // Multiboot Framebuffer 資訊
     // ==========================================
     uint64_t framebuffer_addr;   // 畫布的實體記憶體起點
     uint32_t framebuffer_pitch;  // 每一橫列的位元組數 (Bytes per line)

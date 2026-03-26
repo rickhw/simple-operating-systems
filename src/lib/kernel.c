@@ -80,12 +80,11 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
         kprintf("Disk Error: No partition found.\n");
         while(1) __asm__ volatile("hlt");
     }
-
-    // 呼叫我們重構好的函式！
+    // 初始化 file system: mount, format, copy external applications
     setup_filesystem(part_lba, mbd);
 
     // ==========================================
-    // 【復活】應用程式載入與排程 (Ring 0 -> Ring 3)
+    // 應用程式載入與排程 (Ring 0 -> Ring 3)
     // ==========================================
     kprintf("[Kernel] Fetching 'shell.elf' from Virtual File System...\n");
     fs_node_t* app_node = simplefs_find(1, "shell.elf");
@@ -116,7 +115,6 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     } else {
         kprintf("[Kernel] Error: Shell (shell.elf) not found on disk.\n");
     }
-
 
     while (1) { __asm__ volatile ("hlt"); }
 }

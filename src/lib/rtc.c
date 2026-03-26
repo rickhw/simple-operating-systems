@@ -1,12 +1,14 @@
+// RTC: Real-Time Clock
 #include "io.h"
 #include "rtc.h"
+
+#define CMOS_ADDRESS 0x70
+#define CMOS_DATA    0x71
 
 // 宣告 I/O 函式
 extern uint8_t inb(uint16_t port);
 extern void outb(uint16_t port, uint8_t data);
 
-#define CMOS_ADDRESS 0x70
-#define CMOS_DATA    0x71
 
 static int get_update_in_progress_flag() {
     outb(CMOS_ADDRESS, 0x0A);

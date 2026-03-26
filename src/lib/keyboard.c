@@ -67,7 +67,7 @@ void keyboard_handler(void) {
 char keyboard_getchar() {
     while (kbd_head == kbd_tail) {
         __asm__ volatile("sti");
-        schedule();  // 【關鍵】讓出 CPU，讓多工作業順利流轉
+        schedule();  // 讓出 CPU，讓多工作業順利流轉
         __asm__ volatile("hlt");
     }
     __asm__ volatile("cli");

@@ -15,25 +15,28 @@ volatile task_t *ready_queue = 0;
 uint32_t next_task_id = 0;
 task_t *idle_task = 0;
 
-extern uint32_t page_directory[]; // [Day38] 取得 Kernel 原始的分頁目錄
-// extern void switch_task(uint32_t *current_esp, uint32_t *next_esp); // [Day38][delete]
-extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3); // [Day38][change] 加上第三個參數 cr3
-extern void child_ret_stub();
+extern uint32_t page_directory[];
+extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3);  // // switch_task.S
+extern void child_ret_stub();   // // switch_task.S
+
+// --- Internal API ----
 
 void idle_loop() {
     while(1) { __asm__ volatile("sti; hlt"); }
 }
 
+// ---- Public API ----
+
 void init_multitasking() {
-    // kprintf("[Task] Initializing Multitasking...\n");
+
     task_t *main_task = (task_t*) kmalloc(sizeof(task_t));
     main_task->id = next_task_id++;
     main_task->esp = 0;
     main_task->kernel_stack = 0;
     main_task->state = TASK_RUNNING;
     main_task->wait_pid = 0;
-    main_task->page_directory = (uint32_t) page_directory; // [Day38][Add] 住在原始宇宙
-    main_task->cwd_lba = 0; // [Day48][Add] CWD LBA
+    main_task->page_directory = (uint32_t) page_directory;
+    main_task->cwd_lba = 0;
 
     main_task->next = main_task;
     current_task = main_task;
@@ -43,8 +46,8 @@ void init_multitasking() {
     idle_task->id = 9999;
     idle_task->state = TASK_RUNNING;
     idle_task->wait_pid = 0;
-    idle_task->page_directory = (uint32_t) page_directory; // [Day38][Add] 住在原始宇宙
-    idle_task->cwd_lba = 0; // [Day48][Add] CWD LBA
+    idle_task->page_directory = (uint32_t) page_directory;
+    idle_task->cwd_lba = 0;
 
     uint32_t *kstack_mem = (uint32_t*) kmalloc(4096);
     uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + 4096);
@@ -57,73 +60,16 @@ void init_multitasking() {
     idle_task->esp = (uint32_t) kstack;
 }
 
-void exit_task() {
-    task_t *temp = current_task->next;
-    while (temp != current_task) {
-        if (temp->state == TASK_WAITING && temp->wait_pid == current_task->id) {
-            temp->state = TASK_RUNNING;
-            temp->wait_pid = 0;
-        }
-        temp = temp->next;
-    }
-
-    // [Day46]【新增】如果死的不是老爸 (Kernel 原始宇宙)，就把它專屬的宇宙回收！
-    if (current_task->page_directory != (uint32_t)page_directory) {
-        free_page_directory(current_task->page_directory);
-    }
-
-    current_task->state = TASK_DEAD;
-    schedule();
-}
-
-void schedule() {
-    if (!current_task) return;
-
-    task_t *curr = (task_t*)current_task;
-    task_t *next_node = curr->next;
-
-    while (next_node != current_task) {
-        if (next_node->state == TASK_DEAD) {
-            curr->next = next_node->next;
-            next_node = curr->next;
-        } else {
-            curr = next_node;
-            next_node = curr->next;
-        }
-    }
-
-    task_t *next_run = current_task->next;
-    while (next_run->state != TASK_RUNNING && next_run != current_task) {
-        next_run = next_run->next;
-    }
-
-    if (next_run->state != TASK_RUNNING) {
-        next_run = idle_task;
-    }
-
-    task_t *prev = (task_t*)current_task;
-    current_task = next_run;
-
-    if (current_task != prev) {
-        if (current_task->kernel_stack != 0) {
-            set_kernel_stack(current_task->kernel_stack);
-        }
-        // switch_task(&prev->esp, &current_task->esp);
-        // [Day38][Change]【關鍵】把新任務專屬的宇宙 CR3 傳遞給組合語言！
-        switch_task(&prev->esp, &current_task->esp, current_task->page_directory);
-    }
-}
-
 void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     task_t *new_task = (task_t*) kmalloc(sizeof(task_t));
     new_task->id = next_task_id++;
     new_task->state = TASK_RUNNING;
     new_task->wait_pid = 0;
-    new_task->page_directory = current_task->page_directory; // [Day38][Add]
-    new_task->cwd_lba = 0; // [Day48][Add] CWD LBA
+    new_task->page_directory = current_task->page_directory;
+    new_task->cwd_lba = 0;
 
     // ==========================================
-    // [Day43]【新增】為初代老爸 (Shell) 預先分配 10 個實體分頁給 User Heap
+    // 為初代老爸 (Shell) 預先分配 10 個實體分頁給 User Heap
     // ==========================================
     for (int i = 0; i < 10; i++) {
         uint32_t heap_phys = pmm_alloc_page();
@@ -165,16 +111,72 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     current_task->next = new_task;
 }
 
+void exit_task() {
+    task_t *temp = current_task->next;
+    while (temp != current_task) {
+        if (temp->state == TASK_WAITING && temp->wait_pid == current_task->id) {
+            temp->state = TASK_RUNNING;
+            temp->wait_pid = 0;
+        }
+        temp = temp->next;
+    }
+
+    // 如果死的不是老爸 (Kernel 原始宇宙)，就把它專屬的宇宙回收！
+    if (current_task->page_directory != (uint32_t)page_directory) {
+        free_page_directory(current_task->page_directory);
+    }
+
+    current_task->state = TASK_DEAD;
+    schedule();
+}
+
+void schedule() {
+    if (!current_task) return;
+
+    task_t *curr = (task_t*)current_task;
+    task_t *next_node = curr->next;
+
+    while (next_node != current_task) {
+        if (next_node->state == TASK_DEAD) {
+            curr->next = next_node->next;
+            next_node = curr->next;
+        } else {
+            curr = next_node;
+            next_node = curr->next;
+        }
+    }
+
+    task_t *next_run = current_task->next;
+    while (next_run->state != TASK_RUNNING && next_run != current_task) {
+        next_run = next_run->next;
+    }
+
+    if (next_run->state != TASK_RUNNING) {
+        next_run = idle_task;
+    }
+
+    task_t *prev = (task_t*)current_task;
+    current_task = next_run;
+
+    if (current_task != prev) {
+        if (current_task->kernel_stack != 0) {
+            set_kernel_stack(current_task->kernel_stack);
+        }
+        // 把新任務專屬的宇宙 CR3 傳遞給組合語言！
+        switch_task(&prev->esp, &current_task->esp, current_task->page_directory);
+    }
+}
+
 int sys_fork(registers_t *regs) {
     task_t *child = (task_t*) kmalloc(sizeof(task_t));
     child->id = next_task_id++;
     child->state = TASK_RUNNING;
     child->wait_pid = 0;
-    child->page_directory = current_task->page_directory; // [Day38][Add] (sys_fork 裡是 child->page_directory)
-    child->cwd_lba = current_task->cwd_lba; // [Day48][Add] 子行程必須繼承老爸當前的工作目錄 (CWD)！
+    child->page_directory = current_task->page_directory;
+    child->cwd_lba = current_task->cwd_lba; // 子行程必須繼承老爸當前的工作目錄 (CWD)！
 
     // ==========================================
-    // [Day43]【新增】讓子行程暫時繼承老爸的 Heap 邊界紀錄
+    // 讓子行程暫時繼承老爸的 Heap 邊界紀錄
     // ==========================================
     child->heap_end = current_task->heap_end;
 
@@ -276,7 +278,7 @@ int sys_exec(registers_t *regs) {
     safe_argv[argc] = 0; // 結尾補 NULL
 
     // =====================================================================
-    // 【神聖分離】為這個 Process 建立專屬的新宇宙！
+    // 為這個 Process 建立專屬的新宇宙！
     // =====================================================================
     uint32_t new_cr3 = create_page_directory();
 
@@ -302,7 +304,7 @@ int sys_exec(registers_t *regs) {
     map_page(0x083FF000, ustack_phys, 7);
 
     // ==========================================
-    // [Day]【新增】預先分配 10 個實體分頁 (40KB) 給 User Heap
+    // 預先分配 10 個實體分頁 (40KB) 給 User Heap
     // ==========================================
     for (int i = 0; i < 10; i++) {
         uint32_t heap_phys = pmm_alloc_page();

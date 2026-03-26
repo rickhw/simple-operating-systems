@@ -2,6 +2,11 @@
 #define TASK_H
 #include <stdint.h>
 
+#define TASK_RUNNING 0
+#define TASK_DEAD    1
+#define TASK_WAITING 2
+
+
 /**
  * [結構目的]：中斷上下文快照 (Interrupt Context Snapshot)
  * * 此結構體的佈局必須嚴格遵循 x86 中斷發生時的堆疊增長順序。
@@ -51,28 +56,26 @@ typedef struct {
     uint32_t user_ss;  // User Stack Segment: 使用者原本的堆疊段選擇子 (通常 0x23)
 } registers_t;
 
-#define TASK_RUNNING 0
-#define TASK_DEAD    1
-#define TASK_WAITING 2
 
 typedef struct task {
     uint32_t esp;
     uint32_t id;
     uint32_t kernel_stack;
-    uint32_t page_directory;    // [Day38]【新增】這個 Task 專屬的分頁目錄實體位址 (CR3)
+    uint32_t page_directory;    // 這個 Task 專屬的分頁目錄實體位址 (CR3)
     uint32_t state;
     uint32_t wait_pid;
-    uint32_t heap_end;          // [Day43]【新增】記錄 User Heap 的當前頂點
-    uint32_t cwd_lba;           // [Day48]【新增】當前工作目錄 (Current Working Directory, CWD) 的 LBA
+    uint32_t heap_end;          // 記錄 User Heap 的當前頂點
+    uint32_t cwd_lba;           // 當前工作目錄 (Current Working Directory, CWD) 的 LBA
     struct task *next;
 } task_t;
 
 extern volatile task_t *current_task;
 
 void init_multitasking();
+
 void create_user_task(uint32_t entry_point, uint32_t user_stack_top);
-void schedule();
 void exit_task();
+void schedule();
 int sys_fork(registers_t *regs);
 int sys_exec(registers_t *regs);
 int sys_wait(int pid);

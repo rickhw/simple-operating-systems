@@ -15,12 +15,12 @@
 #define ATA_PORT_STATUS     0x1F7
 #define ATA_PORT_COMMAND    0x1F7
 
-// [新增] 純粹等待硬碟不忙碌 (BSY bit 清零)
+// 純粹等待硬碟不忙碌 (BSY bit 清零)
 static void ata_wait_bsy() {
     while (inb(ATA_PORT_STATUS) & 0x80);
 }
 
-// [修改] 等待硬碟準備好傳輸資料 (BSY 清零 且 DRQ 設為 1)
+// 等待硬碟準備好傳輸資料 (BSY 清零 且 DRQ 設為 1)
 static void ata_wait_drq() {
     while (1) {
         uint8_t status = inb(ATA_PORT_STATUS);
@@ -41,7 +41,7 @@ static void ata_delay() {
 // --- 公開 API ---
 
 void ata_read_sector(uint32_t lba, uint8_t* buffer) {
-    ata_wait_bsy(); // [新增] 開始前先確認硬碟有空
+    ata_wait_bsy(); // 開始前先確認硬碟有空
 
     outb(ATA_PORT_DRV_HEAD, 0xE0 | ((lba >> 24) & 0x0F));
     outb(ATA_PORT_SECT_COUNT, 1);
@@ -50,7 +50,7 @@ void ata_read_sector(uint32_t lba, uint8_t* buffer) {
     outb(ATA_PORT_LBA_HIGH, (uint8_t)(lba >> 16));
     outb(ATA_PORT_COMMAND, 0x20); // 讀取
 
-    ata_delay();    // [新增] 給硬碟一點時間掛上 BSY 旗標
+    ata_delay();    // 給硬碟一點時間掛上 BSY 旗標
     ata_wait_drq(); // 讀取前，等待硬碟說「我有資料要給你」(DRQ=1)
 
     uint16_t* ptr = (uint16_t*) buffer;
@@ -58,7 +58,7 @@ void ata_read_sector(uint32_t lba, uint8_t* buffer) {
         ptr[i] = inw(ATA_PORT_DATA);
     }
 
-    ata_wait_bsy(); // [新增] 讀完後確認硬碟收尾完成
+    ata_wait_bsy(); // 讀完後確認硬碟收尾完成
 }
 
 void ata_write_sector(uint32_t lba, uint8_t* buffer) {
@@ -79,7 +79,7 @@ void ata_write_sector(uint32_t lba, uint8_t* buffer) {
         outw(ATA_PORT_DATA, ptr[i]);
     }
 
-    // 【終極修復】：必須先等硬碟把剛才的資料寫完（BSY 清零）！
+    // 必須先等硬碟把剛才的資料寫完（BSY 清零）！
     ata_delay();
     ata_wait_bsy();
 

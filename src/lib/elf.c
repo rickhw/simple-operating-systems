@@ -35,13 +35,11 @@ bool elf_check_supported(elf32_ehdr_t* header) {
         return false;
     }
 
-    // kprintf("[ELF] Valid x86 32-bit Executable! Entry Point is at: [0x%x].\n", header->entry);
-
     return true;
 }
 
 uint32_t elf_load(elf32_ehdr_t* ehdr) {
-    // 1. 使用我們寫好的檢查函式
+    // 1. 檢查函式
     if (!elf_check_supported(ehdr)) {
         return 0;
     }
@@ -67,7 +65,7 @@ uint32_t elf_load(elf32_ehdr_t* ehdr) {
                 map_page(virt_addr + (j * 4096), phys_addr, 7);
             }
 
-            // 【終極修復點：複製資料】
+            // 複製資料
             uint8_t* src = (uint8_t*)ehdr + file_offset;
             uint8_t* dest = (uint8_t*)virt_addr;
 

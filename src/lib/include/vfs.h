@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-// 定義節點的類型 (這就是 Linux "萬物皆檔案" 的基礎)
+// 定義節點的類型 (Linux "萬物皆檔案" 的基礎)
 #define FS_FILE        0x01   // 一般檔案
 #define FS_DIRECTORY   0x02   // 目錄
 #define FS_CHARDEVICE  0x03   // 字元裝置 (如鍵盤、終端機)
@@ -15,7 +15,7 @@
 // 前置宣告，因為函式指標會用到自己
 struct fs_node;
 
-// 定義「讀取」與「寫入」的函式指標型別 (這就是我們的 Interface)
+// 定義「讀取」與「寫入」的函式指標型別 (這就是 Interface)
 // 參數: 節點指標, 偏移量(offset), 讀寫大小(size), 緩衝區(buffer)
 typedef uint32_t (*read_type_t)(struct fs_node*, uint32_t, uint32_t, uint8_t*);
 typedef uint32_t (*write_type_t)(struct fs_node*, uint32_t, uint32_t, uint8_t*);
@@ -30,7 +30,7 @@ typedef struct fs_node {
     uint32_t inode;     // 該檔案系統專用的 ID
     uint32_t impl;      // 給底層驅動程式偷藏資料用的數字
 
-    // [多型魔法] 綁定在這個檔案上的操作函式！
+    // [多型] 綁定在這個檔案上的操作函式！
     read_type_t read;
     write_type_t write;
     open_type_t open;

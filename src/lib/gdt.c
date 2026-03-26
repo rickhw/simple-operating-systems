@@ -54,15 +54,15 @@ void init_gdt(void) {
     // Access 0x92: Ring 0, 可讀寫
     gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
 
-    // [新增] User Code Segment (位址 0~4GB)
+    // User Code Segment (位址 0~4GB)
     // Access 0xFA: Ring 3 (DPL=3), 可執行, 可讀取
     gdt_set_gate(3, 0, 0xFFFFFFFF, 0xFA, 0xCF);
 
-    // [新增] User Data Segment (位址 0~4GB)
+    // User Data Segment (位址 0~4GB)
     // Access 0xF2: Ring 3 (DPL=3), 可讀寫
     gdt_set_gate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
 
-    // [新增] 初始化 TSS (掛在第 5 個位置，也就是 0x28)
+    // 初始化 TSS (掛在第 5 個位置，也就是 0x28)
     // 這裡的 0x10 是 Kernel Data Segment。0x0 暫時填 0，晚點會被動態更新
     write_tss(5, 0x10, 0x0);
 

@@ -20,11 +20,12 @@ void init_timer(uint32_t frequency) {
 void timer_handler(void) {
     tick++;
 
-    // 【核心新增】每一滴答 (Tick)，檢查並刷新畫面！
+    // 每一滴答 (Tick)，檢查並刷新畫面！
     gui_handle_timer();
 
     // 必須先發送 EOI，才能切換任務！否則 PIC 會被卡死
     outb(0x20, 0x20);
+
     // 強行切換任務
     schedule();
 }

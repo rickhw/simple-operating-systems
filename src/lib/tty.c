@@ -2,20 +2,20 @@
 #include <stddef.h>
 #include "tty.h"
 #include "utils.h"
-#include "gfx.h" // 引入我們強大的圖形引擎
-#include "gui.h" // 為了呼叫 get_window
+#include "gfx.h"
+#include "gui.h"
 
-// 設定終端機的字體顏色為白色 (0xFFFFFF)，背景為純黑 (0x000000)
-#define TERM_FG 0xFFFFFF
-#define TERM_BG 0x008080    // 把這行原本的黑色換成深青色 (Teal)
+// 設定終端機的字體顏色
+#define TERM_FG 0xFFFFFF    // 白色
+#define TERM_BG 0x008080    // 深青色 (Teal)
 
-// 假設解析度是 800x600 (你可以未來把它變成從 gfx.h 讀取)
+// 假設解析度是 800x600
 #define SCREEN_WIDTH  800
 #define SCREEN_HEIGHT 600
 #define FONT_WIDTH    8
 #define FONT_HEIGHT   8
 
-// 【修改】改成網格座標！假設我們終端機視窗要放 45 個字元寬、25 行高
+// 改成網格座標！假設我們終端機視窗要放 45 個字元寬、25 行高
 #define MAX_COLS 45
 #define MAX_ROWS 25
 
@@ -25,6 +25,9 @@ static int term_row = 0; // 目前在第幾橫列
 static char text_buffer[MAX_ROWS][MAX_COLS];
 // 記錄終端機被綁定到哪一個 GUI 視窗 ID
 static int bound_win_id = -1;
+
+
+// --- Public API
 
 void terminal_initialize(void) {
     term_col = 0;
@@ -76,12 +79,11 @@ void terminal_writestring(const char* data) {
     terminal_write(data, strlen(data));
 }
 
-
 void terminal_bind_window(int win_id) {
     bound_win_id = win_id;
 }
 
-// 【核心修改】只在綁定的視窗被繪製時，才渲染文字！
+// 只在綁定的視窗被繪製時，才渲染文字！
 void tty_render_window(int win_id) {
     if (bound_win_id == -1 || win_id != bound_win_id) return;
 

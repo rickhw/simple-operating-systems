@@ -5,27 +5,27 @@
 #include "pmm.h"
 
 uint32_t page_directory[1024] __attribute__((aligned(4096)));
+
 uint32_t first_page_table[1024] __attribute__((aligned(4096)));
 uint32_t second_page_table[1024] __attribute__((aligned(4096)));
 uint32_t third_page_table[1024] __attribute__((aligned(4096)));
-
+// user page
 uint32_t user_page_table[1024] __attribute__((aligned(4096)));
-uint32_t user_heap_page_table[1024] __attribute__((aligned(4096))); // [Day43] 新增初代宇宙的 Heap 表
-
-uint32_t vram_page_table[1024] __attribute__((aligned(4096))); // [Day51][Add]
+uint32_t user_heap_page_table[1024] __attribute__((aligned(4096)));
+// vram page
+uint32_t vram_page_table[1024] __attribute__((aligned(4096)));
 
 // ====================================================================
-// 【神級捷徑】預先分配 16 個宇宙的空間！
+// 預先分配 16 個宇宙的空間！
 // ====================================================================
 uint32_t universe_pds[16][1024] __attribute__((aligned(4096)));
 uint32_t universe_pts[16][1024] __attribute__((aligned(4096)));
-uint32_t universe_heap_pts[16][1024] __attribute__((aligned(4096)));    // [Day43] 新增平行宇宙的 Heap 表陣列
+uint32_t universe_heap_pts[16][1024] __attribute__((aligned(4096)));    // 平行宇宙的 Heap 表陣列
 
 int next_universe_id = 0;
 
 // 在全域變數區新增一個陣列，記錄哪個宇宙被使用了
 int universe_used[16] = {0};
-
 
 extern void load_page_directory(uint32_t*);
 extern void enable_paging(void);
@@ -41,7 +41,7 @@ void init_paging(void) {
     page_directory[0] = ((uint32_t)first_page_table) | 7;
     page_directory[32] = ((uint32_t)user_page_table) | 7;
 
-    // [Day43] 掛載 0x10000000 區域 (pd_idx = 64)
+    // [掛載 0x10000000 區域 (pd_idx = 64)
     page_directory[64] = ((uint32_t)user_heap_page_table) | 7;
 
     page_directory[512] = ((uint32_t)second_page_table) | 3;
@@ -73,7 +73,7 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
         }
     } else if (pd_idx == 64) {
         // =========================================================
-        // [Day43] 【Heap 區】 (0x10000000)
+        // 【Heap 區】 (0x10000000)
         // =========================================================
         uint32_t cr3;
         __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
@@ -100,10 +100,7 @@ void map_page(uint32_t virt, uint32_t phys, uint32_t flags) {
 }
 
 uint32_t create_page_directory() {
-    // if (next_universe_id >= 16) {
-    //     kprintf("Error: Max universes reached!\n");
-    //     while(1) __asm__ volatile("hlt");
-    // }
+
     int id = -1;
     // 尋找空閒的宇宙
     for (int i = 0; i < 16; i++) {
@@ -116,10 +113,9 @@ uint32_t create_page_directory() {
 
     universe_used[id] = 1; // 標記為使用中
 
-    // int id = next_universe_id++;
     uint32_t* new_pd = universe_pds[id];
     uint32_t* new_pt = universe_pts[id];
-    uint32_t* new_heap_pt = universe_heap_pts[id]; // [Day43] 拿出這個宇宙專屬的 Heap 表
+    uint32_t* new_heap_pt = universe_heap_pts[id]; // 拿出這個宇宙專屬的 Heap 表
 
     for(int i = 0; i < 1024; i++) {
         new_pd[i] = page_directory[i];
@@ -127,18 +123,18 @@ uint32_t create_page_directory() {
 
     for(int i = 0; i < 1024; i++) {
         new_pt[i] = 0;
-        new_heap_pt[i] = 0; // [Day43] 初始化清空
+        new_heap_pt[i] = 0; // 初始化清空
     }
 
     new_pd[32] = ((uint32_t)new_pt) | 7;
-    // [Day43] 將這張全新的 Heap 表掛載到新宇宙的 0x10000000 區段
+    // 將這張全新的 Heap 表掛載到新宇宙的 0x10000000 區段
     new_pd[64] = ((uint32_t)new_heap_pt) | 7;
 
     return (uint32_t)new_pd;
 }
 
 
-// [Day46]【新增】提供給 sys_exit 呼叫的回收函式
+// 提供給 sys_exit 呼叫的回收函式
 void free_page_directory(uint32_t pd_phys) {
     for (int i = 0; i < 16; i++) {
         if ((uint32_t)universe_pds[i] == pd_phys) {
@@ -148,8 +144,7 @@ void free_page_directory(uint32_t pd_phys) {
     }
 }
 
-
-// [Day51] add -- start
+// 專門用來映射 Framebuffer (MMIO, Memory-Mapped I/O) 的安全函數
 void map_vram(uint32_t virt, uint32_t phys) {
     uint32_t pd_idx = virt >> 22;
     uint32_t pt_idx = (virt >> 12) & 0x03FF;
@@ -161,4 +156,3 @@ void map_vram(uint32_t virt, uint32_t phys) {
     }
     vram_page_table[pt_idx] = phys | 7;
 }
-// [Day51] add -- end

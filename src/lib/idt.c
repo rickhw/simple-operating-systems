@@ -28,6 +28,46 @@ static void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags
     idt_entries[num].flags   = flags;
 }
 
+
+// --- 公開 API ---
+
+void init_idt(void) {
+    idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
+    idt_ptr.base  = (uint32_t)&idt_entries;
+
+    // 先把 256 個中斷全部清空 (避免指到未知的記憶體)
+    // 這裡我們簡單用迴圈清零 (你也可以 include 昨天寫的 memset)
+    for (int i = 0; i < 256; i++) {
+        idt_set_gate(i, 0, 0, 0);
+    }
+
+    // 掛載第 0 號中斷：除以零
+    // 0x08 是我們昨天在 GDT 設定的 Kernel Code Segment
+    idt_set_gate(0, (uint32_t)isr0, 0x08, 0x8E);
+
+    // 重新映射 PIC
+    pic_remap();
+
+    // 掛載第 32 號中斷 (IRQ0: Timer)
+    idt_set_gate(32, (uint32_t)isr32, 0x08, 0x8E);
+
+    // 掛載第 33 號中斷 (IRQ1: Keyboard)
+    idt_set_gate(33, (uint32_t)isr33, 0x08, 0x8E);
+
+    // 掛載第 44 號中斷 (IRQ1: Mouse)
+    idt_set_gate(44, (uint32_t)isr44, 0x08, 0x8E);
+
+    // 掛載第 128 號中斷 (System Call)
+    // 注意！旗標是 0xEE (允許 Ring 3 呼叫)
+    idt_set_gate(128, (uint32_t)isr128, 0x08, 0xEE);
+
+    // 呼叫組合語言，正式套用新的 IDT
+    idt_flush((uint32_t)&idt_ptr);
+}
+
+
+// ---
+
 // 這是當「除以零」發生時，實際會執行的 C 語言函式
 void isr0_handler(void) {
     kprintf("\n[KERNEL PANIC] Exception 0: Divide by Zero!\n");
@@ -62,48 +102,11 @@ void pic_remap() {
     outb(0xA1, 0x01);
 
     // ==========================================================
-    // [最終設定] 遮罩 (Masks)：0 代表開啟，1 代表屏蔽
+    // 遮罩 (Masks)：0 代表開啟，1 代表屏蔽
     // 為了讓 IRQ 12 (滑鼠) 通過，我們必須：
     // 1. 開啟 Master PIC 的 IRQ 0(Timer), 1(Keyboard), 2(Slave連線) -> 1111 1000 = 0xF8
     // 2. 開啟 Slave PIC 的 IRQ 12 (第 4 個 bit) -> 1110 1111 = 0xEF
     // ==========================================================
     outb(0x21, 0xF8);
     outb(0xA1, 0xEF);
-}
-
-
-// --- 公開 API ---
-
-void init_idt(void) {
-    idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
-    idt_ptr.base  = (uint32_t)&idt_entries;
-
-    // 先把 256 個中斷全部清空 (避免指到未知的記憶體)
-    // 這裡我們簡單用迴圈清零 (你也可以 include 昨天寫的 memset)
-    for (int i = 0; i < 256; i++) {
-        idt_set_gate(i, 0, 0, 0);
-    }
-
-    // 掛載第 0 號中斷：除以零
-    // 0x08 是我們昨天在 GDT 設定的 Kernel Code Segment
-    idt_set_gate(0, (uint32_t)isr0, 0x08, 0x8E);
-
-    // [新增] 重新映射 PIC
-    pic_remap();
-
-    // [新增] 掛載第 32 號中斷 (IRQ0 Timer)
-    idt_set_gate(32, (uint32_t)isr32, 0x08, 0x8E);
-
-    // [新增] 掛載第 33 號中斷 (IRQ1 鍵盤)
-    idt_set_gate(33, (uint32_t)isr33, 0x08, 0x8E);
-
-    // [Day53] 掛載第 44 號中斷 (IRQ1 Mouse)
-    idt_set_gate(44, (uint32_t)isr44, 0x08, 0x8E);
-
-    // [新增] 掛載第 128 號中斷 (System Call)
-    // 注意！旗標是 0xEE (允許 Ring 3 呼叫)
-    idt_set_gate(128, (uint32_t)isr128, 0x08, 0xEE);
-
-    // 呼叫組合語言，正式套用新的 IDT
-    idt_flush((uint32_t)&idt_ptr);
 }

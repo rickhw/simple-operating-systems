@@ -34,14 +34,12 @@ typedef struct {
 // 格式化指定的分區
 void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count);
 void simplefs_mount(uint32_t part_lba);
-void simplefs_list_files(void); // 【修改】不再需要傳參數
+void simplefs_list_files(void);
 
-// 【修改】全面改用相對目錄位址 (dir_lba_rel)
-fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* filename);
 int simplefs_create_file(uint32_t dir_lba_rel, char* filename, char* data, uint32_t size);
 uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
-// 【新增】VFS 需要的 VFS 通用 API 宣告
-// int vfs_getcwd(uint32_t dir_lba, char* buffer);
+// 用相對目錄位址 (dir_lba_rel)
+fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* filename);
 
 #endif

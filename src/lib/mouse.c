@@ -166,8 +166,7 @@ void mouse_handler(void) {
                 }
 
                 prev_left_click = left_click; // 更新狀態紀錄
-                // gui_render(mouse_x, mouse_y);
-                // 【修改】不要在這裡直接 Render 了！只更新座標並標記 Dirty！
+                // 不要在這裡直接 Render 了！只更新座標並標記 Dirty！
                 gui_update_mouse(mouse_x, mouse_y);
                 break;
         }
@@ -175,7 +174,7 @@ void mouse_handler(void) {
     }
 
     // ==========================================
-    // 【關鍵新增】發送 EOI (End of Interrupt) 給 PIC
+    // 發送 EOI (End of Interrupt) 給 PIC
     // ==========================================
     // 因為 IRQ 12 在 Slave PIC，所以必須同時通知 Slave 和 Master！
     outb(0xA0, 0x20); // 通知 Slave PIC

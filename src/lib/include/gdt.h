@@ -39,10 +39,5 @@ void init_gdt(void);
 // 新增在 lib/gdt.h
 void set_kernel_stack(uint32_t esp);
 
-// [Day54] 在特定座標畫出一串字
-void draw_string(int x, int y, const char* str, uint32_t fg_color, uint32_t bg_color);
-
-// [Day54] 畫出一個標準的 GUI 視窗
-void draw_window(int x, int y, int width, int height, const char* title);
 
 #endif

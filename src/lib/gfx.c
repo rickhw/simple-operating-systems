@@ -11,7 +11,7 @@ static uint32_t fb_width = 0;
 static uint32_t fb_height = 0;
 static uint8_t  fb_bpp = 0;
 
-// [Day55]【核心魔法】隱形畫布 (Back Buffer)
+// 隱形畫布 (Back Buffer)
 // 800x600 * 4 Bytes = 約 1.92 MB。我們把它放在 BSS 區段，既安全又快速！
 static uint32_t back_buffer[800 * 600];
 
@@ -47,13 +47,10 @@ void init_gfx(multiboot_info_t* mbd) {
         uint32_t cr3;
         __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
         __asm__ volatile("mov %0, %%cr3" : : "r"(cr3));
-
-        // （因為現在 kprintf 已經看不到畫面了，這個 Log 只會留在 serial port 裡）
-        // kprintf("[GFX] Initialized: %dx%dx%d at 0x%x\n", fb_width, fb_height, fb_bpp, fb_addr);
     }
 }
 
-// 【修改】現在所有的畫筆，都畫在隱形的 back_buffer 上！
+// 現在所有的畫筆，都畫在隱形的 back_buffer 上！
 void put_pixel(int x, int y, uint32_t color) {
     if (x < 0 || (uint32_t)x >= fb_width || y < 0 || (uint32_t)y >= fb_height) return;
     back_buffer[y * fb_width + x] = color;
@@ -64,7 +61,7 @@ uint32_t get_pixel(int x, int y) {
     return back_buffer[y * fb_width + x];
 }
 
-// 【新增】瞬間交換畫布！(消除閃爍的終極武器)
+// 瞬間交換畫布！(消除閃爍的終極武器)
 void gfx_swap_buffers() {
     if (fb_addr == 0) return;
     // 逐行將 back_buffer 複製到實體的 Framebuffer
@@ -101,7 +98,7 @@ void draw_char(char c, int x, int y, uint32_t fg_color, uint32_t bg_color) {
     }
 }
 
-// 【修改】滑鼠游標現在不需要備份背景了！直接畫上去！
+// 直接把滑鼠游標畫上去
 void draw_cursor(int new_x, int new_y) {
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
@@ -141,7 +138,7 @@ void draw_window(int x, int y, int width, int height, const char* title) {
 }
 
 
-// 【新增】畫透明底色的字元 (給終端機疊加在背景上用)
+// 畫透明底色的字元 (給終端機疊加在背景上用)
 void draw_char_transparent(char c, int x, int y, uint32_t fg_color) {
     if (c < 32 || c > 126) return;
     const uint8_t* glyph = font8x8[c - 32];

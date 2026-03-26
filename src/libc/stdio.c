@@ -2,12 +2,14 @@
 #include "syscall.h"
 #include "stdarg.h"
 
+// Syscall 2: sys_print
 void print(const char* str) {
-    syscall(2, (int)str, 0, 0, 0, 0); // Syscall 2: sys_print
+    syscall(2, (int)str, 0, 0, 0, 0);
 }
 
+// Syscall 5: sys_getchar
 char getchar() {
-    return (char)syscall(5, 0, 0, 0, 0, 0); // Syscall 5: sys_getchar
+    return (char)syscall(5, 0, 0, 0, 0, 0);
 }
 
 // 內部工具：將整數轉為字串並印出 (支援 10 進位與 16 進位)
@@ -44,7 +46,6 @@ static void print_int(int num, int base) {
     print(str);
 }
 
-// 屬於你的 libc printf 來了！
 void printf(const char* format, ...) {
     va_list args;
     va_start(args, format);
@@ -95,8 +96,6 @@ void printf(const char* format, ...) {
 
     va_end(args);
 }
-
-// file
 
 int open(char* filename) {
     int fd;

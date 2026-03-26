@@ -1,7 +1,6 @@
 #include "stdio.h"
 #include "unistd.h"
 
-
 // User Space 專用的字串比對工具
 int strcmp(const char *s1, const char *s2) {
     while (*s1 && (*s1 == *s2)) { s1++; s2++; }
@@ -59,14 +58,12 @@ int parse_args(char* input, char** argv) {
     return argc;
 }
 
-// 【修改】將 _start 改名為 main，並回傳 int
 int main(int argc, char** argv) {
     if (argc <= 1) {
         printf("\n======================================\n");
         printf("      Welcome to Simple OS Shell!     \n");
         printf("======================================\n");
     } else {
-        // 【看這邊！】用 printf 代替以前一大坨的 sys_print！
         printf("Awesome! I received %d arguments:\n", argc);
         for(int i = 0; i < argc; i++) {
             printf("  Arg %d: %s\n", i, argv[i]);
@@ -81,7 +78,7 @@ int main(int argc, char** argv) {
         read_line(cmd_buffer, 128);
         if (cmd_buffer[0] == '\0') continue;
 
-        // 【核心魔法】解析使用者輸入
+        // 解析使用者輸入
         char* parsed_argv[16];
         int parsed_argc = parse_args(cmd_buffer, parsed_argv);
         char* cmd = parsed_argv[0];
@@ -98,8 +95,6 @@ int main(int argc, char** argv) {
             printf("Goodbye!\n");
             exit();
         }
-        // [Day48] add -- start
-        // 【新增】內建指令：cd
         else if (strcmp(cmd, "cd") == 0) {
             if (parsed_argc < 2) {
                 printf("Usage: cd <directory>\n");
@@ -109,15 +104,11 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        // [Day48] add -- end
-        // [Day50] add -- start
         else if (strcmp(cmd, "pwd") == 0) {
             char path_buf[256];
             getcwd(path_buf);
             printf("%s\n", path_buf);
         }
-        // [Day50] add -- end
-        // [Day39] add -- start
         else if (strcmp(cmd_buffer, "ipc") == 0) {
             printf("\n--- Starting IPC Queue Test ---\n");
 
@@ -154,8 +145,7 @@ int main(int argc, char** argv) {
             wait(pid_ping2);
             printf("--- IPC Test Finished! ---\n\n");
         }
-        // [Day39] add -- end
-        // 【動態執行外部程式】
+        // 動態執行外部程式
         else {
             // 自動幫指令加上 .elf 副檔名
             char elf_name[32];

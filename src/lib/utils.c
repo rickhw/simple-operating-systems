@@ -157,17 +157,19 @@ void kprintf(const char* format, ...) {
 
     va_end(args); // 清理不定參數列表
 
-    // 【關鍵優化】整句 kprintf 組合完畢後，再一次性渲染到螢幕上！
+    // 整句 kprintf 組合完畢後，再一次性渲染到螢幕上！
     gui_redraw();
 }
 
 
+// in write, @TODO: move to io.h
 uint16_t inw(uint16_t port) {
     uint16_t ret;
     __asm__ volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
     return ret;
 }
 
+// output write, @TODO: move to io.h
 void outw(uint16_t port, uint16_t data) {
     __asm__ volatile ("outw %1, %0" : : "dN" (port), "a" (data));
 }

@@ -11,7 +11,7 @@ block_header_t* first_block = 0;
 void init_kheap() {
     kprintf("[Heap] Initializing Kernel Heap at 0xC0000000...\n");
 
-    // 【升級】從 32 個分頁擴建到 512 個分頁 (512 * 4KB = 2 MB)！
+    // 從 32 個分頁擴建到 512 個分頁 (512 * 4KB = 2 MB)！
     for (int i = 0; i < 512; i++) {
         // 加上 (uint32_t) 強制轉型，消除編譯警告
         uint32_t phys_addr = (uint32_t) pmm_alloc_page();
@@ -33,7 +33,6 @@ void* kmalloc(uint32_t size) {
 
     while (current != 0) {
         if (current->is_free && current->size >= aligned_size) {
-            // 【關鍵修復：切割邏輯】
             // 如果這塊空地很大，我們不能全給他，要把剩下的切出來當新空地！
             if (current->size > aligned_size + sizeof(block_header_t) + 16) {
                 // 計算新地契的位置

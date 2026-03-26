@@ -4,41 +4,26 @@
 #include "kheap.h"
 #include "utils.h"
 
-uint32_t mounted_part_lba = 0;
-
 #define ROOT_DIR_SECTORS 8
 #define ROOT_DIR_BYTES   (ROOT_DIR_SECTORS * 512)
 #define MAX_FILES        (ROOT_DIR_BYTES / sizeof(sfs_file_entry_t))
 
-// ==========================================
-// 1. 底層硬碟讀寫與空間分配器
-// ==========================================
+uint32_t mounted_part_lba = 0;
+
+// 底層硬碟讀寫與空間分配器
 static void read_dir(uint32_t dir_lba_rel, uint8_t* buffer) {
     for (int i = 0; i < ROOT_DIR_SECTORS; i++) {
         ata_read_sector(mounted_part_lba + dir_lba_rel + i, buffer + (i * 512));
     }
 }
+
 static void write_dir(uint32_t dir_lba_rel, uint8_t* buffer) {
     for (int i = 0; i < ROOT_DIR_SECTORS; i++) {
         ata_write_sector(mounted_part_lba + dir_lba_rel + i, buffer + (i * 512));
     }
 }
 
-uint32_t simplefs_alloc_blocks(uint32_t sectors_needed) {
-    if (sectors_needed == 0) return 0;
-    sfs_superblock_t* sb = (sfs_superblock_t*) kmalloc(512);
-    ata_read_sector(mounted_part_lba, (uint8_t*)sb);
-    uint32_t allocated_lba = sb->data_start_lba;
-    sb->data_start_lba += sectors_needed;
-    ata_write_sector(mounted_part_lba, (uint8_t*)sb);
-    kfree(sb);
-    return allocated_lba;
-}
-
-// ==========================================
-// 2. 終極路徑解析引擎 (Path Resolution Engine)
-// ==========================================
-
+// 路徑解析引擎 (Path Resolution Engine)
 // 輔助：只在指定的「單一目錄」內尋找子資料夾
 static uint32_t shallow_get_dir_lba(uint32_t dir_lba, char* name) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
@@ -57,7 +42,7 @@ static uint32_t shallow_get_dir_lba(uint32_t dir_lba, char* name) {
     return 0;
 }
 
-// 核心：把 "folder1/folder2/note.txt" 拆解，
+// 把 "folder1/folder2/note.txt" 拆解，
 // 沿路往下走，最後回傳 note.txt 所在的目錄 LBA，並把 "note.txt" 存入 out_name。
 static uint32_t simplefs_resolve_path(uint32_t start_dir_lba, char* full_path, char* out_name) {
     uint32_t curr_lba = start_dir_lba;
@@ -90,17 +75,24 @@ static uint32_t simplefs_resolve_path(uint32_t start_dir_lba, char* full_path, c
     return curr_lba;
 }
 
-// ==========================================
-// 3. 全面支援路徑的 Public API
-// ==========================================
-
-void simplefs_mount(uint32_t part_lba) {
-    mounted_part_lba = part_lba;
+//
+uint32_t simplefs_alloc_blocks(uint32_t sectors_needed) {
+    if (sectors_needed == 0) return 0;
+    sfs_superblock_t* sb = (sfs_superblock_t*) kmalloc(512);
+    ata_read_sector(mounted_part_lba, (uint8_t*)sb);
+    uint32_t allocated_lba = sb->data_start_lba;
+    sb->data_start_lba += sectors_needed;
+    ata_write_sector(mounted_part_lba, (uint8_t*)sb);
+    kfree(sb);
+    return allocated_lba;
 }
+
+// --- Public API ----
 
 void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
     sfs_superblock_t* sb = (sfs_superblock_t*) kmalloc(512);
     memset(sb, 0, 512);
+
     sb->magic = SIMPLEFS_MAGIC;
     sb->total_blocks = sector_count;
     sb->root_dir_lba = 1;
@@ -115,6 +107,7 @@ void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
     strcpy(root_entries[0].filename, ".");
     root_entries[0].start_lba = 1;
     root_entries[0].type = FS_DIR;
+
     strcpy(root_entries[1].filename, "..");
     root_entries[1].start_lba = 1;
     root_entries[1].type = FS_DIR;
@@ -124,6 +117,10 @@ void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
     }
     kfree(sb);
     kfree(empty_dir);
+}
+
+void simplefs_mount(uint32_t part_lba) {
+    mounted_part_lba = part_lba;
 }
 
 void simplefs_list_files(void) {
@@ -141,37 +138,7 @@ void simplefs_list_files(void) {
     kfree(dir_buf);
 }
 
-// 【升級】支援 cat /folder1/note.txt
-fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* path) {
-    if (mounted_part_lba == 0) return 0;
-
-    char filename[32];
-    uint32_t target_dir = simplefs_resolve_path(dir_lba_rel, path, filename);
-    if (target_dir == 0 || filename[0] == '\0') return 0;
-
-    uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
-    read_dir(target_dir, dir_buf);
-
-    sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
-    for (int i = 0; i < MAX_FILES; i++) {
-        if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, filename) == 0) {
-            fs_node_t* node = (fs_node_t*) kmalloc(sizeof(fs_node_t));
-            strcpy(node->name, entries[i].filename);
-            node->flags = 1;
-            node->length = entries[i].file_size;
-            node->inode = entries[i].start_lba;
-            node->impl = mounted_part_lba;
-            node->read = simplefs_read;
-            node->write = 0;
-            kfree(dir_buf);
-            return node;
-        }
-    }
-    kfree(dir_buf);
-    return 0;
-}
-
-// 【升級】支援 write /folder1/note.txt "data"
+// file
 int simplefs_create_file(uint32_t dir_lba_rel, char* path, char* data, uint32_t size) {
     char filename[32];
     uint32_t target_dir = simplefs_resolve_path(dir_lba_rel, path, filename);
@@ -246,6 +213,37 @@ uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t 
     return bytes_read;
 }
 
+fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* path) {
+    if (mounted_part_lba == 0) return 0;
+
+    char filename[32];
+    uint32_t target_dir = simplefs_resolve_path(dir_lba_rel, path, filename);
+    if (target_dir == 0 || filename[0] == '\0') return 0;
+
+    uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
+    read_dir(target_dir, dir_buf);
+
+    sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, filename) == 0) {
+            fs_node_t* node = (fs_node_t*) kmalloc(sizeof(fs_node_t));
+            strcpy(node->name, entries[i].filename);
+            node->flags = 1;
+            node->length = entries[i].file_size;
+            node->inode = entries[i].start_lba;
+            node->impl = mounted_part_lba;
+            node->read = simplefs_read;
+            node->write = 0;
+            kfree(dir_buf);
+            return node;
+        }
+    }
+    kfree(dir_buf);
+    return 0;
+}
+
+// --- Internal API ---
+
 int simplefs_readdir(uint32_t dir_lba_rel, int index, char* out_name, uint32_t* out_size, uint32_t* out_type) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
     read_dir(dir_lba_rel, dir_buf);
@@ -268,7 +266,6 @@ int simplefs_readdir(uint32_t dir_lba_rel, int index, char* out_name, uint32_t* 
     return 0;
 }
 
-// 【升級】支援 rm /folder1/note.txt
 int simplefs_delete_file(uint32_t dir_lba_rel, char* path) {
     char filename[32];
     uint32_t target_dir = simplefs_resolve_path(dir_lba_rel, path, filename);
@@ -290,7 +287,6 @@ int simplefs_delete_file(uint32_t dir_lba_rel, char* path) {
     return -1;
 }
 
-// 【升級】支援 mkdir /folder1/subfolder
 int simplefs_mkdir(uint32_t dir_lba_rel, char* path) {
     char dirname[32];
     uint32_t target_dir = simplefs_resolve_path(dir_lba_rel, path, dirname);
@@ -334,7 +330,6 @@ int simplefs_mkdir(uint32_t dir_lba_rel, char* path) {
     return -1;
 }
 
-// 【升級】支援 cd /folder1/subfolder
 uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* path) {
     char target_name[32];
     uint32_t parent_lba = simplefs_resolve_path(current_dir_lba, path, target_name);
@@ -346,25 +341,7 @@ uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* path) {
     return shallow_get_dir_lba(parent_lba, target_name);
 }
 
-// === VFS 封裝層 (維持不變) ===
-int vfs_create_file(uint32_t dir_lba, char* filename, char* content) {
-    if (mounted_part_lba == 0) return -1;
-    return simplefs_create_file(dir_lba, filename, content, strlen(content));
-}
-int vfs_readdir(uint32_t dir_lba, int index, char* out_name, uint32_t* out_size, uint32_t* out_type) {
-    if (mounted_part_lba == 0) return -1;
-    return simplefs_readdir(dir_lba, index, out_name, out_size, out_type);
-}
-int vfs_delete_file(uint32_t dir_lba, char* filename) {
-    if (mounted_part_lba == 0) return -1;
-    return simplefs_delete_file(dir_lba, filename);
-}
-int vfs_mkdir(uint32_t dir_lba, char* dirname) {
-    if (mounted_part_lba == 0) return -1;
-    return simplefs_mkdir(dir_lba, dirname);
-}
-
-// 【核心魔法】爬樹法實作 pwd
+// 爬樹法實作 pwd
 void simplefs_getcwd(uint32_t current_lba, char* out_buffer) {
     // 1. 如果已經在根目錄，直接回傳 "/"
     if (current_lba == 1 || current_lba == 0) {
@@ -426,7 +403,24 @@ void simplefs_getcwd(uint32_t current_lba, char* out_buffer) {
     out_buffer[out_idx] = '\0';
 }
 
-// === VFS 封裝層新增 ===
+// --- VSF 封裝 API ---
+int vfs_create_file(uint32_t dir_lba, char* filename, char* content) {
+    if (mounted_part_lba == 0) return -1;
+    return simplefs_create_file(dir_lba, filename, content, strlen(content));
+}
+int vfs_readdir(uint32_t dir_lba, int index, char* out_name, uint32_t* out_size, uint32_t* out_type) {
+    if (mounted_part_lba == 0) return -1;
+    return simplefs_readdir(dir_lba, index, out_name, out_size, out_type);
+}
+int vfs_delete_file(uint32_t dir_lba, char* filename) {
+    if (mounted_part_lba == 0) return -1;
+    return simplefs_delete_file(dir_lba, filename);
+}
+int vfs_mkdir(uint32_t dir_lba, char* dirname) {
+    if (mounted_part_lba == 0) return -1;
+    return simplefs_mkdir(dir_lba, dirname);
+}
+
 int vfs_getcwd(uint32_t dir_lba, char* buffer) {
     if (mounted_part_lba == 0) return -1;
 
