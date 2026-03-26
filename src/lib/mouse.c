@@ -105,43 +105,51 @@ void mouse_handler(void) {
                 // 【核心互動邏輯】
                 if (left_click && !prev_left_click) {
                     // 滑鼠「剛按下的瞬間」
-                    int clicked_id = -1;
 
-                    // 為了符合 Z-Order，我們應該「倒過來」檢查，先檢查最上層的 (也就是 Focused 視窗)
-                    int current_focus = get_focused_window();
-                    if (current_focus != -1 && wins[current_focus].is_active) {
-                        if (mouse_x >= wins[current_focus].x && mouse_x <= wins[current_focus].x + wins[current_focus].width &&
-                            mouse_y >= wins[current_focus].y && mouse_y <= wins[current_focus].y + wins[current_focus].height) {
-                            clicked_id = current_focus;
-                        }
+                    // 【新增】先問 GUI 系統有沒有點到 Start 選單或工作列？
+                    if (gui_check_ui_click(mouse_x, mouse_y)) {
+                        // 如果 return 1，代表 GUI 處理掉了，我們就不要再檢查底下的視窗了！
                     }
+                    else {
+                        // 如果 GUI 沒處理，我們才繼續做視窗的 Z-Order 碰撞偵測
+                        int clicked_id = -1;
 
-                    // 如果最上層沒點到，再檢查其他視窗
-                    if (clicked_id == -1) {
-                        for (int i = 0; i < 10; i++) {
-                            if (wins[i].is_active && i != current_focus) {
-                                if (mouse_x >= wins[i].x && mouse_x <= wins[i].x + wins[i].width &&
-                                    mouse_y >= wins[i].y && mouse_y <= wins[i].y + wins[i].height) {
-                                    clicked_id = i;
-                                    break;
+                        // 為了符合 Z-Order，我們應該「倒過來」檢查，先檢查最上層的 (也就是 Focused 視窗)
+                        int current_focus = get_focused_window();
+                        if (current_focus != -1 && wins[current_focus].is_active) {
+                            if (mouse_x >= wins[current_focus].x && mouse_x <= wins[current_focus].x + wins[current_focus].width &&
+                                mouse_y >= wins[current_focus].y && mouse_y <= wins[current_focus].y + wins[current_focus].height) {
+                                clicked_id = current_focus;
+                            }
+                        }
+
+                        // 如果最上層沒點到，再檢查其他視窗
+                        if (clicked_id == -1) {
+                            for (int i = 0; i < 10; i++) {
+                                if (wins[i].is_active && i != current_focus) {
+                                    if (mouse_x >= wins[i].x && mouse_x <= wins[i].x + wins[i].width &&
+                                        mouse_y >= wins[i].y && mouse_y <= wins[i].y + wins[i].height) {
+                                        clicked_id = i;
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // 如果真的點到了某個視窗
-                    if (clicked_id != -1) {
-                        set_focused_window(clicked_id); // 將它拉到最上層！
+                        // 如果真的點到了某個視窗
+                        if (clicked_id != -1) {
+                            set_focused_window(clicked_id); // 將它拉到最上層！
 
-                        // 判斷是否點到了右上角的 [X] 按鈕
-                        if (mouse_x >= wins[clicked_id].x + wins[clicked_id].width - 20 &&
-                            mouse_x <= wins[clicked_id].x + wins[clicked_id].width - 6 &&
-                            mouse_y >= wins[clicked_id].y + 4 && mouse_y <= wins[clicked_id].y + 18) {
-                            close_window(clicked_id); // 關閉視窗！
-                        }
-                        // 判斷是否點到了標題列，準備拖曳
-                        else if (mouse_y >= wins[clicked_id].y && mouse_y <= wins[clicked_id].y + 20) {
-                            dragged_window_id = clicked_id;
+                            // 判斷是否點到了右上角的 [X] 按鈕
+                            if (mouse_x >= wins[clicked_id].x + wins[clicked_id].width - 20 &&
+                                mouse_x <= wins[clicked_id].x + wins[clicked_id].width - 6 &&
+                                mouse_y >= wins[clicked_id].y + 4 && mouse_y <= wins[clicked_id].y + 18) {
+                                close_window(clicked_id); // 關閉視窗！
+                            }
+                            // 判斷是否點到了標題列，準備拖曳
+                            else if (mouse_y >= wins[clicked_id].y && mouse_y <= wins[clicked_id].y + 20) {
+                                dragged_window_id = clicked_id;
+                            }
                         }
                     }
                 }

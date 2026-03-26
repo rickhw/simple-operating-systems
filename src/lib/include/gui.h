@@ -38,4 +38,7 @@ void close_window(int id);
 void gui_handle_timer(void);
 void gui_update_mouse(int x, int y);
 
+// 檢查是否點擊了系統 UI，回傳 1 代表已處理，0 代表未攔截
+int gui_check_ui_click(int x, int y);
+
 #endif

@@ -16,6 +16,8 @@ static int window_count = 0;
 static int focused_window_id = -1;
 static int last_mouse_x = 400;
 static int last_mouse_y = 300;
+// 【新增】開始選單是否開啟的狀態
+static int start_menu_open = 0;
 
 // 【新增】非同步渲染的靈魂：髒標記與渲染鎖！
 static volatile int gui_dirty = 1;     // 1 代表畫面需要更新
@@ -98,6 +100,28 @@ static void draw_taskbar(void) {
     draw_string(tray_x + 10, taskbar_y + 10, time_str, 0x000000, 0xC0C0C0);
 }
 
+// 【新增】畫出 3D 開始選單
+static void draw_start_menu(void) {
+    if (!start_menu_open) return;
+
+    int menu_w = 150;
+    int menu_h = 100;
+    int menu_x = 4;
+    int menu_y = 600 - 28 - menu_h; // 貼在工作列正上方 (Y=472)
+
+    // 畫底板與 3D 邊框 (左上亮，右下暗)
+    draw_rect(menu_x, menu_y, menu_w, menu_h, 0xC0C0C0);
+    draw_rect(menu_x, menu_y, menu_w, 2, 0xFFFFFF);
+    draw_rect(menu_x, menu_y, 2, menu_h, 0xFFFFFF);
+    draw_rect(menu_x, menu_y + menu_h - 2, menu_w, 2, 0x808080);
+    draw_rect(menu_x + menu_w - 2, menu_y, 2, menu_h, 0x808080);
+
+    // 畫選單項目
+    draw_string(menu_x + 10, menu_y + 12, "1. Terminal", 0x000000, 0xC0C0C0);
+    draw_string(menu_x + 10, menu_y + 42, "2. Sys Status", 0x000000, 0xC0C0C0);
+    draw_string(menu_x + 10, menu_y + 72, "3. Shutdown", 0x000000, 0xC0C0C0);
+}
+
 // -- Public API
 
 void init_gui(void) {
@@ -168,6 +192,9 @@ void gui_render(int mouse_x, int mouse_y) {
     // 4. 畫工作列 (Taskbar)
     draw_taskbar();
 
+    // 【新增】畫開始選單 (必須疊在所有視窗和工作列上面)
+    draw_start_menu();
+
     // 5. 畫滑鼠游標 (永遠在最最上層)
     draw_cursor(mouse_x, mouse_y);
 
@@ -200,4 +227,74 @@ void gui_handle_timer(void) {
         gui_dirty = 0;    // 清除髒標記
         is_rendering = 0; // 解鎖
     }
+}
+
+
+// 【核心新增】UI 事件分發中心
+int gui_check_ui_click(int x, int y) {
+    // 1. 檢查是否點擊了左下角的 Start 按鈕 (X: 4~64, Y: 576~596)
+    if (x >= 4 && x <= 64 && y >= 576 && y <= 596) {
+        start_menu_open = !start_menu_open; // 切換開關
+        gui_dirty = 1;
+        return 1; // 成功攔截這次點擊
+    }
+
+    // 2. 如果選單是開著的，檢查是否點了裡面的選項
+    if (start_menu_open) {
+        int menu_y = 600 - 28 - 100; // 472
+
+        if (x >= 4 && x <= 154 && y >= menu_y && y <= menu_y + 100) {
+            // 點擊 "1. Terminal"
+            if (y >= menu_y + 10 && y <= menu_y + 30) {
+                // 【核心修正】尋找現有的 Terminal 視窗，把它拉到最上層！
+                int found = 0;
+                for (int i = 0; i < MAX_WINDOWS; i++) {
+                    if (windows[i].is_active && strcmp(windows[i].title, "Simple OS Terminal") == 0) {
+                        set_focused_window(i); // 找到了！拉到最上層並給予焦點
+                        found = 1;
+                        break;
+                    }
+                }
+
+                // 如果終端機之前被手賤按 [X] 關掉了，我們就在原地幫他把框框畫回來
+                // (註：因為 Shell process 其實還活在背景，所以框框畫回來，綁定回去就又看得到了！)
+                if (!found) {
+                    int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal");
+                    terminal_bind_window(term_win);
+                }
+            }
+            // 點擊 "2. Sys Status"
+            else if (y >= menu_y + 40 && y <= menu_y + 60) {
+                int found = 0;
+                for (int i = 0; i < MAX_WINDOWS; i++) {
+                    if (windows[i].is_active && strcmp(windows[i].title, "System Status") == 0) {
+                        set_focused_window(i);
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found) {
+                    create_window(450, 100, 300, 200, "System Status");
+                }
+            }
+            // 點擊 "3. Shutdown"
+            else if (y >= menu_y + 70 && y <= menu_y + 90) {
+                draw_rect(0, 0, 800, 600, 0x000000); // 假裝關機畫面
+                draw_string(230, 280, "It is now safe to turn off your computer.", 0xFF8000, 0x000000);
+                gfx_swap_buffers();
+                while(1) __asm__ volatile("cli; hlt"); // 凍結系統
+            }
+
+            start_menu_open = 0; // 點完選項後自動收起選單
+            gui_dirty = 1;
+            return 1;
+        } else {
+            // 點到選單外面的任何地方，就自動收起選單
+            start_menu_open = 0;
+            gui_dirty = 1;
+            // 這裡不 return 1，讓底下的視窗可以繼續處理這個點擊
+        }
+    }
+
+    return 0; // 不是 UI 事件，放行給視窗處理
 }
