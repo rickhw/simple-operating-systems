@@ -68,44 +68,34 @@ void terminal_write(const char* data, size_t size) {
     for (size_t i = 0; i < size; i++) {
         terminal_putchar(data[i]);
     }
+    // 【關鍵優化】整串字串都排進 text_buffer 後，再一次性重繪！
+    gui_redraw();
 }
 
 void terminal_writestring(const char* data) {
     terminal_write(data, strlen(data));
 }
 
-// 【新增】把記憶體裡的字，畫在目前的畫布上
-// void tty_render(void) {
-//     for (int r = 0; r < MAX_ROWS; r++) {
-//         for (int c = 0; c < MAX_COLS; c++) {
-//             char ch = text_buffer[r][c];
-//             if (ch != '\0' && ch != ' ') {
-//                 draw_char_transparent(ch, c * 8, r * 8, TERM_FG);
-//             }
-//         }
-//     }
-// }
-
 
 void terminal_bind_window(int win_id) {
     bound_win_id = win_id;
 }
 
-// 【核心新增】只在綁定的視窗被繪製時，才渲染文字！
+// 【核心修改】只在綁定的視窗被繪製時，才渲染文字！
 void tty_render_window(int win_id) {
     if (bound_win_id == -1 || win_id != bound_win_id) return;
 
     window_t* win = get_window(win_id);
-    if (win == 0) return; // 視窗已經被關閉了就不畫
+    if (win == 0) return;
 
-    // 算出內容的起始像素座標 (避開標題列 20px 與上左邊框)
-    int start_x = win->x + 4;
-    int start_y = win->y + 24;
+    // 1. 強制畫出純黑色的內部畫布 (避開外框與標題列)
+    draw_rect(win->x + 4, win->y + 22, win->width - 8, win->height - 26, 0x000000);
 
-    // 畫出終端機的黑色背景底板
-    draw_rect(start_x, start_y, MAX_COLS * 8, MAX_ROWS * 8, TERM_BG);
+    // 2. 算出內容的起始像素座標 (加入 Padding 讓字不要貼齊邊緣)
+    int start_x = win->x + 8;
+    int start_y = win->y + 26;
 
-    // 把文字畫上去！
+    // 3. 把文字畫上去！
     for (int r = 0; r < MAX_ROWS; r++) {
         for (int c = 0; c < MAX_COLS; c++) {
             char ch = text_buffer[r][c];

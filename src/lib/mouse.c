@@ -158,7 +158,9 @@ void mouse_handler(void) {
                 }
 
                 prev_left_click = left_click; // 更新狀態紀錄
-                gui_render(mouse_x, mouse_y);
+                // gui_render(mouse_x, mouse_y);
+                // 【修改】不要在這裡直接 Render 了！只更新座標並標記 Dirty！
+                gui_update_mouse(mouse_x, mouse_y);
                 break;
         }
         status = inb(0x64); // 繼續讀取直到清空

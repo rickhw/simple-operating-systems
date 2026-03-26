@@ -27,10 +27,15 @@ window_t* get_window(int id);
 window_t* get_windows(void);
 
 void gui_render(int mouse_x, int mouse_y);
+void gui_redraw(void); // 【新增】不改變滑鼠座標的原地重繪
 
 // 【Day 56 新增】焦點與關閉控制
 void set_focused_window(int id);
 int get_focused_window(void);
 void close_window(int id);
+
+// 【新增】非同步渲染架構 API
+void gui_handle_timer(void);
+void gui_update_mouse(int x, int y);
 
 #endif

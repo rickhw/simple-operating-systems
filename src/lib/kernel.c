@@ -60,7 +60,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     create_window(450, 100, 300, 200, "System Status");
 
     // 建立終端機視窗 (寬度: 45個字*8 + 左右邊框8 = 368，高度: 25行*8 + 標題列/邊框28 = 228)
-    int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal");
+    int term_win = create_window(50, 50, 600, 400, "Terminal");
 
     // 【關鍵綁定】告訴 TTY 系統，請把文字印在這個視窗裡面！
     terminal_bind_window(term_win);
@@ -73,6 +73,50 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     // 左上角的終端機文字會自然地印在藍綠色的桌面上
     kprintf("=== OS Subsystems Ready ===\n\n");
     kprintf("Welcome to Simple OS Desktop Environment!\n");
+
+    // --- 儲存與檔案系統 ---
+    uint32_t part_lba = parse_mbr();
+    if (part_lba == 0) {
+        kprintf("Disk Error: No partition found.\n");
+        while(1) __asm__ volatile("hlt");
+    }
+
+    // 呼叫我們重構好的函式！
+    setup_filesystem(part_lba, mbd);
+
+    // ==========================================
+    // 【復活】應用程式載入與排程 (Ring 0 -> Ring 3)
+    // ==========================================
+    kprintf("[Kernel] Fetching 'shell.elf' from Virtual File System...\n");
+    fs_node_t* app_node = simplefs_find(1, "shell.elf");
+
+    if (app_node != 0) {
+        uint8_t* app_buffer = (uint8_t*) kmalloc(app_node->length);
+        vfs_read(app_node, 0, app_node->length, app_buffer);
+        uint32_t entry_point = elf_load((elf32_ehdr_t*)app_buffer);
+
+        if (entry_point != 0) {
+            kprintf("Creating Initial Process (Shell)...\n\n");
+
+            // 啟動排程器 (Timer IRQ0 開始跳動)
+            init_multitasking();
+
+            // 為 Shell 分配專屬的 User Stack
+            uint32_t ustack1_phys = (uint32_t) pmm_alloc_page();
+            map_page(0x083FF000, ustack1_phys, 7);
+
+            // 建立 Ring 3 主任務
+            create_user_task(entry_point, 0x083FF000 + 4096);
+
+            kprintf("[Kernel] Dropping to idle state. Enjoy your GUI!\n");
+
+            // Kernel 功成身退，把自己宣告死亡！
+            exit_task();
+        }
+    } else {
+        kprintf("[Kernel] Error: Shell (shell.elf) not found on disk.\n");
+    }
+
 
     while (1) { __asm__ volatile ("hlt"); }
 }

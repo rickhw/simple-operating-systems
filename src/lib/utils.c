@@ -1,4 +1,5 @@
 #include "tty.h"
+#include "gui.h"
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -155,6 +156,9 @@ void kprintf(const char* format, ...) {
     }
 
     va_end(args); // 清理不定參數列表
+
+    // 【關鍵優化】整句 kprintf 組合完畢後，再一次性渲染到螢幕上！
+    gui_redraw();
 }
 
 
