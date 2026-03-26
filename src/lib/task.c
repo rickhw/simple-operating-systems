@@ -20,6 +20,7 @@ void init_multitasking() {
 
     // [新增] 確保主核心任務的 kernel_stack 初始為 0
     main_task->kernel_stack = 0;
+    main_task->state = TASK_RUNNING; // [Day33][新增] 初始化為存活
 
     main_task->next = main_task;
     current_task = main_task;
@@ -61,6 +62,7 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     *(--kstack) = 0x0202; // 給 switch_task 的 popf 消耗
 
     new_task->esp = (uint32_t) kstack;
+    new_task->state = TASK_RUNNING; // [Day33][新增] 新生兒預設為存活
 
     // 插入排程佇列
     new_task->next = current_task->next;
@@ -94,16 +96,40 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
 //     current_task->next = new_task;
 // }
 
-void schedule() {
-    if (!current_task || current_task->next == current_task) return;
-    task_t *prev_task = (task_t*)current_task;
-    current_task = current_task->next;
+// [Day33][新增] 處決當前任務的函式
+void exit_task() {
+    current_task->state = TASK_DEAD;
+    // 標記為死亡後，立刻呼叫排程器強行切換，一去不復返！
+    schedule();
+}
 
-    // 【關鍵魔法】每次切換任務前，更新 TSS 的 esp0！
-    // 這樣下一次中斷發生時，CPU 才會把狀態存進這個新任務自己的 Kernel Stack 裡！
-    if (current_task->kernel_stack != 0) {
-        set_kernel_stack(current_task->kernel_stack);
+// [升級] 具有「清理屍體」能力的排程器
+void schedule() {
+    if (!current_task) return;
+
+    task_t *prev = (task_t*)current_task;
+    task_t *next = current_task->next;
+
+    // 沿著環狀佇列尋找下一個「活著」的任務，並將死掉的剃除
+    while (next->state == TASK_DEAD && next != current_task) {
+        prev->next = next->next; // 將指標繞過死掉的任務，將其從佇列中解開
+        // (未來我們可以在這裡呼叫 kfree() 回收它的記憶體與堆疊)
+        next = prev->next;
     }
 
-    switch_task(&prev_task->esp, &current_task->esp);
+    // 如果繞了一圈發現大家都死了 (包含自己)
+    if (next == current_task && current_task->state == TASK_DEAD) {
+        kprintf("\n[Kernel] All user processes terminated. System Idle.\n");
+        while(1) { __asm__ volatile("cli; hlt"); } // 系統進入永久安眠
+    }
+
+    current_task = next;
+
+    // 如果切換後的任務不是原本的任務 (代表真的有發生切換)
+    if (current_task != prev) {
+        if (current_task->kernel_stack != 0) {
+            set_kernel_stack(current_task->kernel_stack);
+        }
+        switch_task(&prev->esp, &current_task->esp);
+    }
 }

@@ -43,6 +43,16 @@ void read_line(char* buffer, int max_len) {
     buffer[i] = '\0'; // 字串結尾
 }
 
+// [新增] 封裝 sys_yield
+void sys_yield() {
+    __asm__ volatile ("int $0x80" : : "a"(6) : "memory");
+}
+
+// [新增] 封裝 sys_exit
+void sys_exit() {
+    __asm__ volatile ("int $0x80" : : "a"(7) : "memory");
+}
+
 void _start() {
     sys_print("\n======================================\n");
     sys_print("      Welcome to Simple OS Shell!     \n");
@@ -82,6 +92,11 @@ void _start() {
                 sys_print(file_buf);
                 sys_print("\n--------------------\n");
             }
+        }
+        else if (strcmp(cmd_buffer, "exit") == 0) {
+            // [新增] 處理 exit 指令
+            sys_print("Goodbye!\n");
+            sys_exit(); // 呼叫核心，了結自己！
         }
         else {
             sys_print("Command not found: ");

@@ -3,12 +3,12 @@
 #include "utils.h"
 #include "simplefs.h" // [Day28] add - 為了使用 simplefs_find
 #include "keyboard.h" // [Day30] [新增] 為了使用 keyboard_getchar()
+#include "task.h"      // [新增] 為了使用 schedule() 和 exit_task()
 
 void init_syscalls(void) {
     kprintf("System Calls initialized on Interrupt 0x80 (128).\n");
 }
 
-// [Day28] add -- start
 // 核心的檔案描述符表 (最多允許同時打開 32 個檔案)
 // FD 0, 1, 2 通常保留給 stdin, stdout, stderr，所以我們從 3 開始用
 fs_node_t* fd_table[32] = {0};
@@ -16,6 +16,9 @@ fs_node_t* fd_table[32] = {0};
 // Syscall 分發中心
 void syscall_handler(uint32_t edi, uint32_t esi, uint32_t ebp, uint32_t esp,
                      uint32_t ebx, uint32_t edx, uint32_t ecx, uint32_t eax) {
+
+    // 忽略未使用的參數警告
+    (void)edi; (void)esi; (void)ebp; (void)esp; (void)edx; (void)ecx;
 
     if (eax == 2) {
         // Syscall 2: 印出字串 (ebx 存放字串指標)
@@ -67,8 +70,18 @@ void syscall_handler(uint32_t edi, uint32_t esi, uint32_t ebp, uint32_t esp,
 
         __asm__ volatile("mov %0, %%eax" : : "r"((uint32_t)c));
     }
+    // [Day33] add -- start
+    else if (eax == 6) {
+        // [新增] Syscall 6: sys_yield (自願讓出 CPU 時間片)
+        schedule();
+    }
+    else if (eax == 7) {
+        // [新增] Syscall 7: sys_exit (終止並退出程式)
+        exit_task();
+    }
+    // [Day33] add -- end
 }
-// [Day28] add -- end
+
 
 // [Day28] delete -- start
 // // 這是核心在防彈玻璃後面做事的邏輯
