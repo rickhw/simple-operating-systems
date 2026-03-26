@@ -55,18 +55,26 @@ isr33:
 
 ; 第 128 號中斷 (System Call 窗口)
 isr128:
-    pusha           ; 備份目前的暫存器狀態
+    ; 按照 C 語言 (cdecl) 的呼叫慣例，參數是【從右到左】 push 進堆疊的。
+    ; 我們的 C 語言函式長這樣：
+    ; void syscall_handler(edi, esi, ebp, esp, ebx, edx, ecx, eax);
 
-    ; 依照 C 語言的呼叫慣例 (cdecl)，參數要從右到左 push 進 Stack
-    ; 我們假設 User App 把 syscall_num 放 eax, arg1 放 ebx, arg2 放 ecx
-    push ecx        ; 參數 3 (arg2)
-    push ebx        ; 參數 2 (arg1)
-    push eax        ; 參數 1 (syscall_num)
+    push eax
+    push ecx
+    push edx
+    push ebx
+    push esp
+    push ebp
+    push esi
+    push edi
 
+    ; 呼叫 C 語言的處理中心
     call syscall_handler
 
-    ; 呼叫完畢後，清理剛剛 push 進去的 3 個參數 (3 * 4 = 12 bytes)
-    add esp, 12
+    ; 清理堆疊！我們剛才 push 了 8 個 32-bit (4 bytes) 的暫存器
+    ; 8 * 4 = 32 bytes。所以把 esp 加上 32，丟棄剛才 push 的參數
+    add esp, 32
 
-    popa            ; 恢復暫存器狀態
-    iret            ; 返回 User App
+    ; ！！！關鍵魔法！！！
+    ; 這裡我們【絕對不能】使用 popa 來恢復暫存器！
+    iret

@@ -1,5 +1,6 @@
 #include "elf.h"
 #include "tty.h"
+#include "utils.h"
 #include "paging.h" // [Day20] add: 需要用到 map_page
 
 // [Day20] add - start

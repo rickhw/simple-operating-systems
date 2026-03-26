@@ -17,10 +17,27 @@ all: build-env myos.iso
 build-env:
 	docker build -t os-builder .
 
-myos.iso: myos.bin grub.cfg
+# --- User App 建置規則 (取代原本的 build-app.sh) ---
+app.o: app.c
+	@echo "==> 編譯 User App (app.c)..."
+	$(DOCKER_CMD) gcc -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector -c app.c -o app.o
+
+my_app.elf: app.o
+	@echo "==> 連結 User App，指定 Entry Point 於 0x08048000..."
+	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 app.o -o my_app.elf
+
+# 專屬清理 User App 的指令
+clean-app:
+	rm -f app.o my_app.elf
+	@echo "==> User App 已清除。"
+
+# --- OS ISO 建置規則 ---
+# 注意：這裡依賴了 my_app.elf，所以只要打 make myos.iso，它就會自動先去編譯 App
+myos.iso: myos.bin grub.cfg my_app.elf
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg
+	cp my_app.elf isodir/boot/my_app.elf  # 把執行檔塞進虛擬光碟
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 
@@ -39,19 +56,21 @@ clean-disk:
 	rm -f hdd.img
 	@echo "==> 硬碟已刪除，下次 make run 將會產生一顆全新的硬碟。"
 
+# 核心編譯規則
 %.o: %.c
 	$(DOCKER_CMD) gcc $(CFLAGS) -c $< -o $@
 
 %.o: %.S
 	$(DOCKER_CMD) nasm -f elf32 $< -o $@
 
-clean:
+# 總清理規則：順便觸發 clean-app
+clean: clean-app
 	rm -f hdd.img
 	rm -f asm/*.o lib/*.o *.bin *.iso
 	rm -rf isodir
 
-run: myos.iso hdd.img
+run: myos.iso hdd.img my_app.elf
 	qemu-system-i386 -cdrom myos.iso -monitor stdio -hda hdd.img -boot d
 
-debug: myos.iso hdd.img
+debug: myos.iso hdd.img my_app.elf
 	qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d

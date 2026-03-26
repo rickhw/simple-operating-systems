@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "gdt.h"
+#include "utils.h"
 
 gdt_entry_t gdt_entries[6]; // 6 個元素：Null, KCode, KData, UCode, UData, TSS
 gdt_ptr_t   gdt_ptr;
@@ -66,7 +67,15 @@ void init_gdt(void) {
     tss_flush(); // 告訴 CPU：「逃生路線圖在這裡！」
 }
 
-// 公開 API，讓排程器可以隨時更新 TSS 的 esp0 (Extended Stack Pointer)
-void set_kernel_stack(uint32_t stack) {
-    tss_entry.esp0 = stack;
+// // 公開 API，讓排程器可以隨時更新 TSS 的 esp0 (Extended Stack Pointer)
+// void set_kernel_stack(uint32_t stack) {
+//     tss_entry.esp0 = stack;
+// }
+
+// 在 lib/gdt.c 檔案的下方新增這個函式：
+// (請根據你在 Day 17 定義的 TSS 變數名稱，將 tss_entry 替換成正確的名稱)
+void set_kernel_stack(uint32_t esp) {
+    // 0x10 代表 Kernel Data Segment (你的 GDT 設定中，Data 段的 offset)
+    tss_entry.ss0 = 0x10;
+    tss_entry.esp0 = esp;
 }

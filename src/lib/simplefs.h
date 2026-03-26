@@ -34,8 +34,11 @@ int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t
 // [Day26][新增] 列出目錄下的所有檔案 (類似 ls 指令)
 void simplefs_list_files(uint32_t part_lba);
 
-// [Day27][新增] 透過檔名尋找檔案，並回傳 VFS 標準節點
-fs_node_t* simplefs_find(uint32_t part_lba, char* filename);
+
+// fs_node_t* simplefs_find(uint32_t part_lba, char* filename); // [Day27][新增] // [Day28] delete
+fs_node_t* simplefs_find(char* filename); // [Day28] add
+
+void simplefs_mount(uint32_t part_lba); // [Day28] add
 
 #endif
 // [Day25] add -- end

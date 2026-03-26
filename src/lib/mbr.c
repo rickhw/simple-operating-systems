@@ -1,6 +1,7 @@
 #include "mbr.h"
 #include "ata.h"
 #include "tty.h"
+#include "utils.h"
 #include "kheap.h"
 
 // lib/mbr.h 與 lib/mbr.c 記得都要把型別改成 uint32_t parse_mbr(void);

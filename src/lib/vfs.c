@@ -1,5 +1,6 @@
 #include "vfs.h"
 #include "tty.h"
+#include "utils.h"
 
 // 宣告全域的根節點 (目前還是空的，等具體檔案系統掛載後才會賦值)
 fs_node_t *fs_root = 0;
