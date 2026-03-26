@@ -1,0 +1,16 @@
+// utils.h
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <stdint.h>
+#include <stdarg.h>
+#include <stdbool.h>
+
+void* memcpy(void* dstptr, const void* srcptr, size_t size);
+void* memset(void* bufptr, int value, size_t size);
+void reverse_string(char* str, int length);
+void reverse_string(char* str, int length);
+void itoa(int value, char* str, int base);
+void kprintf(const char* format, ...);
+
+#endif

@@ -1,7 +1,16 @@
-DOCKER_CMD = docker run --rm -v $(PWD):/workspace -w /workspace os-builder
+DOCKER_CMD = docker run --platform linux/amd64 --rm -v $(PWD):/workspace -w /workspace os-builder
 
-# GCC 編譯參數：32位元、無標準函式庫、開啟最佳化與警告
-CFLAGS = -m32 -ffreestanding -O2 -Wall -Wextra
+# [新增] -Ilib 告訴 GCC：如果遇到 #include "xxx.h"，請去 lib/ 目錄下找！
+CFLAGS = -m32 -ffreestanding -O2 -Wall -Wextra -Ilib
+
+# 自動抓取所有的 .c 與 .S 檔案
+C_SOURCES = $(wildcard lib/*.c)
+C_OBJS = $(C_SOURCES:.c=.o)
+ASM_SOURCES = $(wildcard asm/*.S)
+ASM_OBJS = $(ASM_SOURCES:.S=.o)
+
+# 把所有 .o 檔統整起來 (注意 boot.o 必須在前面，雖然 linker.ld 裡有指定 ENTRY，但放前面更保險)
+OBJS = asm/boot.o $(filter-out asm/boot.o, $(ASM_OBJS)) $(C_OBJS)
 
 all: build-env myos.iso
 
@@ -15,25 +24,21 @@ myos.iso: myos.bin grub.cfg
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 
-# 在 myos.bin 的依賴與 ld 指令中加入 idt.o 與 interrupts.o
-myos.bin: boot.o kernel.o gdt.o gdt_flush.o idt.o interrupts.o
-	$(DOCKER_CMD) ld -m elf_i386 -n -T linker.ld -o myos.bin boot.o kernel.o gdt.o gdt_flush.o idt.o interrupts.o
+myos.bin: $(OBJS)
+	$(DOCKER_CMD) ld -m elf_i386 -n -T linker.ld -o myos.bin $(OBJS)
 
-# 編譯 C 檔案的通用規則
 %.o: %.c
 	$(DOCKER_CMD) gcc $(CFLAGS) -c $< -o $@
 
-# 編譯 Assembly 檔案的通用規則
 %.o: %.S
 	$(DOCKER_CMD) nasm -f elf32 $< -o $@
 
+clean:
+	rm -f asm/*.o lib/*.o *.bin *.iso
+	rm -rf isodir
 
 run:
 	qemu-system-i386 -cdrom myos.iso -monitor stdio
 
 debug:
 	qemu-system-i386 -cdrom myos.iso -d int -no-reboot
-
-clean:
-	rm -f *.o *.bin *.iso
-	rm -rf isodir

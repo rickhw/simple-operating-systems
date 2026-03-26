@@ -64,21 +64,21 @@ void pic_remap() {
 }
 
 // 鍵盤按下時會觸發這個函式
-void keyboard_handler() {
-    // 從 Port 0x60 讀取鍵盤掃描碼 (Scan Code)
-    uint8_t scancode = inb(0x60);
+// void keyboard_handler() {
+//     // 從 Port 0x60 讀取鍵盤掃描碼 (Scan Code)
+//     uint8_t scancode = inb(0x60);
 
-    // 最高位元 (第7位) 如果是 1，代表按鍵被「放開 (Release)」
-    // 如果是 0，代表按鍵被「按下 (Press)」
-    if (!(scancode & 0x80)) {
-        // 為了驗證，我們先簡單印出十六進位的掃描碼
-        kprintf("Key Pressed! Scancode: 0x%x\n", scancode);
-    }
+//     // 最高位元 (第7位) 如果是 1，代表按鍵被「放開 (Release)」
+//     // 如果是 0，代表按鍵被「按下 (Press)」
+//     if (!(scancode & 0x80)) {
+//         // 為了驗證，我們先簡單印出十六進位的掃描碼
+//         kprintf("Key Pressed! Scancode: 0x%x\n", scancode);
+//     }
 
-    // [非常重要] 告訴 PIC 秘書：「這個中斷我處理完了，你可以送下一個來了」
-    // 也就是發送 EOI (End of Interrupt) 訊號給 Master PIC (Port 0x20)
-    outb(0x20, 0x20);
-}
+//     // [非常重要] 告訴 PIC 秘書：「這個中斷我處理完了，你可以送下一個來了」
+//     // 也就是發送 EOI (End of Interrupt) 訊號給 Master PIC (Port 0x20)
+//     outb(0x20, 0x20);
+// }
 
 
 extern void isr33(); // 宣告組合語言的鍵盤跳板
