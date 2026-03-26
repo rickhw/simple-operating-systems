@@ -24,8 +24,8 @@ void init_paging(void) {
     // 這張表有 1024 項，每項 4KB，所以剛好是 4MB (包含我們的核心與 VGA)
     for(int i = 0; i < 1024; i++) {
         // 實體位址 = i * 4096 (也就是 0x1000)
-        // 屬性 3 代表：Present (1) | Read/Write (2) = 3
-        first_page_table[i] = (i * 0x1000) | 3;
+        // [修改] 將權限從 3 改成 7 (Present | Read/Write | User)
+        first_page_table[i] = (i * 0x1000) | 7;
     }
 
     // [新增] 初始化第二張表 (全部設為不存在)
@@ -40,7 +40,8 @@ void init_paging(void) {
 
     // 將兩張表掛載到目錄上
     // 這樣 0x00000000 到 0x003FFFFF 的虛擬位址就會被翻譯到這裡
-    page_directory[0] = ((uint32_t)first_page_table) | 3;
+    // [修改] 目錄的第 0 項也必須加上 User 權限 (7)
+    page_directory[0] = ((uint32_t)first_page_table) | 7;
     // 0x80000000 除以 4MB (0x400000) = 512，所以 2GB 的位址是由目錄的第 512 項來管！
     page_directory[512] = ((uint32_t)second_page_table) | 3;
     page_directory[768] = ((uint32_t)third_page_table) | 3; // [新增] 3GB 目錄項

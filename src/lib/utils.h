@@ -8,6 +8,7 @@
 
 void* memcpy(void* dstptr, const void* srcptr, size_t size);
 void* memset(void* bufptr, int value, size_t size);
+// void* memset(void* dest, int val, uint32_t len);
 void reverse_string(char* str, int length);
 void reverse_string(char* str, int length);
 void itoa(int value, char* str, int base);

@@ -22,3 +22,11 @@ gdt_flush:
 
 .flush:
     ret
+
+
+global tss_flush
+
+tss_flush:
+    mov ax, 0x2B ; 0x28 (第 5 個 GDT) | 3 (Ring 3) = 0x2B
+    ltr ax       ; Load Task Register
+    ret

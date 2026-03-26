@@ -22,6 +22,14 @@ void* memset(void* bufptr, int value, size_t size) {
     return bufptr;
 }
 
+// void* memset(void* dest, int val, uint32_t len) {
+//     uint8_t* ptr = (uint8_t*)dest;
+//     while (len-- > 0) {
+//         *ptr++ = val;
+//     }
+//     return dest;
+// }
+
 
 
 // ==========================================
