@@ -88,8 +88,8 @@ int main(int argc, char** argv) {
 
         // 內建指令 (Built-ins)
         if (strcmp(cmd, "help") == 0) {
-            printf("Built-in commands: help, about, ipc, exit\n");
-            printf("External apps    : echo, cat, ping, pong, ls, write\n");
+            printf("Built-in commands: help, about, ipc, cd, exit\n");
+            printf("External commands: echo, cat, ping, pong, ls, touch, mkdir\n");
         }
         else if (strcmp(cmd, "about") == 0) {
             printf("Simple OS v1.0 - Dynamic Shell Edition\n");

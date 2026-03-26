@@ -7,10 +7,13 @@
 
 fs_node_t* fd_table[32] = {0};
 
-extern int vfs_create_file(char* filename, char* content);
-extern int vfs_readdir(int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
-extern int vfs_delete_file(char* filename);
-extern int vfs_mkdir(char* dirname);
+// 記得更新最上方的 extern 宣告
+extern fs_node_t* simplefs_find(uint32_t dir_lba, char* filename);
+extern int vfs_create_file(uint32_t dir_lba, char* filename, char* content);
+extern int vfs_readdir(uint32_t dir_lba, int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
+extern int vfs_delete_file(uint32_t dir_lba, char* filename);
+extern int vfs_mkdir(uint32_t dir_lba, char* dirname);
+
 extern uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* dirname); // [Day48][Add]
 extern uint32_t mounted_part_lba;   // [Day48][Add]
 
@@ -55,7 +58,11 @@ void syscall_handler(registers_t *regs) {
     }
     else if (eax == 3) {
         char* filename = (char*)regs->ebx;
-        fs_node_t* node = simplefs_find(filename);
+
+        // 取得目前的目錄 (如果沒設定，1 代表相對根目錄)
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
+        fs_node_t* node = simplefs_find(current_dir, filename);
+
         if (node == 0) { regs->eax = -1; return; }
         for (int i = 3; i < 32; i++) {
             if (fd_table[i] == 0) {
@@ -154,9 +161,10 @@ void syscall_handler(registers_t *regs) {
     else if (eax == 14) {
         char* filename = (char*)regs->ebx;
         char* content = (char*)regs->ecx;
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
-        ipc_lock(); // 上鎖，防止寫入硬碟時被排程器打斷！
-        regs->eax = vfs_create_file(filename, content);
+        ipc_lock();
+        regs->eax = vfs_create_file(current_dir, filename, content);
         ipc_unlock();
     }
     // Syscall 15: sys_readdir (讀取目錄內容)
@@ -167,7 +175,7 @@ void syscall_handler(registers_t *regs) {
         uint32_t* out_type = (uint32_t*)regs->esi; // 【新增】從 ESI 暫存器拿出 out_type 指標！
 
         // 取得目前的目錄
-        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : mounted_part_lba + 1;
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
         ipc_lock();
         // 【修改】直接呼叫底層，並傳入 current_dir！
@@ -178,19 +186,20 @@ void syscall_handler(registers_t *regs) {
     // Syscall 16: sys_remove (刪除檔案)
     else if (eax == 16) {
         char* filename = (char*)regs->ebx;
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
         ipc_lock(); // 上鎖！修改硬碟資料是非常危險的操作
-        regs->eax = vfs_delete_file(filename);
+        regs->eax = vfs_delete_file(current_dir, filename);
         ipc_unlock();
     }
 
     // Syscall 17: sys_mkdir (建立目錄)
     else if (eax == 17) {
         char* dirname = (char*)regs->ebx;
-        // kprintf("[syscall_handler] sys_mkdir, filename: [%s]\n", dirname);
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
         ipc_lock();
-        regs->eax = vfs_mkdir(dirname);
+        regs->eax = vfs_mkdir(current_dir, dirname);
         ipc_unlock();
     }
 
@@ -198,11 +207,11 @@ void syscall_handler(registers_t *regs) {
     else if (eax == 18) {
         char* dirname = (char*)regs->ebx;
         // 如果還沒有 CWD，預設就是根目錄
-        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : mounted_part_lba + 1;
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
 
         ipc_lock();
         if (strcmp(dirname, "/") == 0) {
-            current_task->cwd_lba = mounted_part_lba + 1; // 回到根目錄
+            current_task->cwd_lba = 1; // 回到根目錄
             regs->eax = 0;
         } else {
             uint32_t target_lba = simplefs_get_dir_lba(current_dir, dirname);

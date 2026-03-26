@@ -19,22 +19,22 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     kprintf("[Kernel] Setting up SimpleFS environment...\n");
     simplefs_mount(part_lba);
     simplefs_format(part_lba, 10000);
-    simplefs_create_file(part_lba, "hello.txt", "This is the content of the very first file ever created on Simple OS!\n", 70);
+    simplefs_create_file(1, "hello.txt", "This is the content of the very first file ever created on Simple OS!\n", 70);
 
     // 【修改】自動巡覽所有模組並寫入 HDD
     if (mbd->mods_count > 0) {
         multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
-        char* filenames[] = {"shell.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf", "write.elf", "ls.elf", "rm.elf", "mkdir.elf"};
+        char* filenames[] = {"shell.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf", "touch.elf", "ls.elf", "rm.elf", "mkdir.elf"};
         uint32_t expected_mods = sizeof(filenames) / sizeof(filenames[0]);
 
         for(uint32_t i = 0; i < mbd->mods_count && i < expected_mods; i++) {
             uint32_t size = mod[i].mod_end - mod[i].mod_start;
             kprintf("[Kernel] Installing [%s] to HDD (Size: %d bytes)...\n", filenames[i], size);
-            simplefs_create_file(part_lba, filenames[i], (char*)mod[i].mod_start, size);
+            simplefs_create_file(1, filenames[i], (char*)mod[i].mod_start, size);
         }
     }
 
-    // simplefs_list_files(part_lba);
+    // simplefs_list_files();
 
 }
 
@@ -67,7 +67,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     // [Day35] start
     // --- 應用程式載入與排程 ---
     kprintf("[Kernel] Fetching 'shell.elf' from Virtual File System...\n");
-    fs_node_t* app_node = simplefs_find("shell.elf");
+    fs_node_t* app_node = simplefs_find(1, "shell.elf");
 
     if (app_node != 0) {
         uint8_t* app_buffer = (uint8_t*) kmalloc(app_node->length);

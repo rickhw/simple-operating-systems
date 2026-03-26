@@ -3,8 +3,8 @@
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        printf("Usage: write <filename> <content>\n");
-        printf("Example: write note.txt \"Hello World!\"\n");
+        printf("Usage: touch <filename> <content>\n");
+        printf("Example: touch note.txt \"Hello World!\"\n");
         return 1;
     }
 

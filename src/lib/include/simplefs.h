@@ -34,15 +34,11 @@ typedef struct {
 // 格式化指定的分區
 void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count);
 void simplefs_mount(uint32_t part_lba);
+void simplefs_list_files(void); // 【修改】不再需要傳參數
 
-// 列出目錄下的所有檔案 (類似 ls 指令)
-void simplefs_list_files(uint32_t part_lba);
-fs_node_t* simplefs_find(char* filename);
-
-// operate for files
-// 建立檔案並寫入資料
-// 為了簡單起見，我們這版先限制檔案大小不能超過 512 bytes (一個磁區)
-int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t size);
+// 【修改】全面改用相對目錄位址 (dir_lba_rel)
+fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* filename);
+int simplefs_create_file(uint32_t dir_lba_rel, char* filename, char* data, uint32_t size);
 uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
 #endif

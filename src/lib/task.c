@@ -242,7 +242,18 @@ int sys_exec(registers_t *regs) {
     char* filename = (char*)regs->ebx;
     char** old_argv = (char**)regs->ecx;
 
-    fs_node_t* file_node = simplefs_find(filename);
+    // 1. 取得當前的目錄 (若為 0 則預設為根目錄 1)
+    uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : 1;
+
+    fs_node_t* file_node = simplefs_find(current_dir, filename);
+
+    // 3. 【系統指令救星】如果在當前目錄找不到，強制去「根目錄 (1)」找找看！
+    // 這模擬了 Linux 系統去 /bin 目錄尋找全域指令的行為
+    if (file_node == 0 && current_dir != 1) {
+        file_node = simplefs_find(1, filename);
+    }
+
+    // 4. 如果連根目錄都沒有，那就真的找不到了
     if (file_node == 0) { return -1; }
 
     uint8_t* buffer = (uint8_t*) kmalloc(file_node->length);
