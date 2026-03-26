@@ -9,11 +9,20 @@
 #include "pmm.h"
 #include "kheap.h"
 #include "syscall.h"
-#include "elf.h" // [新增]
+#include "elf.h"
+#include "multiboot.h" // [新增]
 
-void kernel_main(void) {
+
+// void kernel_main(void) {
+void kernel_main(uint32_t magic, multiboot_info_t* mbd) {// [修改] 接收 boot.S 傳來的參數
     terminal_initialize();
     kprintf("=== OS Kernel Booting ===\n");
+
+    // 1. 驗證 GRUB 魔法數字
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+        kprintf("PANIC: Invalid Multiboot Magic Number!\n");
+        return;
+    }
 
     init_gdt();
     init_idt();
@@ -26,34 +35,36 @@ void kernel_main(void) {
     __asm__ volatile ("mov %%esp, %0" : "=r" (current_esp));
     set_kernel_stack(current_esp);
 
-    kprintf("Kernel subsystems initialized.\n\n");
+    kprintf("Kernel initialized.\n\n");
 
-    // === Day 18: 測試 ELF 解析器 ===
-    kprintf("--- ELF Parser Test ---\n");
+    // === Day 19: 簽收 GRUB 模組 ===
+    kprintf("--- GRUB Multiboot Delivery ---\n");
+    kprintf("MBI Flags: [0x%x]\n", mbd->flags); // [新增] 看看 GRUB 到底給了什麼權限
 
-    // 偽造一份長度為 52 bytes 的假 ELF 檔案 (全部填 0)
-    uint8_t fake_file[52] = {0};
+    // 檢查 MBI 結構的 flags 第 3 個 bit (代表模組資訊是否有效)
+    if (mbd->flags & (1 << 3)) {
+        kprintf("Modules count: [%d]\n", mbd->mods_count);
 
-    // 把這塊記憶體強制轉型成 ELF 標頭結構，方便我們修改
-    elf32_ehdr_t* fake_elf = (elf32_ehdr_t*)fake_file;
+        if (mbd->mods_count > 0) {
+            // 取得模組陣列的指標
+            multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
 
-    // 填寫合法的資訊騙過檢查器
-    fake_elf->magic = ELF_MAGIC;    // 0x7F 'E' 'L' 'F'
-    fake_elf->ident[0] = 1;         // 32-bit
-    fake_elf->type = 2;             // Executable
-    fake_elf->machine = 3;          // x86
-    fake_elf->entry = 0x08048000;   // 假設這是應用程式的進入點 (Linux 的標準起點)
+            kprintf("Module 1 loaded at physical address: [0x%x] to [0x%x]\n", mod->mod_start, mod->mod_end);
+            kprintf("Module size: [%d] bytes\n", mod->mod_end - mod->mod_start);
 
-    // 把假檔案丟給解析器檢查！
-    elf_check_supported(fake_elf);
+            // [精彩時刻] 把這塊實體記憶體當作 ELF 檔案，交給昨天的解析器！
+            elf32_ehdr_t* real_app = (elf32_ehdr_t*)mod->mod_start;
 
-    // 試試看故意搞破壞
-    kprintf("\nNow corrupting the file...\n");
-    fake_elf->machine = 8; // 故意改成 8 (MIPS 架構)
-    elf_check_supported(fake_elf);
+            kprintf("\nPassing module to ELF Parser...\n");
+            elf_check_supported(real_app);
+        }
+    } else {
+        kprintf("No modules were loaded by GRUB.\n");
+    }
 
     __asm__ volatile ("sti");
     kprintf("\nSystem is ready.\n> ");
 
     while (1) { __asm__ volatile ("hlt"); }
+
 }

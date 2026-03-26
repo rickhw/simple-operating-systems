@@ -17,10 +17,11 @@ all: build-env myos.iso
 build-env:
 	docker build -t os-builder .
 
-myos.iso: myos.bin grub.cfg
+myos.iso: myos.bin grub.cfg my_app.elfs
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg
+	cp my_app.elf isodir/boot/my_app.elf  # [新增這行！] 把執行檔塞進虛擬光碟
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 

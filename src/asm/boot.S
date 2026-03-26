@@ -1,37 +1,44 @@
-section .multiboot
-align 8
-header_start:
-    dd 0xe85250d6
-    dd 0
-    dd header_end - header_start
-    dd 0x100000000 - (0xe85250d6 + 0 + (header_end - header_start))
-    align 8
-    dw 0
-    dw 0
-    dd 8
-header_end:
+; === 定義 Multiboot 1 的常數 ===
+MBALIGN  equ  1 << 0            ; 請求 GRUB 將載入的模組對齊 4KB 邊界
+MEMINFO  equ  1 << 1            ; 請求 GRUB 提供記憶體資訊 (包含模組位址)
+MAGIC    equ  0x1BADB002        ; [關鍵] Multiboot 1 的專屬魔法數字
+FLAGS    equ  MBALIGN | MEMINFO ; 組合旗標 (通常是 3)
+CHECKSUM equ -(MAGIC + FLAGS)   ; 檢查碼，證明這是一個合法的標頭
 
-; === 新增：定義未初始化的資料區段 (BSS) 來存放堆疊 ===
+section .multiboot
+align 4
+    dd MAGIC
+    dd FLAGS
+    dd CHECKSUM
+
+; === 定義未初始化的資料區段 (BSS) 來存放堆疊 ===
 section .bss
 align 16
 stack_bottom:
     resb 16384 ; 保留 16 KB 的空間 (16 * 1024 bytes)
 stack_top:
 
-; === 修改：系統進入點 ===
+; === 系統進入點 ===
 section .text
-extern kernel_main ; 告訴組譯器：我們等一下會呼叫一個在外面用 C 寫的函式
+extern kernel_main
 
 global _start
 _start:
-    ; 1. 設定堆疊指標 (Stack Pointer) 指向堆疊頂部
-    ; x86 的堆疊是往下長的，所以要指向最高位址的 stack_top
+    ; 1. 設定堆疊指標
     mov esp, stack_top
 
-    ; 2. 呼叫 C 語言的進入點
+    ; 2. 將 GRUB 傳遞的參數壓入堆疊 (Multiboot 1 規範)
+    ; eax 會包含 0x2BADB002，ebx 會包含 MBI 結構的位址
+    push ebx    ; 參數 2: multiboot_info_t* (MBI 結構指標)
+    push eax    ; 參數 1: magic number (魔法數字)
+
+    ; 3. 呼叫 C 語言的進入點
     call kernel_main
 
-    ; 3. 如果 C 函式意外 Return 了，關閉中斷並讓 CPU 休眠
+    ; 4. 清理堆疊 (兩個參數共 8 bytes)
+    add esp, 8
+
+    ; 5. 安全降落區：如果 Kernel 意外結束，就在這裡無限休眠
     cli
 .hang:
     hlt
