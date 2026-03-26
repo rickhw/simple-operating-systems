@@ -53,18 +53,19 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     init_pmm(16384);
     init_kheap();
 
-    // 1. 初始化圖形引擎
     init_gfx(mbd);
-
-    // 【新增】初始化 GUI 系統並註冊視窗
     init_gui();
+
+    // 建立狀態視窗
     create_window(450, 100, 300, 200, "System Status");
-    create_window(50, 50, 350, 250, "Simple OS Terminal"); // 多開一個視窗試試！
 
-    // 首次渲染全畫面
+    // 建立終端機視窗 (寬度: 45個字*8 + 左右邊框8 = 368，高度: 25行*8 + 標題列/邊框28 = 228)
+    int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal");
+
+    // 【關鍵綁定】告訴 TTY 系統，請把文字印在這個視窗裡面！
+    terminal_bind_window(term_win);
+
     gui_render(400, 300);
-
-    // 3. 啟動滑鼠驅動 (它會擷取畫好視窗後的背景)
     init_mouse();
 
     __asm__ volatile ("sti");

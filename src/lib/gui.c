@@ -6,11 +6,14 @@
 #define MAX_WINDOWS 10
 #define TERM_BG 0x008080 // 桌面底色
 
+extern void tty_render_window(int win_id);
+
 static window_t windows[MAX_WINDOWS];
 static int window_count = 0;
 
 // 【新增】記錄當前被選中的視窗 (-1 代表沒有)
 static int focused_window_id = -1;
+
 // 【修改】加入 Focus 判斷與 [X] 按鈕
 static void draw_window_internal(window_t* win) {
     int is_focused = (focused_window_id == win->id);
@@ -30,6 +33,19 @@ static void draw_window_internal(window_t* win) {
     // 【新增】畫出 [X] 關閉按鈕 (在右上角)
     draw_rect(win->x + win->width - 20, win->y + 4, 14, 14, 0xC0C0C0);
     draw_string(win->x + win->width - 17, win->y + 7, "X", 0x000000, 0xC0C0C0);
+
+    // ==========================================
+    // 【核心新增】在這裡渲染視窗專屬的內容！
+    // 這樣內容就會完美服從視窗的 Z-Order，不會穿透了！
+    // ==========================================
+    if (strcmp(win->title, "System Status") == 0) {
+        draw_string(win->x + 10, win->y + 30, "CPU: x86 32-bit", 0x000000, 0xC0C0C0);
+        draw_string(win->x + 10, win->y + 50, "Memory: 16 MB", 0x000000, 0xC0C0C0);
+        draw_string(win->x + 10, win->y + 70, "GUI: Active", 0x000000, 0xC0C0C0);
+    }
+
+    // 如果這個視窗有綁定終端機，這行會把它畫出來
+    tty_render_window(win->id);
 }
 
 
@@ -55,6 +71,14 @@ int create_window(int x, int y, int width, int height, const char* title) {
     return id;
 }
 
+window_t* get_window(int id) {
+    if (id >= 0 && id < MAX_WINDOWS && windows[id].is_active) {
+        return &windows[id];
+    }
+    return 0; // NULL
+}
+
+// 【加回來】
 window_t* get_windows(void) {
     return windows;
 }
@@ -82,16 +106,8 @@ void gui_render(int mouse_x, int mouse_y) {
     // 2. 最後畫「有焦點」的視窗 (讓它疊在最上層！)
     if (focused_window_id != -1 && windows[focused_window_id].is_active) {
         draw_window_internal(&windows[focused_window_id]);
-
-        // 示範內容 (畫在 focused 的視窗裡，如果是視窗 0 的話)
-        if (focused_window_id == 0) {
-            draw_string(windows[0].x + 10, windows[0].y + 30, "CPU: x86 32-bit", 0x000000, 0xC0C0C0);
-            draw_string(windows[0].x + 10, windows[0].y + 50, "Memory: 16 MB", 0x000000, 0xC0C0C0);
-            draw_string(windows[0].x + 10, windows[0].y + 70, "GUI: Active", 0x000000, 0xC0C0C0);
-        }
     }
 
-    tty_render();
     draw_cursor(mouse_x, mouse_y);
     gfx_swap_buffers();
 }

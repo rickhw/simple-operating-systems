@@ -20,7 +20,10 @@ void init_gui(void);
 // 註冊一個新視窗
 int create_window(int x, int y, int width, int height, const char* title);
 
-// 取得全域視窗陣列的指標 (給滑鼠偵測用)
+// 取得單一視窗 (給 TTY 用)
+window_t* get_window(int id);
+
+// 【加回來】取得全域視窗陣列 (給滑鼠碰撞偵測用)
 window_t* get_windows(void);
 
 void gui_render(int mouse_x, int mouse_y);
