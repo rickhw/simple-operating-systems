@@ -29,3 +29,7 @@ int remove(const char* filename) {
 int mkdir(const char* filename) {
     return syscall(17, (int)filename, 0, 0, 0, 0);
 }
+
+int chdir(const char* dirname) {
+    return syscall(18, (int)dirname, 0, 0, 0, 0);
+}

@@ -11,17 +11,19 @@ uint32_t mounted_part_lba = 0;
 #define ROOT_DIR_BYTES   (ROOT_DIR_SECTORS * 512) // 4096 Bytes
 #define MAX_FILES        (ROOT_DIR_BYTES / sizeof(sfs_file_entry_t)) // 64 個檔案！
 
-// --- 內部輔助函數：讀寫整個根目錄 ---
-static void read_root_dir(uint32_t part_lba, uint8_t* buffer) {
+// [Day48][Add] start
+// 拔掉原本的 read_root_dir / write_root_dir，換成這兩個通用的：
+static void read_dir(uint32_t dir_lba, uint8_t* buffer) {
     for (int i = 0; i < ROOT_DIR_SECTORS; i++) {
-        ata_read_sector(part_lba + 1 + i, buffer + (i * 512));
+        ata_read_sector(dir_lba + i, buffer + (i * 512));
     }
 }
-static void write_root_dir(uint32_t part_lba, uint8_t* buffer) {
+static void write_dir(uint32_t dir_lba, uint8_t* buffer) {
     for (int i = 0; i < ROOT_DIR_SECTORS; i++) {
-        ata_write_sector(part_lba + 1 + i, buffer + (i * 512));
+        ata_write_sector(dir_lba + i, buffer + (i * 512));
     }
 }
+// [Day48][Add] end
 
 // --- 公開 API ---
 
@@ -44,7 +46,7 @@ void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
 
     uint8_t* empty_dir = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
     memset(empty_dir, 0, ROOT_DIR_BYTES);
-    write_root_dir(partition_start_lba, empty_dir); // 寫入空白的巨型根目錄
+    write_dir(partition_start_lba, empty_dir); // 寫入空白的巨型根目錄
 
     kfree(sb);
     kfree(empty_dir);
@@ -54,7 +56,7 @@ void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
 void simplefs_list_files(uint32_t part_lba) {
     kprintf("\n[SimpleFS] List Root Directory\n");
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
-    read_root_dir(part_lba, dir_buf);
+    read_dir(part_lba + 1, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
 
     int file_count = 0;
@@ -73,7 +75,7 @@ void simplefs_list_files(uint32_t part_lba) {
 fs_node_t* simplefs_find(char* filename) {
     if (mounted_part_lba == 0) return 0;
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
-    read_root_dir(mounted_part_lba, dir_buf);
+    read_dir(mounted_part_lba + 1, dir_buf);
 
     sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
     for (int i = 0; i < MAX_FILES; i++) {
@@ -96,7 +98,7 @@ fs_node_t* simplefs_find(char* filename) {
 
 int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t size) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
-    read_root_dir(part_lba, dir_buf);
+    read_dir(part_lba + 1, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
 
     int target_idx = -1;
@@ -132,7 +134,7 @@ int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t
     entries[target_idx].file_size = size;
     entries[target_idx].type = FS_FILE;
 
-    write_root_dir(part_lba, dir_buf);
+    write_dir(part_lba + 1, dir_buf);
     kfree(dir_buf);
     return 0;
 }
@@ -171,7 +173,7 @@ int vfs_create_file(char* filename, char* content) {
 // 【修改】新增第五個參數 out_type
 int simplefs_readdir(uint32_t part_lba, int index, char* out_name, uint32_t* out_size, uint32_t* out_type) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
-    read_root_dir(part_lba, dir_buf);
+    read_dir(part_lba, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buf;
 
     int valid_count = 0;
@@ -202,13 +204,13 @@ int vfs_readdir(int index, char* out_name, uint32_t* out_size, uint32_t* out_typ
 
 int simplefs_delete_file(uint32_t part_lba, char* filename) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
-    read_root_dir(part_lba, dir_buf);
+    read_dir(part_lba + 1, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buf;
 
     for (int i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, filename) == 0) {
             entries[i].filename[0] = '\0';
-            write_root_dir(part_lba, dir_buf);
+            write_dir(part_lba + 1, dir_buf);
             kfree(dir_buf);
             return 0;
         }
@@ -224,7 +226,7 @@ int vfs_delete_file(char* filename) {
 
 int simplefs_mkdir(uint32_t part_lba, char* dirname) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
-    read_root_dir(part_lba, dir_buf);
+    read_dir(part_lba + 1, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buf;
 
     for (int i = 0; i < MAX_FILES; i++) {
@@ -234,7 +236,15 @@ int simplefs_mkdir(uint32_t part_lba, char* dirname) {
             entries[i].type = FS_DIR;
             entries[i].start_lba = part_lba + 20 + i;
 
-            write_root_dir(part_lba, dir_buf);
+            // ===============================================
+            // 【新增】確保新資料夾裡面是乾淨的 (寫入空白的區塊)
+            // ===============================================
+            uint8_t* empty_dir = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
+            memset(empty_dir, 0, ROOT_DIR_BYTES);
+            write_dir(entries[i].start_lba, empty_dir);
+            kfree(empty_dir);
+
+            write_dir(part_lba + 1, dir_buf);
             kfree(dir_buf);
             return 0;
         }
@@ -247,3 +257,25 @@ int vfs_mkdir(char* dirname) {
     if (mounted_part_lba == 0) return -1;
     return simplefs_mkdir(mounted_part_lba, dirname);
 }
+
+
+// [Day48][Add] start
+// 【新增】尋找子目錄的專用函式
+uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* dirname) {
+    uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
+    read_dir(current_dir_lba, dir_buf);
+    sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
+
+    for (int i = 0; i < MAX_FILES; i++) {
+        if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, dirname) == 0) {
+            if (entries[i].type == FS_DIR) {
+                uint32_t target_lba = entries[i].start_lba;
+                kfree(dir_buf);
+                return target_lba; // 找到了！回傳這個資料夾的 LBA
+            }
+        }
+    }
+    kfree(dir_buf);
+    return 0; // 找不到，或它根本不是一個資料夾
+}
+// [Day48][Add] end

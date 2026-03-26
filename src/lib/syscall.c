@@ -11,6 +11,9 @@ extern int vfs_create_file(char* filename, char* content);
 extern int vfs_readdir(int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
 extern int vfs_delete_file(char* filename);
 extern int vfs_mkdir(char* dirname);
+extern uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* dirname); // [Day48][Add]
+extern uint32_t mounted_part_lba;   // [Day48][Add]
+
 
 // ==========================================
 // IPC 訊息佇列 (Message Queue)
@@ -161,11 +164,14 @@ void syscall_handler(registers_t *regs) {
         int index = (int)regs->ebx;
         char* out_name = (char*)regs->ecx;
         uint32_t* out_size = (uint32_t*)regs->edx;
-
         uint32_t* out_type = (uint32_t*)regs->esi; // 【新增】從 ESI 暫存器拿出 out_type 指標！
 
+        // 取得目前的目錄
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : mounted_part_lba + 1;
+
         ipc_lock();
-        regs->eax = vfs_readdir(index, out_name, out_size, out_type);   // 加入 out_type
+        // 【修改】直接呼叫底層，並傳入 current_dir！
+        regs->eax = simplefs_readdir(current_dir, index, out_name, out_size, out_type);
         ipc_unlock();
     }
 
@@ -181,10 +187,33 @@ void syscall_handler(registers_t *regs) {
     // Syscall 17: sys_mkdir (建立目錄)
     else if (eax == 17) {
         char* dirname = (char*)regs->ebx;
-        kprintf("[syscall_handler] sys_mkdir, filename: [%s]\n", dirname);
+        // kprintf("[syscall_handler] sys_mkdir, filename: [%s]\n", dirname);
 
         ipc_lock();
         regs->eax = vfs_mkdir(dirname);
         ipc_unlock();
     }
+
+    // Syscall 18: sys_chdir (切換目錄)
+    else if (eax == 18) {
+        char* dirname = (char*)regs->ebx;
+        // 如果還沒有 CWD，預設就是根目錄
+        uint32_t current_dir = current_task->cwd_lba ? current_task->cwd_lba : mounted_part_lba + 1;
+
+        ipc_lock();
+        if (strcmp(dirname, "/") == 0) {
+            current_task->cwd_lba = mounted_part_lba + 1; // 回到根目錄
+            regs->eax = 0;
+        } else {
+            uint32_t target_lba = simplefs_get_dir_lba(current_dir, dirname);
+            if (target_lba != 0) {
+                current_task->cwd_lba = target_lba; // 【切換成功】更新任務的 CWD！
+                regs->eax = 0;
+            } else {
+                regs->eax = -1; // 找不到該目錄
+            }
+        }
+        ipc_unlock();
+    }
+
 }

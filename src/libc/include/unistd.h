@@ -15,6 +15,6 @@ int readdir(int index, char* out_name, int* out_size, int* out_type);
 int remove(const char* filename);
 
 int mkdir(const char* dirname);
-
+int chdir(const char* dirname);
 
 #endif

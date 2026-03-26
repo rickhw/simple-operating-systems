@@ -98,6 +98,18 @@ int main(int argc, char** argv) {
             printf("Goodbye!\n");
             exit();
         }
+        // [Day48] add -- start
+        // 【新增】內建指令：cd
+        else if (strcmp(cmd, "cd") == 0) {
+            if (parsed_argc < 2) {
+                printf("Usage: cd <directory>\n");
+            } else {
+                if (chdir(parsed_argv[1]) != 0) {
+                    printf("cd: %s: No such directory\n", parsed_argv[1]);
+                }
+            }
+        }
+        // [Day48] add -- end
         // [Day39] add -- start
         else if (strcmp(cmd_buffer, "ipc") == 0) {
             printf("\n--- Starting IPC Queue Test ---\n");

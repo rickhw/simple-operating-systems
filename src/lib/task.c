@@ -33,6 +33,7 @@ void init_multitasking() {
     main_task->state = TASK_RUNNING;
     main_task->wait_pid = 0;
     main_task->page_directory = (uint32_t) page_directory; // [Day38][Add] 住在原始宇宙
+    main_task->cwd_lba = 0; // [Day48][Add] CWD LBA
 
     main_task->next = main_task;
     current_task = main_task;
@@ -43,6 +44,7 @@ void init_multitasking() {
     idle_task->state = TASK_RUNNING;
     idle_task->wait_pid = 0;
     idle_task->page_directory = (uint32_t) page_directory; // [Day38][Add] 住在原始宇宙
+    idle_task->cwd_lba = 0; // [Day48][Add] CWD LBA
 
     uint32_t *kstack_mem = (uint32_t*) kmalloc(4096);
     uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + 4096);
@@ -118,6 +120,7 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     new_task->state = TASK_RUNNING;
     new_task->wait_pid = 0;
     new_task->page_directory = current_task->page_directory; // [Day38][Add]
+    new_task->cwd_lba = 0; // [Day48][Add] CWD LBA
 
     // ==========================================
     // [Day43]【新增】為初代老爸 (Shell) 預先分配 10 個實體分頁給 User Heap
@@ -168,6 +171,7 @@ int sys_fork(registers_t *regs) {
     child->state = TASK_RUNNING;
     child->wait_pid = 0;
     child->page_directory = current_task->page_directory; // [Day38][Add] (sys_fork 裡是 child->page_directory)
+    child->cwd_lba = current_task->cwd_lba; // [Day48][Add] 子行程必須繼承老爸當前的工作目錄 (CWD)！
 
     // ==========================================
     // [Day43]【新增】讓子行程暫時繼承老爸的 Heap 邊界紀錄

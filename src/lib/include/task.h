@@ -59,10 +59,11 @@ typedef struct task {
     uint32_t esp;
     uint32_t id;
     uint32_t kernel_stack;
-    uint32_t page_directory; // [Day38]【新增】這個 Task 專屬的分頁目錄實體位址 (CR3)
+    uint32_t page_directory;    // [Day38]【新增】這個 Task 專屬的分頁目錄實體位址 (CR3)
     uint32_t state;
     uint32_t wait_pid;
-    uint32_t heap_end; // [Day43]【新增】記錄 User Heap 的當前頂點
+    uint32_t heap_end;          // [Day43]【新增】記錄 User Heap 的當前頂點
+    uint32_t cwd_lba;           // [Day48]【新增】當前工作目錄 (Current Working Directory, CWD) 的 LBA
     struct task *next;
 } task_t;
 
