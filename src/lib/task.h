@@ -15,6 +15,7 @@ typedef struct task {
     uint32_t esp;
     uint32_t id;
     uint32_t kernel_stack;
+    uint32_t page_directory; // [Day38]【新增】這個 Task 專屬的分頁目錄實體位址 (CR3)
     uint32_t state;
     uint32_t wait_pid;
     struct task *next;
@@ -28,8 +29,6 @@ void schedule();
 void exit_task();
 int sys_fork(registers_t *regs);
 int sys_exec(registers_t *regs);
-
-// 【請確認這行存在！】
 int sys_wait(int pid);
 
 #endif
