@@ -12,3 +12,7 @@ int recv(char* buffer) { return syscall(12, (int)buffer, 0, 0, 0, 0); }
 void* sbrk(int increment) {
     return (void*)syscall(13, increment, 0, 0, 0, 0); // 呼叫 Syscall 13
 }
+
+int create_file(const char* filename, const char* content) {
+    return syscall(14, (int)filename, (int)content, 0, 0, 0);
+}

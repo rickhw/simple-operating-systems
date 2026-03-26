@@ -39,5 +39,4 @@ fs_node_t* simplefs_find(char* filename);
 int simplefs_create_file(uint32_t part_lba, char* filename, char* data, uint32_t size);
 uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
-
 #endif

@@ -7,6 +7,8 @@
 
 fs_node_t* fd_table[32] = {0};
 
+extern int vfs_create_file(char* filename, char* content);
+
 // ==========================================
 // IPC 訊息佇列 (Message Queue)
 // ==========================================
@@ -138,5 +140,15 @@ void syscall_handler(registers_t *regs) {
 
         // 回傳舊的邊界，這就是新分配空間的起始位址！
         regs->eax = old_end;
+    }
+
+    // Syscall 14: sys_create (建立/寫入文字檔)
+    else if (eax == 14) {
+        char* filename = (char*)regs->ebx;
+        char* content = (char*)regs->ecx;
+
+        ipc_lock(); // 上鎖，防止寫入硬碟時被排程器打斷！
+        regs->eax = vfs_create_file(filename, content);
+        ipc_unlock();
     }
 }

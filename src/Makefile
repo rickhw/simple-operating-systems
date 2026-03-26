@@ -17,7 +17,7 @@ LIBC_OBJS = $(LIBC_SOURCES:.c=.o)
 # 把所有 .o 檔統整起來 (注意 boot.o 必須在前面，雖然 linker.ld 裡有指定 ENTRY，但放前面更保險)
 OBJS = asm/boot.o $(filter-out asm/boot.o, $(ASM_OBJS)) $(C_OBJS)
 
-all: build-env shell.elf echo.elf cat.elf ping.elf pong.elf myos.iso
+all: build-env shell.elf echo.elf cat.elf ping.elf pong.elf write.elf myos.iso
 
 build-env:
 	docker build -t os-builder .
@@ -70,11 +70,12 @@ myos.iso: myos.bin grub.cfg shell.elf echo.elf cat.elf ping.elf pong.elf
 	mkdir -p isodir/boot/grub
 	cp myos.bin isodir/boot/myos.bin
 	cp grub.cfg isodir/boot/grub/grub.cfg
-	cp shell.elf isodir/boot/shell.elf  # 把執行檔塞進虛擬光碟
-	cp echo.elf isodir/boot/echo.elf      # 【新增】把 echo.elf 塞進光碟
+	cp shell.elf isodir/boot/shell.elf
+	cp echo.elf isodir/boot/echo.elf
 	cp cat.elf isodir/boot/cat.elf
 	cp ping.elf isodir/boot/ping.elf
 	cp pong.elf isodir/boot/pong.elf
+	cp write.elf isodir/boot/write.elf
 	$(DOCKER_CMD) grub-mkrescue -o myos.iso isodir
 	rm -rf isodir
 
@@ -100,8 +101,8 @@ clean: clean-app
 	rm -f asm/*.o lib/*.o *.bin *.iso
 	rm -rf isodir
 
-run: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf
+run: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf write.elf
 	qemu-system-i386 -cdrom myos.iso -monitor stdio -hda hdd.img -boot d
 
-debug: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf
+debug: myos.iso hdd.img shell.elf cat.elf ping.elf pong.elf write.elf
 	qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d

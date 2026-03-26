@@ -6,7 +6,6 @@
 
 uint32_t mounted_part_lba = 0; // 記錄目前掛載的分區起點
 
-
 // --- 公開 API ---
 
 void simplefs_mount(uint32_t part_lba) {
@@ -175,4 +174,14 @@ uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t 
 
     kfree(temp_buf);
     return bytes_read;
+}
+
+// 【新增】提供給 Syscall 呼叫的友善封裝
+int vfs_create_file(char* filename, char* content) {
+    if (mounted_part_lba == 0) return -1;
+
+    int len = strlen(content);
+    // 呼叫我們之前寫好的底層建立檔案功能
+    simplefs_create_file(mounted_part_lba, filename, content, len);
+    return 0;
 }
