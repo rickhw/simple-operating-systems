@@ -8,16 +8,18 @@ SCRIPT_DIR  = scripts
 KERNEL_DIR     = $(SRC_DIR)/kernel
 KERNEL_ASM_DIR = $(KERNEL_DIR)/asm
 KERNEL_LIB_DIR = $(KERNEL_DIR)/lib
-KERNEL_INC     = -Ikernel/include -Ikernel/lib  # 相對於 Docker 工作目錄 (src)
+KERNEL_INC     = -Ikernel/include -Ikernel/lib
 
 # User 相關目錄
 USER_DIR     = $(SRC_DIR)/user
 USER_ASM_DIR = $(USER_DIR)/asm
 USER_LIB_DIR = $(USER_DIR)/lib
-USER_INC     = -Iuser/include -Iuser/lib        # 相對於 Docker 工作目錄 (src)
+USER_BIN_DIR = $(USER_DIR)/bin
+USER_INC     = -Iuser/include -Iuser/lib
 
-# Docker 指令：工作目錄設在 src 內
+# Docker 指令
 DOCKER_CMD = docker run --platform linux/amd64 --rm -v $(PWD):/workspace -w /workspace/$(SRC_DIR) os-builder
+
 
 # -----------------------------------------------------------------------------
 # 編譯參數
@@ -30,29 +32,22 @@ APP_CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protecto
 # -----------------------------------------------------------------------------
 
 # [Kernel]
-# 1. 抓取 kernel/lib 下的所有 .c
-C_LIB_SOURCES = $(wildcard $(KERNEL_LIB_DIR)/*.c)
-# 2. 【新增】抓取 kernel/ 目錄下直接存放的 .c (例如 kernel.c)
+C_LIB_SOURCES  = $(wildcard $(KERNEL_LIB_DIR)/*.c)
 C_CORE_SOURCES = $(wildcard $(KERNEL_DIR)/*.c)
+C_OBJS         = $(C_LIB_SOURCES:.c=.o) $(C_CORE_SOURCES:.c=.o)
+ASM_SOURCES    = $(wildcard $(KERNEL_ASM_DIR)/*.S)
+ASM_OBJS       = $(ASM_SOURCES:.S=.o)
 
-C_OBJS      = $(C_LIB_SOURCES:.c=.o) $(C_CORE_SOURCES:.c=.o)
-ASM_SOURCES = $(wildcard $(KERNEL_ASM_DIR)/*.S)
-ASM_OBJS    = $(ASM_SOURCES:.S=.o)
-
-# 核心物件檔案清單 (boot.o 必須在最前面)
 OBJS = $(KERNEL_ASM_DIR)/boot.o $(filter-out $(KERNEL_ASM_DIR)/boot.o, $(ASM_OBJS)) $(C_OBJS)
 
 # [User]
-# 假設 crt0.S 移到了 user/asm/
-CRT0_OBJ    = $(USER_ASM_DIR)/crt0.o
-
-# 使用者庫 (原本的 libc 現在應該在 user/lib/)
+CRT0_OBJ      = $(USER_ASM_DIR)/crt0.o
 USER_LIB_SRCS = $(wildcard $(USER_LIB_DIR)/*.c)
 USER_LIB_OBJS = $(USER_LIB_SRCS:.c=.o)
 
-# 使用者應用程式 (在 user/ 下的 .c)
-USER_APPS_C = $(wildcard $(USER_DIR)/*.c)
-APPS        = $(USER_APPS_C:.c=.elf)
+# 【修正】指向新的 bin 子目錄
+USER_APPS_C   = $(wildcard $(USER_BIN_DIR)/*.c)
+APPS          = $(USER_APPS_C:.c=.elf)
 
 # -----------------------------------------------------------------------------
 # 主要目標
@@ -62,8 +57,8 @@ all: build-env $(APPS) myos.iso
 build-env:
 	docker build -t os-builder .
 
-# 防止 Make 自動刪除 .o 檔
-.PRECIOUS: %.o $(SRC_DIR)/%.o $(KERNEL_DIR)/%.o $(USER_DIR)/%.o
+# 防止 Make 自動刪除 .o 檔，加入新的 bin 目錄路徑
+.PRECIOUS: %.o $(SRC_DIR)/%.o $(KERNEL_DIR)/%.o $(USER_DIR)/%.o $(USER_BIN_DIR)/%.o
 
 # -----------------------------------------------------------------------------
 # Compile Rules
@@ -88,14 +83,14 @@ $(USER_ASM_DIR)/%.o: $(USER_ASM_DIR)/%.S
 	@echo "==> 編譯 User CRT0: $<"
 	$(DOCKER_CMD) nasm -f elf32 $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
-# 2. User Lib (user/lib - 原 libc)
+# 2. User Lib (user/lib)
 $(USER_LIB_DIR)/%.o: $(USER_LIB_DIR)/%.c
 	@echo "==> 編譯 User Lib: $<"
 	$(DOCKER_CMD) gcc $(APP_CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
-# 3. User Apps (user/*.c)
-$(USER_DIR)/%.o: $(USER_DIR)/%.c
-	@echo "==> 編譯 User App: $<"
+# 3. User App 在 user/bin 目錄下的編譯規則
+$(USER_BIN_DIR)/%.o: $(USER_BIN_DIR)/%.c
+	@echo "==> 編譯 User App (bin): $<"
 	$(DOCKER_CMD) gcc $(APP_CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
 # -----------------------------------------------------------------------------
@@ -103,11 +98,11 @@ $(USER_DIR)/%.o: $(USER_DIR)/%.c
 # -----------------------------------------------------------------------------
 
 # 通用 User App 連結規則
-$(USER_DIR)/%.elf: $(CRT0_OBJ) $(USER_DIR)/%.o $(USER_LIB_OBJS)
+$(USER_BIN_DIR)/%.elf: $(CRT0_OBJ) $(USER_BIN_DIR)/%.o $(USER_LIB_OBJS)
 	@echo "==> 連結 User App: $@"
 	$(DOCKER_CMD) ld -m elf_i386 -Ttext 0x08048000 \
 		$(subst $(SRC_DIR)/,,$(CRT0_OBJ)) \
-		$(subst $(SRC_DIR)/,,$(USER_DIR)/$*.o) \
+		$(subst $(SRC_DIR)/,,$(USER_BIN_DIR)/$*.o) \
 		$(subst $(SRC_DIR)/,,$(USER_LIB_OBJS)) \
 		-o $(subst $(SRC_DIR)/,,$@)
 
@@ -119,7 +114,7 @@ myos.iso: $(SRC_DIR)/myos.bin $(SCRIPT_DIR)/grub.cfg $(APPS)
 	mkdir -p $(SRC_DIR)/isodir/boot/grub
 	cp $(SRC_DIR)/myos.bin $(SRC_DIR)/isodir/boot/myos.bin
 	cp $(SCRIPT_DIR)/grub.cfg $(SRC_DIR)/isodir/boot/grub/grub.cfg
-	cp $(USER_DIR)/*.elf $(SRC_DIR)/isodir/boot/
+	cp $(USER_BIN_DIR)/*.elf $(SRC_DIR)/isodir/boot/
 	$(DOCKER_CMD) grub-mkrescue -o ../$@ isodir
 	rm -rf $(SRC_DIR)/isodir
 
