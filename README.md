@@ -1,107 +1,267 @@
-# 緣由 / 動機
+
+很久以前前就想做的事：`純手工自幹一個作業系統`
+
+有點瘋狂，有點無聊，但卻又超有趣！以前做不來，因為門檻高、需要查找很多資料、太硬核、沒人可以討論；工作很忙、沒時間 ... 等因素。
+
+但現在是個 AI 時代，很難的事，不容易的事情，條件很多的，都為因為有 AI 的幫忙，變得有趣、而且可行！
+
+![](/about/Result-Window.png)
 
 
-Just for fun
+<!-- more -->
 
 
-實作過 AWS DynamoDB 的 Capacutiy Unit 機制，應用在 API 架構上。
+## 動機
+
+### `它們都是作業系統` - 資源分配與調度
+
+工作上處理過不少 BI and Workflow 的系統，像是自幹的 [自動化回歸測試框架與平台][ct1]、電商系統維護平台 (PowerShell)、電商的非同步批次系統、[Netflix Conductor][l1] 、[BMC - Orchestration][l2]、n8n、Gitlab、SaaS Platform、Artifact & Build System ... 等。這些系統的本質，都是資源分配與調度的處理。
+
+也管過不少 K8s Platform、AWS、GCP、Networking ... 等。K8s 就是維護很多個 Cluster，因為運行的應用程式屬性關係，通常會需要設計 Cluster 的屬性，規劃 CPU Bound / IO Bound / Memory Bound ... 等特定，然後引導使用者正確使用。AWS 與 GCP 本質上的管理與治理策略也是一樣。
+
+也曾經實作過類似 AWS DynamoDB 的 Capacutiy Unit 機制，應用在 [API 架構 / 平台][ct6] 上，做到 [Multi-Tenancy (多租戶架構)][ct5] 的限流與資源分配，可以有效的管控用量，同時讓系統實務上 [可靠性][ct7]。這個設計與實作的成功，讓我了解分散式系統本質，不管形式是 K8s or AWS，最後還是要回到作業系統整個設計的機制。
+
+不管是 BI / Workflow / K8s / Cloud / API ... 等，這些任務本質都是在做 `資源分配與調度` 的工作，最後都會遇到要處理資源競爭、協調的事情。
+
+也因此，工作上遇到的各種需求與系統的設計，最後在我眼裡 `都是一種作業系統的變形`，而且，他們通常都沒有作業系統那麼複雜，即使像 K8s 這種分散式架構，本質還是跟作業系統一樣。
 
 
+除了技術上的經歷，擔任管理工作，負責對外協調、對內分配，本質上還是在做資源分配與調度，只是調度的是人與事。而在專案管理 (Project Management) 任務管理本質上就類似於作業系統的 Scheduler，根據任務的重要性排優先序，但往往就會遇到那種很重要但不緊急的技術任務，會發生飢餓 (Starvation) 的現象，這在管理上是很常要處理的事情。各種專案管理工具 (Azure DevOps / JIRA / Redmine) 就是在列管工作項目，透過 Project Manager (PjM) 依照權重 (通常是重要性) 調整執行的優先序。
+
+我去年做的 [純手工遊戲開發][ct2] 整個遊戲的各種機制，很多也都是在做資源分配與調度的機制。像是地圖系統、背包系統、多個 NPC 動態路徑 ... 等，都是資源分配與調度的實作。
+
+資源分配與調度做得最好的，經歷最多考驗的，在計算機科學領域，就是作業系統。其他演算法、資料結構、計算機網路、計算機結構、離散數學、密碼學 ... 等科目，都是來幫助人們處理資源調度，從而可以更快速的完成任務，最後的集大成就是作業系統。作業系統最核心在處理的則是 搶佔 CPU、搶佔 I/O、分配 Memory 空間 ... 等管理，所以如果徹底的了解作業系統實際的運作，對於系統設計是很有幫助的。
+
+
+
+### Just for fun
+
+2010 年在書店偶然間看到一本 `30 天打造 OS - 作業系統自作入門`，作者是 `川合秀實`。書的內容就是手把手，用二進位從 Bootloader 開始，然後組合語言、到 C，一步一步教怎麼寫出一個作業系統。那時候看到這本書就覺得個要是能做出來，一定很有趣，於是買下來開始研究。
+
+![](/about/Book-BuildOS-in-30Days.jpeg)
+
+雖然學生時代也學過組合語言 (8051)、C，工作後也實際做過 Embedded 開發工作，但面對這種要懂 CPU 指令集、各種暫存器 ... 等知識，就像一開頭我說的，沒人可以問，過程遇到問題只能 Google 到天荒地老，加上生活上種種因素，大概做到第五天就放棄了 XD
+
+自幹作業系統這件事情就變成心裡的另一個懸念了 ... (不過有轉去做其他事啦，像是 [搞黑金塔][ct4] 之類的，容易很多 ... XD)
+
+在電商領域工作期間，遇到很多流量問題、交易問題、非同步問題、[SaaS / 多租戶架構][ct5] / [API 設計][ct6]，在學 [AWS](/categories/AWS/) / [SRE](/categories/DevOps/SRE/) 過程，也展開 [分散式系統](/categories/Distributed-Systems/) 的探索，這些實務經驗，都持續不斷的讓我加深 `它們都是作業系統` 的想法，覺得還是應該回去自幹一下作業系統才過癮啊 ～～～
+
+心裡有 `它們都是作業系統` 的念頭一直放在心上，而那段繁忙的工作歷程，我利用上下班坐公車往返兩小時的時間，回去反覆重讀作業系統，包含上清大開放課程 - 周志遠教授 的 [作業系統](https://www.youtube.com/playlist?list=PLS0SUwlYe8cxj8FCPRoPHAehIiN9Vo6VZ)、follow 成大 [黃敬群 Jserv - Linux 核心設計][r3] 課程。但是這些 follow 總是淺薄，加上工作上各種 Interrupt 與 Context Switch，我覺得都只是學到一些皮毛。後來我也買了 `作業系統概念 (俗稱恐龍書)` 回來啃，補足很多重要的概念，像是 [淺談同步機制][ct3] 就是整理第六章的內容。
+
+![](/about/OS-Concepts.jpeg)
+
+但恐龍書講的是概念，缺少實作。所以我又透過 `Linux Programming Interface` 了解更多實際上在 Linux 上怎麼實作的細節，像是 Linux 怎麼管理共享記憶體。
+
+![](/about/Linux-Programming-Interface1.jpeg)
+![](/about/Linux-Programming-Interface2.jpeg)
+
+
+過去幾年 (Since 2016)，我花最多時間研究的主題是 [分散式系統](/categories/Distributed-Systems/) 以及延伸的主題，但實際上研究到最後發現，本質還是回到作業系統。
+
+
+### 驗證：透過 AI 可以自學很多東西
+
+除了前面提到的個人經歷，以及有趣之外，另外我也想驗證一件事情：
+
+> 透過 AI 自學東西
+
+現在寫文章，如果不搭上 AI 好像沒有點閱率 XDD
+
+觸發我實際想動手自幹作業系統的源頭是今年 (2026) 人多人在玩 Thread，有很多不錯的話題，有兩個話題是我一直在關注的：
+
+1. [想試著從零開始學習C++ 有什麼資源建議？](https://www.threads.com/@sjej77138/post/DVvrnqHElku)
+1. [現在就學中的人，或者剛就業兩年多，要不要繼續學計算機科學？像是作業系統 or 演算法？](https://www.threads.com/@dreamitguitar/post/DVIJ2vXicgn)
+
+這兩個問題，我都有實際上去回答我當時的想法，截圖如下：
+
+![](/about/Thread-Learning-by-AI.png)
 [Facebook](https://www.facebook.com/rick.kyhwang/posts/pfbid02RrS7sEbJjWry84bNM1t2totc9fWYoHCQ61heQ3XT2vzN3aCknVqvmBp4BvEfQBf6l)
 
-[Thread](https://www.threads.com/@sjej77138/post/DVvrnqHElku)
-
-[周志遠教授｜作業系統](https://www.youtube.com/playlist?list=PLS0SUwlYe8cxj8FCPRoPHAehIiN9Vo6VZ)
-
-[黃敬群 Jserv - Linux 核心設計]
-
-[管理者如何持續學習技術？](https://rickhw.github.io/2019/03/30/Management/How-do-Manager-Keep-Learning/)
-
-知其然，理論與實務
-
-現代分散式系統
-
-有興趣的 Topic, 像是 IPC
+![](/about/Thread-Learning-CS1.png)
+![](/about/Thread-Learning-CS2.png)
 
 
-## 有趣的實作
+學習部分，我敲完那端化之後，當天 (2026/03/12) 我就開始用同樣的 Prompt 在 Google Gemini 上開工了！重要的是，我不是用 AI Agent 幫我寫，而是在對話過程，請 Gemini 教我，然後一步一步前進。
 
-- Day39/40: 實作 IPC (Inter Process Communication), 實作單核心的鎖機制: Mutex
-- Built-in: help, about, exit, cd, pwd, path solution
-- ls, touch, cat, mkdir
+> 想學習 (as Engineer)，透過 Prompt 一問一答，自己動手；想做產品 (as Product Manager)，則透過 AI Agent 實作，自己動腦 + 動口。
 
+至於是否繼續念 CS 或者 CS 無用論，不是第一次遇到這個問題，2023 年 12 月，ChatGPT 剛上線的那個月，我去 成大資工所演講，主題是 [軟體職涯的分享][ct9]，當時就有同學問我如何面對 AI 世代；2025 年 6 月我在高雄示範大學演講時，現場也有同學和老師問到同樣的問題。
 
+這個題目放到最後統一整理，本質思路是這樣：
 
-## BI and Workflow 工作流程
+> AI 很強，工具很好用，那你想做什麼？
 
-- 自幹的
-- [Netflix Conductor](https://github.com/Netflix/conductor)
-- [BMC - Orchestration](https://www.bmc.com/it-solutions/automation-orchestration.html)
-- n8n
-- OpenClaw
-
-
-## 方法
-
-一個 Session 作為主要課程內容，取得課程內容，討論主要課程問題。
-另一個 Session 當作助教，諮詢像是 c / asm / qemu 等知識
-
-
-## 心得：課前知識
-
-1. c 語言
-2. 組合語言
-3. 對計算機組織有基本認識: 記憶體
+如果現在不缺錢與資源，那你想做什麼？或者給你最強的 AI 你想做什麼？
 
 
 ---
-# 心得與思考
 
-## 有 AI 之後，還需要學作業系統？還需要學計算機科學 (CS)？
+## 實作內容
 
-### 學這個有什麼用？
+整個實際實作大概分成底下六大部分：
 
-### 交給小龍蝦就好？或者用現代各種 AI Agent，像是 AntiGravity, Cursor, Kiro, 
+1. 透過組合語言從 Bootloader 開始，實作 GDT / IDT，透過控制各種 IRQ 讓 CPU 聽話，讓鍵盤的事件可以正常運作
+2. 然後 MBR、FileSystem，實作出檔案系統
+3. 接下來是 Timer、與 Context Switch 與 Scheduler，讓 Single Core CPU 有「多工」的幻覺；
+4. 然後是記憶體管理，實作 MMU Paging，實現了記憶體隔離和 fork / exec，讓 `Shell` 誕生，也實踐了 IPC (Inter-Process Communication) 以及簡單的 Mutex 機制
+5. 接下來就是 User Space 的 C Library，包含了 malloc / free / printf 等基礎函式；
+    - 最後則是透過 syscall 打造了最基礎的檔案管理指令，包含了 ls / mkdir / cat / touch / rm
+    - 內建指令 cd / pwd / exit / path solution ... 等。
+6. 實作簡單的 GUI Window 介面，包含 Mouse I/O、 Double Buffering 機制，字型，實踐出簡單的 Window Manager
 
-寫應用，也就是功能需求 (Functional Requirement, FR)，大部分都不太難，
-
-寫非功能需求 (Non-Functional Requirement, NFR)，對於 AI 來講，也不太難。
-
-但是把 FR & NFR 這兩個放在一起，是大部分的人比較不會意識到的，所以不會特別去跟 AI Agent 説。
-
-## Multiple AI Agent
-
-我看到很多人已經掉入 multitask 的認知問題了，也就是開了一堆 AI Agent，同時做很多事，做了一堆 Context Switch。
-
-其實開一堆 AI Agent，人自己轉換成調度者，這個本質上就是主管在做的事，包含決定產品發展方向、任務分配、資源調度、品質標準、驗收標準、上線計劃 ... 等。
+可以想像成六個 sprint，每個部分裡都有 10 個功能要做。
 
 
+### 學習過程
 
-## 太多、太快、太跳
+全程都在 [Google Gemini](https://gemini.google.com/app/18b8fcafe3a7592b) 上，同一個 Session 裡面，以問答的方式完成。另外遇到 Assembly 或者 C 的問題，則開另一個 Session as 助教，然後在那邊問細節。
 
-做軟體架構師的時候，為了要滿足業務需求，在解決問題思路需要銜接業務需求與軟體工程之間。
+過程常常遇到 Core Dump 和 Debug 的問題，寫作業系統不像一班的 Application，是連 printf 都沒得用的，所以常常需要透過 core dump 找問題。這時候 AI 就非常有幫助，反正整坨都丟給他就好，這比我第一次寫 bootloader 在除錯時，在 Google 找個半死方便多了 XDD
 
-這兩者介於抽象、具象之間，而往往在表達不夠完整，以及經驗上的落差之下，就會造成「太多」、「太快」、「太跳」的現象。
+Core Dump 大概長這樣：
 
-這些現象，在 AI 興起之後，又更明顯了。
+```bash
+❯ make debug
+qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d
+WARNING: Image format was not specified for 'hdd.img' and probing guessed raw.
+         Automatically detecting the format is dangerous for raw images, write operations on block 0 will be restricted.
+         Specify the 'raw' format explicitly to remove the restrictions.
+SMM: enter
+EAX=00000000 EBX=00000000 ECX=02000000 EDX=02000628
+ESI=0000000b EDI=02000000 EBP=06feb010 ESP=00006d5c
+EIP=000ebede EFL=00000046 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9b00 DPL=0 CS32 [-RA]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+GDT=     000f6220 00000037
+IDT=     000f625e 00000000
+CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000044 CCD=ffffffff CCO=EFLAGS
+EFER=0000000000000000
+
+EAX=000000b5 EBX=00007d47 ECX=00005678 EDX=00000003
+ESI=06f31fb0 EDI=06ffee71 EBP=0000695c ESP=0000695c
+EIP=00007d47 EFL=00000006 [-----P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =da80 000da800 ffffffff 00809300
+CS =f000 000f0000 ffffffff 00809b00
+SS =0000 00000000 ffffffff 00809300
+DS =0000 00000000 ffffffff 00809300
+FS =0000 00000000 ffffffff 00809300
+GS =ca00 000ca000 ffffffff 00809300
+LDT=0000 00000000 0000ffff 00008200
+TR =0000 00000000 0000ffff 00008b00
+GDT=     00000000 00000000
+IDT=     00000000 000003ff
+CR0=00000010 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000004 CCD=00000001 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x08
+Servicing hardware INT=0x08
+Servicing hardware INT=0x08
+
+Servicing hardware INT=0x09
+Servicing hardware INT=0x08
+Servicing hardware INT=0x20
+     0: v=20 e=0000 i=0 cpl=0 IP=0008:001002a1 pc=001002a1 SP=0010:00109d38 env->regs[R_EAX]=ffffff50
+EAX=ffffff50 EBX=00105084 ECX=000001f7 EDX=000001f7
+ESI=00109f78 EDI=00109f78 EBP=00002800 ESP=00109d38
+EIP=001002a1 EFL=00000286 [--S--P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=0010f000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000084 CCD=ffffffc0 CCO=EFLAGS
+EFER=0000000000000000
+Servicing hardware INT=0x21
+     
+     2: v=20 e=0000 i=0 cpl=0 IP=0008:00101870 pc=00101870 SP=0010:00109fc8 env->regs[R_EAX]=c0000030
+EAX=c0000030 EBX=c000000c ECX=00000000 EDX=c0000030
+ESI=c000000c EDI=00105084 EBP=00000000 ESP=00109fc8
+EIP=00101870 EFL=00000297 [--S-APC] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
+GDT=     0010a080 0000002f
+IDT=     0010a0e0 000007ff
+CR0=80000011 CR2=00000000 CR3=0010f000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+CCS=00000095 CCD=ffffffff CCO=EFLAGS
+EFER=0000000000000000
+^Cqemu-system-i386: terminating on signal 2 from pid 10254 (<unknown process>)
+```
 
 
-## 專業的傲慢
+### 結果與原始碼
 
-我在學習過程，看到 AI 很自然地吐出一堆我看不懂的東西，過程中我回想到學生時代在學習 8051 以及資料結構的時候，那時候可能是我沒有專心聽清楚課堂開始的介紹，或者回家沒有好好複習，經常會發生課程到中間的時候，很多名詞看不懂，然後老師在講的東西，我就跟不上了，然後我也不好意思問。
+整個作業系統打包後大小約 48K Byte：
 
-類似的狀況，在工作上我可能也曾經是這樣的，只是反過來，我是架構師或者主管的角色，專案的第一天，或者前期會提一些基礎概念，或者重要的名詞，但是專案進行到一半，會發現團隊有些人會完全狀況外。實際了解後，才發現，有些基礎的概念，或者產品的專有名詞他根本不懂，或者說跟不上了。但他也不好意思問。
+```bash
+❯ ls -lh
+total 96
+drwxr-xr-x@ 7 rickhwang  staff   224B Mar 26 21:15 kernel
+-rwxr-xr-x  1 rickhwang  staff    48K Mar 26 21:15 myos.bin
+drwxr-xr-x@ 6 rickhwang  staff   192B Mar 26 21:10 user
+```
 
-用 AI 不一樣，我就會很不客氣地一直問。
+底下錄影分別 Demo 的 Terminal 和 Window：
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WVQSnAE8AJM?si=9qayW1VGcYEGr65J" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/07ytT9O286E?si=LVDDYjLzQMv8oWhf" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 
-## 這個世界需要這麼快？
+原始碼放在 [GitHub](https://github.com/rickhw/simple-operating-systems) 上，用 Branch 分開每個階段的內容：
 
-人類一直在搞一些很詭異的事，任何技術應該都是要改善人類的生活，提高生活品質。
+![](/about/Source-Code-Branch.png)
 
-AI 出現後，出現更多的是裁員、焦慮、越來越快。
+目錄 course 則有完整的 [課程大綱](https://github.com/rickhw/simple-operating-systems/tree/main/course)、[課程藍圖](https://github.com/rickhw/simple-operating-systems/blob/main/course/Course-Overview.mermaid)，以及每個階段的原始碼，以及 [專有名詞對照表](https://github.com/rickhw/simple-operating-systems/blob/main/course/Terms.md) 。
+
+![](/about/Course-Overview1.png)
+![](/about/Course-Overview2.png)
+
+![](/about/Course-Overview.png)
 
 
-## 懶人包？
+### 課前知識與準備
 
-唯有透過深度的思考，人們才能真正的學習與獲得知識。
+1. C 語言, 組合語言
+1. 對計算機組織有基本認識: 記憶體
+1. 在 macOS / Ubuntu 24.04 都可以正常編譯
+1. Docker (推薦 OrbStack) 與 QEMU
+
+```bash
+❯ qemu-system-i386 -version
+QEMU emulator version 10.2.2
+Copyright (c) 2003-2025 Fabrice Bellard and the QEMU Project developers
+```
+
+
+### 跟恐龍書比較起來
+
+這個課程內容，嚴格說比 `30 天打造 OS - 作業系統自作入門` 簡單很多，算是很容易快速上手、或者說體驗開發作業系統的種種問題。
+
+我實作完之後，回去翻 `恐龍書`、`30 天打造 OS` 感覺是偏簡單的。可能是我本身就已經在實務上有一定程度的經驗。
