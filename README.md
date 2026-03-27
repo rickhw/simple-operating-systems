@@ -265,3 +265,38 @@ Copyright (c) 2003-2025 Fabrice Bellard and the QEMU Project developers
 這個課程內容，嚴格說比 `30 天打造 OS - 作業系統自作入門` 簡單很多，算是很容易快速上手、或者說體驗開發作業系統的種種問題。
 
 我實作完之後，回去翻 `恐龍書`、`30 天打造 OS` 感覺是偏簡單的。可能是我本身就已經在實務上有一定程度的經驗。
+
+
+
+---
+# 延伸閱讀
+
+## 站內文章
+
+- [聊聊 API First 開發策略][ct6]
+- [從應用程式 Inside-Out 出發的 Web 可靠性設計][ct7] - 台灣軟體工程協會, 高雄師範大學
+- [管理者如何持續學習技術？][ct8]
+- [在生命轉彎的地方 - 從軟體開發職涯，探索人生][ct9] - 成功大學 資工所 20231201_5
+
+## 參考資料
+
+- [COSCUP 2012 第一次自幹作業系統核心就上手 - Jserv][r1]
+- [11010周志遠教授｜作業系統 - 字幕版][r2]
+- [Linux 核心設計][r3]
+
+[r1]: https://www.youtube.com/watch?v=m6R1mFpifa4
+[r2]: https://www.youtube.com/playlist?list=PLS0SUwlYe8cxj8FCPRoPHAehIiN9Vo6VZ
+[r3]: https://www.youtube.com/@sysprog
+
+[ct1]: /2018/05/12/SQA/Designing-Test-Architecture-and-Framework/
+[ct2]: /2025/12/19/About/Java-2D-RPG-Game/
+[ct3]: /2020/09/12/ComputerScience/Synchronization/
+[ct4]: /2013/11/17/OSX/Install-OSX-Mavericks-on-PC/
+[ct5]: /2023/09/11/DistributedSystems/SaaS-KeyDesign_MultiTenancy-with-Isolation-Factor/
+[ct6]: /2025/03/08/Design/Gossip-API-First-Joureny/
+[ct7]: https://speakerdeck.com/rickhwang/cong-ying-yong-cheng-shi-inside-out-chu-fa-de-web-ke-kao-xing-she-ji-tai-wan-ruan-ti-gong-cheng-xie-hui-gao-xiong-shi-fan-da-xue-20250628
+[ct8]: /2019/03/30/Management/How-do-Manager-Keep-Learning/
+[ct9]: https://speakerdeck.com/rickhwang/zai-sheng-ming-zhuan-wan-de-di-fang-cong-ruan-ti-kai-fa-zhi-ya-tan-suo-ren-sheng-20231201-5
+
+[l1]: https://github.com/Netflix/conductor
+[l2]: https://www.bmc.com/it-solutions/automation-orchestration.html
