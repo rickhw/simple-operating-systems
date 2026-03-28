@@ -1,4 +1,6 @@
 
+全文: [Blog 版本](https://rickhw.github.io/2026/03/27/ComputerScience/Simple-OS/)
+
 ## 很久以前就想做的事 - **純手工自幹一個作業系統**
 
 有點瘋狂，有點無聊，但卻又超有趣！
