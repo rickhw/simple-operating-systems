@@ -1,17 +1,16 @@
-; [目的] 套用新的 GDT 配置並更新 CPU 段暫存器
+; [目的] 套用新的 GDT 配置並載入任務暫存器 (TR)
 ; [流程]
-; C 語言呼叫 gdt_flush(ptr)
-;    |
-;    V
-; [ 載入 GDTR ] (使用 lgdt 指令)
-;    |
-;    |--> [ 更新 Data 段 ] (ds, es, fs, gs, ss 設為 0x10)
-;    |--> [ Far Jump ] ----> [ .flush 標籤 ] (更新 CS 為 0x08)
-;                               |
-;                               V
-;                         [ ret 返回 C ]
+; 1. gdt_flush:
+;    [ 載入 GDTR ] -> [ 更新 DS/ES/SS... ] -> [ Far Jump 刷新 CS ]
+; 2. tss_flush:
+;    [ 載入 Selector 0x2B 到 TR ]
+;    |--> 目的：告訴 CPU 當 User Mode 發生中斷時，去哪裡找「核心堆疊位址」。
+;
+; [GDT 佈局回顧]
+; 0x00: Null | 0x08: K-Code | 0x10: K-Data | 0x18: U-Code | 0x20: U-Data | 0x28: TSS
 
 global gdt_flush
+global tss_flush
 
 gdt_flush:
     ; 從 C 語言的堆疊中取出 gdt_ptr 的位址
@@ -34,9 +33,6 @@ gdt_flush:
 
 .flush:
     ret
-
-
-global tss_flush
 
 tss_flush:
     mov ax, 0x2B ; 0x28 (第 5 個 GDT) | 3 (Ring 3) = 0x2B

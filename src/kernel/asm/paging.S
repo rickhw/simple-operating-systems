@@ -1,11 +1,10 @@
-; [目的] 設定分頁目錄位址並啟動分頁保護模式
+; [目的] 啟動 MMU 分頁機制 (Paging)
+; [暫存器說明]
+;  CR3: 存放「頁目錄 (Page Directory)」的物理位址。
+;  CR0: Bit 31 (PG) 為分頁開關。
 ; [流程]
-; 1. load_page_directory: 將 Page Dir 位址寫入 CR3 暫存器
-; 2. enable_paging:
-;    [ 讀取 CR0 ] -> [ bit 31 設為 1 ] -> [ 寫回 CR0 ]
-;                                            |
-;                                            V
-;                                     [ 虛擬記憶體啟動 ]
+; load_page_directory(dir_addr) --> 把地圖交給 CPU (mov cr3, eax)
+; enable_paging()               --> 把開關打開 (or eax, 0x80000000)
 
 global load_page_directory
 global enable_paging

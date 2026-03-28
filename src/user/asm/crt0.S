@@ -1,19 +1,13 @@
-; crt0: C Runtime Zero, User Space
-; [目的] User Space 程式進入點與 C 執行環境初始化
+; [目的] C Runtime Zero - 使用者程式的最後一道防線
+; [堆疊初始狀態 (自低往高)]
+;  [esp+0]: 假返回位址
+;  [esp+4]: argc (參數數量)
+;  [esp+8]: argv (參數陣列指標)
 ; [流程]
-; Kernel (iret) -> [ _start ]
-;                    |
-;                    |--> [ 清除 EBP ] (建立 Stack Trace 的終點)
-;                    |--> [ 提取參數 ] (從 ESP 取得 argc, argv)
-;                    |--> [ call main ] (進入使用者寫的 C 語言邏輯)
-;                    |      |
-;                    |      V
-;                    |--> [ main 返回 ]
-;                    |
-;                    |--> [ System Call 7 ] (執行 sys_exit 結束進程)
-;                    |
-;                    V
-;               [ 核心回收資源 ]
+;  1. xor ebp, ebp (終止 Stack Trace)
+;  2. 提取 argc, argv 並壓入堆疊
+;  3. call main (執行 App)
+;  4. 若 main 返回 -> mov eax, 7 (sys_exit) -> int 0x80
 
 [bits 32]
 global _start

@@ -1,6 +1,10 @@
-; 1. 手動建立一個 Ring 3 的環境。
-; 2. 確保平民有自己的堆疊（這就是為什麼你要 push edx 作為 ESP）。
-; 3. 確保平民不能亂搞（透過 GDT 描述符設定 DPL=3）。
+; [目的] 執行「降權」操作，從 Ring 0 進入 Ring 3
+; [流程]
+; 1. 設定平民段選擇子 (DS/ES/FS/GS = 0x23)
+; 2. 準備 IRET 堆疊幀 (SS, ESP, EFLAGS, CS, EIP)
+;    |--> EFLAGS 特別處理：or 0x200 確保進入 User Mode 後「中斷是開啟的」
+; 3. 執行 iret：CPU 自動載入暫存器，並跳轉至 entry_point。
+
 global enter_user_mode
 enter_user_mode:
     ; 標準的 C 語言函式開頭

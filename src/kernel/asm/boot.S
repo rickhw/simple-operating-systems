@@ -1,15 +1,16 @@
-; [目的] 核心進入點與環境初始化
+; [目的] 核心進入點與環境初始化 (支援 VESA 圖形模式)
+; [來源] 符合 Multiboot 1 規範，讓 GRUB 載入並啟動
 ; [流程]
-; GRUB 載入器 -> 檢查 Multiboot Header -> 跳轉至 _start
-;                                        |
-;    +-----------------------------------+
+;  GRUB 載入器 -> 檢查 Multiboot Header (含 VBE 設定) -> 跳轉至 _start
+;                                                         |
+;    +----------------------------------------------------+
 ;    V
 ; [ _start ]
-;    |--> [ 設定 ESP ] (指向 16KB 堆疊頂部)
-;    |--> [ 壓入參數 ] (eax=Magic, ebx=MBI)
-;    |--> [ call kernel_main ] (進入 C 語言世界)
-;    |--> [ 核心停止 ] (若 C 返回，則進入 cli/hlt 無限迴圈)
-
+;    |--> [ 設定 ESP ] (指向 16KB 堆疊頂部：stack_top)
+;    |--> [ 壓入參數 ] (eax=Magic, ebx=MBI 指標)
+;    |          |----> ebx 內含 VBE 控制資訊與 Framebuffer 位址
+;    |--> [ call kernel_main ] (切換至 C 語言環境)
+;    |--> [ 核心停止 ] (cli/hlt 無限迴圈，防止 CPU 過熱)
 
 ; ==========================================
 ; Multiboot Header 升級為圖形模式
