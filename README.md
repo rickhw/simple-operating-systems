@@ -3,6 +3,9 @@
 
 ## 很久以前就想做的事 - **純手工自幹一個作業系統**
 
+
+很久以前就想做的事 - **純手工自幹一個作業系統**
+
 有點瘋狂，有點無聊，但卻又超有趣！
 
 以前做不來，是因為門檻高、網路上的資料雜亂、內容太硬核，加上沒人可以討論、工作忙碌沒時間等因素。
@@ -11,6 +14,11 @@
 
 
 ![](/about/Result-Window.png)
+![](/about/FB.png)
+
+
+<!-- more -->
+
 
 ## 動機
 
@@ -46,7 +54,7 @@
 
 在電商領域工作期間，遇到很多流量問題、交易問題、非同步問題、[SaaS / 多租戶架構][ct5] / [API 設計][ct6]，在學 [AWS](/categories/AWS/) / [SRE](/categories/DevOps/SRE/) 過程，也展開 [分散式系統](/categories/Distributed-Systems/) 的探索，這些實務經驗，都持續不斷的讓我加深 `它們都是作業系統` 的想法，覺得還是應該回去自幹一下作業系統才過癮啊 ～～～
 
-心裡有 `它們都是作業系統` 的念頭一直放在心上，而那段繁忙的工作歷程，我利用上下班坐公車往返兩小時的時間，回去反覆重讀作業系統，包含上清大開放課程 - 周志遠教授 的 [作業系統](https://www.youtube.com/playlist?list=PLS0SUwlYe8cxj8FCPRoPHAehIiN9Vo6VZ)、follow 成大 [黃敬群 Jserv - Linux 核心設計][r3] 課程。但是這些 follow 總是淺薄，加上工作上各種 Interrupt 與 Context Switch，我覺得都只是學到一些皮毛。後來我也買了 `作業系統概念 (俗稱恐龍書)` 回來啃，補足很多重要的概念，像是 [淺談同步機制][ct3] 就是整理第六章的內容。
+心裡有 `它們都是作業系統` 的念頭一直放在心上，而那段繁忙的工作歷程，我利用上下班坐公車往返兩小時的時間，回去反覆重讀作業系統，包含上清大開放課程 - 周志遠教授 的 [作業系統][r2]、follow 成大 [黃敬群 Jserv - Linux 核心設計][r3] 課程。但是這些 follow 總是淺薄，加上工作上各種 Interrupt 與 Context Switch，我覺得都只是學到一些皮毛。後來我也買了 `作業系統概念 (俗稱恐龍書)` 回來啃，補足很多重要的概念，像是 [淺談同步機制][ct3] 就是整理第六章的內容。
 
 ![](/about/OS-Concepts.jpeg)
 
@@ -55,8 +63,9 @@
 ![](/about/Linux-Programming-Interface1.jpeg)
 ![](/about/Linux-Programming-Interface2.jpeg)
 
-
 過去幾年 (Since 2016)，我花最多時間研究的主題是 [分散式系統](/categories/Distributed-Systems/) 以及延伸的主題，但實際上研究到最後發現，本質還是回到作業系統。
+
+不過，紙上單兵，或者在工作上混亂的狀態，都不如自己動手做做看的有趣 ... 加上現在有 AI ..
 
 
 ### 驗證：透過 AI 可以自學很多東西
@@ -84,7 +93,7 @@
 
 學習部分，我敲完那段話之後，當天 (2026/03/12) 我就開始用同樣的 Prompt 在 Google Gemini 上開工了！重要的是，我不是用 AI Agent 幫我寫，而是在對話過程，請 Gemini 教我，然後一步一步前進。
 
-至於是否繼續念 CS 或者 CS 無用論，不是第一次遇到這個問題，2023 年 12 月，ChatGPT 剛上線的那個月，我去 成大資工所演講，主題是 [軟體職涯的分享][ct9]，當時就有同學問我如何面對 AI 世代；2025 年 6 月我在高雄示範大學演講時，現場也有同學和老師問到同樣的問題。
+至於是否繼續念 CS 或者 CS 無用論，不是第一次遇到這個問題，2023 年 12 月，ChatGPT 剛上線的那個月，我去 成大資工所演講，主題是 [軟體職涯的分享][ct9]，當時就有同學問我如何面對 AI 世代；2025 年 6 月我在高雄師範大學演講時，現場也有同學和老師問到同樣的問題。
 
 這個題目放到最後統一整理，本質思路是這樣：
 
@@ -263,16 +272,150 @@ Copyright (c) 2003-2025 Fabrice Bellard and the QEMU Project developers
 
 這個課程內容，嚴格說比 `30 天打造 OS - 作業系統自作入門` 簡單很多，算是很容易快速上手、或者說體驗開發作業系統的種種問題。我實作完之後，回去翻 `恐龍書`、`30 天打造 OS` 感覺是偏簡單的。可能是我本身就已經在實務上有一定程度的經驗。
 
+---
+## 心得與想法
+
+AI 時代，有很多疑問會反覆地被討論。我在寫這篇的時候，在 Thread 上、各種媒體、朋友之間，看到很多類似的疑問，問題整理大概有以下：
+
+- 大家都在用 OpenClaw 做自動化、或者用 Claude Code 開發產品，為什麼要花時間「自幹」這個？
+- 學這個有什麼用？AI 時代還需要學作業系統？還需要學計算機科學 (CS)？
+- 交給小龍蝦 (OpenClaw) 就好了，而且可同時開十隻，一下子就可以搞定了！
+- 或者用現代各種 AI Agent，像是 AntiGravity、Cursor、Kiro，也是一下子就搞定了
+
+這些問題本質上指向了兩個方向：
+
+- **學習者模式**：我是學生，AI 是導師。透過 AI 學習已知知識（如 CS 基礎、歷史、思辨）。
+- **創作者模式**：我是產品經理 (PdM)，AI 是我的工程團隊。我專注於「做什麼」，AI 負責「怎麼做」。
+
+當然，更多時候我們是兩者兼具，只是比重不同。但我認為，在 AI 能夠秒殺所有底層代碼的今天，我們回頭去「純手工」實作，其實是一種對 **知識主權** 的宣示：「**因為我知道它如何運作，所以我能駕馭 AI，而不是被 AI 餵養。**」
+
+
+用任何技術之前，我會用以下的思路，討論本質問題：
+
+1. 提問者的 **知識與經歷** 的基礎點是什麼？
+2. 提問者的 **動機是什麼** ？
+3. 在時間上做篇位移
+
+販賣焦慮是容易發財的方法，AI 的出現，讓焦慮指數瞬間提高了很多。問題往往建構基礎、動機的落差，搭配時間模糊，所以販賣焦慮，本質上就是在賣資訊落差造成的焦慮感。
+
+
+### 動機
+
+沒有 AI 的時代，企業發展到一定階段，就會開始重視生產力、效率化的問題，我的書討論 [平台工程 (Platform Engineering)][ct11]，動機也是在提高生產效率。所以動機不外乎就是降本增效，結果則是增加餘裕，可以做自己的事。
+
+如果從個人、組織到理想世界的角度來看：
+
+- **個人**：增加生產力、創造被動收入，最終是為了讓自己有更多「餘裕」去做想做的事。
+- **組織**：為了生存，必須提升產能並降低開發成本。
+- **理想世界**：如反烏托邦小說《美麗新世界》般的自動化社會，人類不再為生存勞動。
+
+對企業來說，用 AI 是為了**「生存」；但對個人來說，回頭學 OS 是為了「進化」**。當 AI 讓程式碼變得廉價，人類的價值就從單純執行的「執行緒 (Thread)」，轉變成了負責決策與資源調度的「核心 (Kernel)」。
+
+繼續往下問，自己的事是什麼事？我們需要進一步探討與思考的是：**當 AI 幫我們省下了時間，我們增加的「餘裕」要拿來做什麼？**。我這段錄影談的是 [投資的目的](https://www.youtube.com/watch?v=f5uRt1IzK2E)，就在深度討論有了餘裕之後的人生。
+
+
+### 還需要學計算機科學 (Computer Science, CS)？
+
+這是許多 CS 學生的擔憂。業界大佬說寫程式不再值錢，這讓「CS 無用論」甚囂塵上。嘗試用我的思考框架來討論。
+
+主詞換掉就是：
+
+- `黃仁勳 | 馬斯克` 學這個有什麼用？
+- `黃仁勳 | 馬斯克` AI 時代還需要學作業系統？
+- `黃仁勳 | 馬斯克` 還需要學計算機科學 (CS)？
+
+黃仁勳在 2024 年說 [不需要學寫程式][l3]，是因為他早已具備數十年的底層經驗。作為時代的先行者，他們是創造知識的人。而我們作為跟隨者，必須思考自身的基礎點：**你現在是學習者還是創作者？**
+
+對我而言，動手幹一個 OS 完全是以學習者角度切入，補足我那些「淺薄」的皮毛。更重要的是，這件事極其有趣。就像鋼鐵人裡的 Jarvis，它能幫 Tony Stark 完成無數繁瑣的設計與計算，但我們不能忽略一個事實：**如果 Stark 本身不懂飛行力學與材料科學，他永遠造不出 Mark 3，他只會是一個「下錯指令」的 PM**。
+
+學生學習目的，是探索知識，增加自己的基礎能力。如果以就業思考，那建議多往實際的應用思考，也就是我在 [本質思考][ct12] 反覆提及的，在生活中學習。
+
+寫這篇文章的時候，剛好有人在 Thread 上在分享 [實作 x86 CPU](https://www.threads.com/@tsla.mark/post/DWXY9UEgfWg)，我猜動機應該跟我差不多吧 XD
+
+
+### 交給龍蝦就好了？
+
+OpenClaw (俗稱龍蝦) 這段時間 (2025/12 ~ 2026/03) 很紅，有機會像電影鋼鐵人裡的 [Tony Stark][l5] 的個人助理 Jarvis，幫 Stark 完成很多設計工作。OpenClaw 則可能成為人類第一個實質 Jarvis 的祖先。
+
+不過回到現實，就是我開頭反覆提及的事情：**資源分配與調度**
+
+反過來問好了:
+
+> 給你十個人來自不同領域的專家，他們每個人都有 Ph.D 的學位。
+> 你要帶領這十個人，去完成一個任務。
+> 
+> 你會怎麼分派工作？
+
+這個問題，就是我在開頭反覆提到的概念：**它們都是作業系統**，本質都在做 **資源分配與調度**
+
+很多人會說，現在任務就是交給 AI Agent 去做，不需要關注他怎麼做，而是專注產出就好。所以很多 PM 都一樣可以做產品，不需要懂技術。
+
+這段話其實就是一個主管在做的工作，但實務上，很多人又會有以下靠北：
+
+> 我的主管啥都不懂，技術能力又差，他憑什麼當主管？
+
+回到個人身上，先不管有沒有 AI 可以用，先思考自己的腦袋裡有什麼？知識？經驗？經歷？怎麼判斷產出？什麼是產出？在生活中，你為什麼要買 Macbook Pro？為什麼要用 Windows？你怎麼判斷？
+
+我以前寫過這篇文章：[什麼是好軟體？][ct10]、 [本質思考][ct12]，就是在探討怎麼做判斷，即使這台 Macbook Pro 不是我做的，他依舊可以達到我預期的水準。
+
+當管理者或 PdM 本身不了解產品的「邊界」與「品質指標」時，產出就會失控。而塑造這些指標的方法，就是實際去體驗、去實作、去理解「好產品」的底層邏輯。
+
+這回到了我反覆提及的概念：「**它們都是作業系統**」。不管是帶領團隊還是下 Prompt 給 Agent，本質都在做 資源分配與調度。
+
+
+### AI 時代的 CS 學習路徑
+
+透過這次實作，我驗證了 AI 是極佳的導師。我建議在 AI 時代，學習 CS 可以分為三個 Level：
+
+- **Level 1 (PdM 模式)** ：讓 AI 寫 Code，你只負責看結果。這適合快速驗證。
+- **Level 2 (學習者模式)** ：讓 AI 解釋 Code，你負責理解背後的 OS 或演算法原理。
+- **Level 3 (架構師模式)** ：你定義核心架構與資源調度邏輯，讓 AI 填補細節。
+
+這次「自幹作業系統」，我是在 Level 2 與 Level 3 之間反覆修煉。雖然工具會變，但「資源調度」的本質邏輯是永恆的。**唯有理解底層，你才能在 AI 時代，從一個被調度的 Thread，進化成掌握全局的 Kernel**。
+
+
+### Star Trak - First Contact
+
+「這東西花了多少錢？」
+
+![](/about/StarTrak_FirstContact/01.png)
+
+『未來的經濟是不太一樣的』
+『金錢 ... 在 24 世紀是不存在的』
+
+![](/about/StarTrak_FirstContact/02.png)
+![](/about/StarTrak_FirstContact/03.png)
+![](/about/StarTrak_FirstContact/04.png)
+
+「沒有錢？」
+「你是說你們沒有薪水？」
+
+![](/about/StarTrak_FirstContact/05.png)
+![](/about/StarTrak_FirstContact/06.png)
+
+『獲取財富不再是生命的動力』
+『我們工作是為了超越自己 造福人類』
+
+![](/about/StarTrak_FirstContact/07.png)
+![](/about/StarTrak_FirstContact/08.png)
+![](/about/StarTrak_FirstContact/09.png)
 
 ---
 # 延伸閱讀
 
 ## 站內文章
 
+- [Designing Test Architecture and Framework][ct1]
+- [純手工遊戲開發心得紀錄 - Java 2D RPG Game][ct2]
+- [淺談同步機制][ct3]
+- [Install Mac OS Mavericks on PC (蘋果安裝筆記)][ct4]
+- [SaaS 關鍵設計 - Multi-Tenancy - 探討真實世界的租賃關係][ct5]
 - [聊聊 API First 開發策略][ct6]
 - [從應用程式 Inside-Out 出發的 Web 可靠性設計][ct7] - 台灣軟體工程協會, 高雄師範大學
 - [管理者如何持續學習技術？][ct8]
 - [在生命轉彎的地方 - 從軟體開發職涯，探索人生][ct9] - 成功大學 資工所 20231201_5
+- [什麼是好軟體？][ct10]
+- [置頂 - 思考本質、實踐、抽象、想像力、教育][ct12]
 
 ## 參考資料
 
@@ -281,22 +424,24 @@ Copyright (c) 2003-2025 Fabrice Bellard and the QEMU Project developers
 - [Linux 核心設計][r3]
 
 
-
 [r1]: https://www.youtube.com/watch?v=m6R1mFpifa4
 [r2]: https://www.youtube.com/playlist?list=PLS0SUwlYe8cxj8FCPRoPHAehIiN9Vo6VZ
 [r3]: https://www.youtube.com/@sysprog
 
-[ct1]: /2018/05/12/SQA/Designing-Test-Architecture-and-Framework/
-[ct2]: /2025/12/19/About/Java-2D-RPG-Game/
-[ct3]: /2020/09/12/ComputerScience/Synchronization/
-[ct4]: /2013/11/17/OSX/Install-OSX-Mavericks-on-PC/
-[ct5]: /2023/09/11/DistributedSystems/SaaS-KeyDesign_MultiTenancy-with-Isolation-Factor/
-[ct6]: /2025/03/08/Design/Gossip-API-First-Joureny/
+[ct1]: https://rickhw.github.io//2018/05/12/SQA/Designing-Test-Architecture-and-Framework/
+[ct2]: https://rickhw.github.io//2025/12/19/About/Java-2D-RPG-Game/
+[ct3]: https://rickhw.github.io//2020/09/12/ComputerScience/Synchronization/
+[ct4]: https://rickhw.github.io//2013/11/17/OSX/Install-OSX-Mavericks-on-PC/
+[ct5]: https://rickhw.github.io//2023/09/11/DistributedSystems/SaaS-KeyDesign_MultiTenancy-with-Isolation-Factor/
+[ct6]: https://rickhw.github.io//2025/03/08/Design/Gossip-API-First-Joureny/
 [ct7]: https://speakerdeck.com/rickhwang/cong-ying-yong-cheng-shi-inside-out-chu-fa-de-web-ke-kao-xing-she-ji-tai-wan-ruan-ti-gong-cheng-xie-hui-gao-xiong-shi-fan-da-xue-20250628
-[ct8]: /2019/03/30/Management/How-do-Manager-Keep-Learning/
+[ct8]: https://rickhw.github.io//2019/03/30/Management/How-do-Manager-Keep-Learning/
 [ct9]: https://speakerdeck.com/rickhwang/zai-sheng-ming-zhuan-wan-de-di-fang-cong-ruan-ti-kai-fa-zhi-ya-tan-suo-ren-sheng-20231201-5
-[ct10]: /2019/09/11/SoftwareEngineering/Great-Software/
-
+[ct10]: https://rickhw.github.io//2019/09/11/SoftwareEngineering/Great-Software/
+[ct11]: https://rickhw.github.io//2023/07/17/About/2023-SRE-Practice-and-IDP/
+[ct12]: https://rickhw.github.io//2017/11/26/Thinking-in-Essence/
 
 [l1]: https://github.com/Netflix/conductor
 [l2]: https://www.bmc.com/it-solutions/automation-orchestration.html
+[l3]: https://www.bnext.com.tw/article/78420/jensen-huang-computer-past
+[l5]: https://zh.wikipedia.org/zh-tw/%E6%9D%B1%E5%B0%BC%C2%B7%E5%8F%B2%E5%A1%94%E5%85%8B_(%E6%BC%AB%E5%A8%81%E9%9B%BB%E5%BD%B1%E5%AE%87%E5%AE%99)
