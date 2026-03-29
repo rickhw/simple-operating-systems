@@ -244,8 +244,8 @@ drwxr-xr-x@ 6 rickhwang  staff   192B Mar 26 21:10 user
 
 底下錄影分別 Demo 了 Terminal 和 Window：
 
-[![Watch the video](https://img.youtube.com)](https://www.youtube.com/watch?v=07ytT9O286E)
-[![Watch the video](https://img.youtube.com)](https://www.youtube.com/watch?v=WVQSnAE8AJM)
+[![Watch the video](https://img.youtube.com/vi/07ytT9O286E/0.jpg)](https://www.youtube.com/watch?v=07ytT9O286E)
+[![Watch the video](https://img.youtube.com/vi/WVQSnAE8AJM/0.jpg)](https://www.youtube.com/watch?v=WVQSnAE8AJM)
 
 
 原始碼放在 [GitHub](https://github.com/rickhw/simple-operating-systems) 上，用 Branch 分開每個階段的內容：
