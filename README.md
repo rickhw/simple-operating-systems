@@ -119,6 +119,13 @@
 
 這可以想像成六個 Sprint，每個部分都有約 10 個核心功能需要達成。
 
+底下是完整的課程大綱：
+
+
+![](/about/Course-Overview1.png)
+![](/about/Course-Overview2.png)
+
+
 
 ### 學習過程
 
@@ -246,12 +253,14 @@ drwxr-xr-x@ 6 rickhwang  staff   192B Mar 26 21:10 user
 
 ![](/about/Source-Code-Branch.png)
 
-目錄 course 則有完整的 [課程大綱](https://github.com/rickhw/simple-operating-systems/tree/main/course)、[課程藍圖](https://github.com/rickhw/simple-operating-systems/blob/main/course/Course-Overview.mermaid)，以及每個階段的原始碼，以及 [專有名詞對照表](https://github.com/rickhw/simple-operating-systems/blob/main/course/Terms.md) 。
+目錄則有以下整理：
 
-![](/about/Course-Overview1.png)
-![](/about/Course-Overview2.png)
+- [課程大綱](https://github.com/rickhw/simple-operating-systems/tree/main/course)
+- [課程藍圖](https://github.com/rickhw/simple-operating-systems/blob/main/course/Course-Overview.mermaid)
+- [每個階段的原始碼](https://github.com/rickhw/simple-operating-systems/tree/main/course)
+- [專有名詞對照表](https://github.com/rickhw/simple-operating-systems/blob/main/course/Terms.md)
+- [x86 Instruction](https://github.com/rickhw/simple-operating-systems/blob/main/course/x86_Instruction.md)
 
-![](/about/Course-Overview.png)
 
 
 ### 課前知識與準備
