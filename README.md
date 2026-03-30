@@ -248,7 +248,36 @@ drwxr-xr-x@ 6 rickhwang  staff   192B Mar 26 21:10 user
 [![Watch the video](https://img.youtube.com/vi/WVQSnAE8AJM/0.jpg)](https://www.youtube.com/watch?v=WVQSnAE8AJM)
 
 
-原始碼放在 [GitHub](https://github.com/rickhw/simple-operating-systems) 上，用 Branch 分開每個階段的內容：
+原始碼放在 [GitHub](https://github.com/rickhw/simple-operating-systems) 上，結構如下：
+
+```bash
+├── Dockerfile      // 用來 Compile 的 GCC container
+├── Makefile
+├── README.md
+├── scripts         
+│   ├── grub.cfg    // GRUB 配置
+│   └── linker.ld
+└── src
+    ├── kernel      // Kernel 部分
+    │   ├── asm         // 組合語言，主要是用來執行 CPU 指令集, 可以參閱 (x86_Instruction.md)
+    │   │   └── *.S
+    │   ├── include
+    │   │   └── *.h
+    │   ├── kernel.c    // 主要的 Kernel 流程
+    │   └── lib
+    │       └── *.c     // Kernel 相關 Lib，包含 ata, gdt, idc, mbr, paging, pmm, syscall, timer, tty ... etc.
+    └── user        // User Space 部分
+        ├── asm
+        │   └── crt0.S  // C Runtime Zero
+        ├── bin         // User Space 的程式, 包含 cat, echo, ls, mkdir, rm, shell, touch
+        │   └── *.c
+        ├── include
+        │   └── *.h
+        └── lib         // syscall, stdlib, stdio, unistd
+            └── *.c
+```
+
+用 Branch 分開每個階段的內容：
 
 ![](/about/Source-Code-Branch.png)
 

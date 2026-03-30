@@ -10,3 +10,16 @@
 
 
 https://gemini.google.com/app/18b8fcafe3a7592b
+
+---
+
+# Prompt 2
+
+接下來我想繼續強化幾個東西：
+
+1. 透過 grub.cfg 選擇開機是 Terminal or Window
+2. 實作網路功能, 實踐 ping, wget, curl 等簡易版工具.
+3. 提供 multi process 的實作，最終以實作 top, ps, kill 三個指令驗收
+4. 在 window 環境，實作 真多工，也就是支援多個 window 運行，最後提供 task manager (CPU / Disk / Networking Status) 以及幾格小遊戲 (時鐘 / 踩地雷 / 計算機) 驗收.
+
+幫我安排一下這幾個實作的課程大綱.
