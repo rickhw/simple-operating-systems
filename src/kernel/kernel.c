@@ -57,7 +57,7 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
 
 /**
  * [Kernel Entry Point]
- * 
+ *
  * ASCII Flow:
  * GRUB -> boot.S -> kernel_main()
  *                      |
@@ -106,7 +106,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
 
     if (is_gui) {
         init_gui();
-        int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1); // 預設 PID(1) 建立
+        int term_win = create_window(50, 50, 600, 300, "Simple OS Terminal", 1); // 預設 PID(1) 建立
         terminal_bind_window(term_win);
         gui_render(400, 300);
 
