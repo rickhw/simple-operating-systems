@@ -40,7 +40,8 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
             "free.elf",
             // window app
             "status.elf", "paint.elf",
-            "segfault.elf"
+            "segfault.elf",
+            "viewer.elf", "logo.bmp"
         };
         uint32_t expected_mods = sizeof(filenames) / sizeof(filenames[0]);
 

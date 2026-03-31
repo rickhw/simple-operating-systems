@@ -97,14 +97,14 @@ void printf(const char* format, ...) {
     va_end(args);
 }
 
-int open(char* filename) {
-    int fd;
-    __asm__ volatile ("int $0x80" : "=a"(fd) : "a"(3), "b"(filename) : "memory");
-    return fd;
-}
+// int open(char* filename) {
+//     int fd;
+//     __asm__ volatile ("int $0x80" : "=a"(fd) : "a"(3), "b"(filename) : "memory");
+//     return fd;
+// }
 
-int read(int fd, char* buffer, int size) {
-    int bytes;
-    __asm__ volatile ("int $0x80" : "=a"(bytes) : "a"(4), "b"(fd), "c"(buffer), "d"(size) : "memory");
-    return bytes;
-}
+// int read(int fd, char* buffer, int size) {
+//     int bytes;
+//     __asm__ volatile ("int $0x80" : "=a"(bytes) : "a"(4), "b"(fd), "c"(buffer), "d"(size) : "memory");
+//     return bytes;
+// }

@@ -24,6 +24,15 @@ int remove(const char* filename) {
     return syscall(16, (int)filename, 0, 0, 0, 0);
 }
 
+// 【Day 73 新增】檔案 I/O 操作
+int open(const char* filename) {
+    return syscall(3, (int)filename, 0, 0, 0, 0);
+}
+
+int read(int fd, void* buffer, int size) {
+    return syscall(4, fd, (int)buffer, size, 0, 0);
+}
+
 // directory
 int readdir(int index, char* out_name, int* out_size, int* out_type) {
     return syscall(15, index, (int)out_name, (int)out_size, (int)out_type, 0);

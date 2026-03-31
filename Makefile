@@ -115,6 +115,7 @@ myos.iso: $(SRC_DIR)/myos.bin $(SCRIPT_DIR)/grub.cfg $(APPS)
 	cp $(SRC_DIR)/myos.bin $(SRC_DIR)/isodir/boot/myos.bin
 	cp $(SCRIPT_DIR)/grub.cfg $(SRC_DIR)/isodir/boot/grub/grub.cfg
 	cp $(USER_BIN_DIR)/*.elf $(SRC_DIR)/isodir/boot/
+	cp $(USER_BIN_DIR)/*.bmp $(SRC_DIR)/isodir/boot/
 	$(DOCKER_CMD) grub-mkrescue -o ../$@ isodir
 	rm -rf $(SRC_DIR)/isodir
 
