@@ -4,6 +4,7 @@
 #include "gfx.h"
 #include "tty.h"
 #include "gui.h"
+#include "utils.h"
 
 // 宣告你現有的 IO 函式 (假設你有 inb 和 outb，如果沒有請在 utils.c 補上)
 extern uint8_t inb(uint16_t port);
@@ -14,13 +15,11 @@ static uint8_t mouse_cycle = 0;
 static int8_t  mouse_byte[3];
 static int mouse_x = 400; // 預設在螢幕正中間
 static int mouse_y = 300;
-// 紀錄目前正在拖曳哪個視窗 (-1 代表沒有)
-static int dragged_window_id = -1;
 static int prev_left_click = 0; // 【新增】記錄上一次的左鍵狀態，用來偵測「剛按下」的瞬間
 
 // 等待鍵盤控制器就緒
 static void mouse_wait(uint8_t a_type) {
-    uint32_t timeout = 100000;
+    int32_t timeout = 100000;
     if (a_type == 0) {
         while (timeout--) { if ((inb(0x64) & 1) == 1) return; }
     } else {

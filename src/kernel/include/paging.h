@@ -14,4 +14,7 @@ void map_vram(uint32_t virt, uint32_t phys);
 
 uint32_t paging_get_active_universes(void);
 
+uint32_t create_page_directory(void);
+void free_page_directory(uint32_t pd_phys);
+
 #endif

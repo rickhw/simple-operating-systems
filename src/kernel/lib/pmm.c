@@ -2,11 +2,11 @@
 #include "pmm.h"
 #include "utils.h"
 #include "tty.h"
+#include "config.h"
 
 // 假設我們最多支援 4GB RAM (總共 1,048,576 個 Frames)
 // 1048576 bits / 32 bits (一個 uint32_t) = 32768 個陣列元素
-#define BITMAP_SIZE 32768
-uint32_t memory_bitmap[BITMAP_SIZE];
+uint32_t memory_bitmap[PMM_BITMAP_SIZE];
 
 uint32_t max_frames = 0; // 系統實際擁有的可用 Frame 數量
 
@@ -35,7 +35,7 @@ static bool bitmap_test(uint32_t frame_idx) {
 
 // 尋找第一個為 0 的 bit (第一塊空地)
 static int bitmap_find_first_free() {
-    for (uint32_t i = 0; i < BITMAP_SIZE; i++) {
+    for (uint32_t i = 0; i < PMM_BITMAP_SIZE; i++) {
         // 如果這個整數不是 0xFFFFFFFF (代表裡面至少有一個 bit 是 0)
         if (memory_bitmap[i] != 0xFFFFFFFF) {
             for (uint32_t j = 0; j < 32; j++) {
@@ -68,7 +68,7 @@ void init_pmm(uint32_t mem_size_kb) {
 
     // [極度重要] 保留系統前 4MB (0 ~ 1024 個 Frames) 不被分配！
     // 因為這 4MB 已經被我們的 Kernel 程式碼、VGA 記憶體、IDT/GDT 給佔用了
-    for (uint32_t i = 0; i < 1024; i++) {
+    for (uint32_t i = 0; i < PMM_RESERVED_MEM; i++) {
         bitmap_set(i);
     }
 }

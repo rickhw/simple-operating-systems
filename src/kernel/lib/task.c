@@ -81,7 +81,7 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     // 為初代老爸 (Shell) 預先分配 10 個實體分頁給 User Heap
     // 預先分配 256 個實體分頁 (1MB) 給 User Heap
     for (int i = 0; i < 256; i++) {
-        uint32_t heap_phys = pmm_alloc_page();
+        uint32_t heap_phys = (uint32_t)pmm_alloc_page();
         map_page(0x10000000 + (i * 4096), heap_phys, 7);
     }
     new_task->heap_start = 0x10000000; // 【Day 62 新增】
@@ -192,7 +192,7 @@ void schedule() {
         if (current_task->kernel_stack != 0) {
             set_kernel_stack(current_task->kernel_stack);
         }
-        switch_task(&prev->esp, &current_task->esp, current_task->page_directory);
+        switch_task((uint32_t*)&prev->esp, (uint32_t*)&current_task->esp, current_task->page_directory);
     }
 }
 
@@ -200,7 +200,7 @@ int sys_fork(registers_t *regs) {
     task_t *child = (task_t*) kmalloc(sizeof(task_t));
     child->pid = next_pid++;                 // 【Day 62 修改】
     child->ppid = current_task->pid;         // 【Day 62 新增】
-    strcpy(child->name, current_task->name); // 【Day 62 新增】繼承老爸的名字
+    strcpy(child->name, (const char*)current_task->name); // 【Day 62 新增】繼承老爸的名字
 
     child->state = TASK_RUNNING;
     child->wait_pid = 0;
@@ -217,7 +217,7 @@ int sys_fork(registers_t *regs) {
 
     // 【Day 62 修改】改用 child->pid 確保位址不衝突
     uint32_t child_ustack_base = 0x083FF000 - (child->pid * 4096);
-    uint32_t child_ustack_phys = pmm_alloc_page();
+    uint32_t child_ustack_phys = (uint32_t)pmm_alloc_page();
     map_page(child_ustack_base, child_ustack_phys, 7);
 
     uint32_t cr3;
@@ -287,7 +287,7 @@ int sys_exec(registers_t *regs) {
     // ==========================================
     // 【Day 62 新增】靈魂轉移：更新行程名稱！
     // ==========================================
-    strcpy(current_task->name, filename);
+    strcpy((char*)current_task->name, filename);
 
     uint8_t* buffer = (uint8_t*) kmalloc(file_node->length);
     vfs_read(file_node, 0, file_node->length, buffer);
@@ -321,12 +321,12 @@ int sys_exec(registers_t *regs) {
     current_task->page_directory = new_cr3;
 
     uint32_t clean_user_stack_top = 0x083FF000 + 4096;
-    uint32_t ustack_phys = pmm_alloc_page();
+    uint32_t ustack_phys = (uint32_t)pmm_alloc_page();
     map_page(0x083FF000, ustack_phys, 7);
 
     // 預先分配 256 個實體分頁 (1MB) 給 User Heap
     for (int i = 0; i < 256; i++) {
-        uint32_t heap_phys = pmm_alloc_page();
+        uint32_t heap_phys = (uint32_t)pmm_alloc_page();
         map_page(0x10000000 + (i * 4096), heap_phys, 7);
     }
     current_task->heap_start = 0x10000000; // 【Day 62 新增】
@@ -421,14 +421,14 @@ int sys_kill(int pid) {
             temp->state = TASK_ZOMBIE;
 
             // 【Day 67 新增】如果老爸正在等它死，我們要順便把老爸叫醒！
-            task_t *parent = current_task;
+            task_t *parent = (task_t*)current_task;
             do {
-                if (parent->pid == temp->ppid && parent->state == TASK_WAITING && parent->wait_pid == pid) {
+                if (parent->pid == temp->ppid && parent->state == TASK_WAITING && parent->wait_pid == (uint32_t)pid) {
                     parent->state = TASK_RUNNING;
                     parent->wait_pid = 0;
                 }
                 parent = parent->next;
-            } while (parent != current_task);
+            } while (parent != (task_t*)current_task);
 
             found = 1;
             break;

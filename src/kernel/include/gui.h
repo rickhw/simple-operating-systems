@@ -43,6 +43,7 @@ void set_focused_window(int id);
 int get_focused_window(void);
 
 void enable_gui_mode(int enable);
+void switch_display_mode(int is_gui);
 
 void gui_mouse_down(int x, int y);
 void gui_mouse_up(void);

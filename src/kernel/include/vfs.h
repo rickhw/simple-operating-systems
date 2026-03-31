@@ -49,4 +49,10 @@ void vfs_close(fs_node_t *node);
 uint32_t vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 uint32_t vfs_write(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
+int vfs_create_file(uint32_t dir_lba, char* filename, char* content);
+int vfs_readdir(uint32_t dir_lba, int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
+int vfs_delete_file(uint32_t dir_lba, char* filename);
+int vfs_mkdir(uint32_t dir_lba, char* dirname);
+int vfs_getcwd(uint32_t dir_lba, char* buffer);
+
 #endif

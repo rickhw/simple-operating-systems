@@ -19,6 +19,8 @@ typedef struct {
     unsigned int active_universes;
 } mem_info_t;
 
+int get_mem_info(mem_info_t* info);
+
 int fork();
 int exec(char* filename, char** argv);
 int wait(int pid);

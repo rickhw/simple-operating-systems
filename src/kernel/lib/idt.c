@@ -38,7 +38,7 @@ void init_idt(void) {
 
     // 先把 256 個中斷全部清空 (避免指到未知的記憶體)
     // 這裡我們簡單用迴圈清零 (你也可以 include 昨天寫的 memset)
-    for (int i = 0; i < 256; i++) {
+    for (uint32_t i = 0; i < 256; i++) {
         idt_set_gate(i, 0, 0, 0);
     }
 
@@ -83,7 +83,7 @@ void isr0_handler(void) {
 
 // 初始化 8259 PIC，將 IRQ 0~15 重映射到 IDT 的 32~47
 // Intel 8259: https://zh.wikipedia.org/zh-tw/Intel_8259
-void pic_remap() {
+void pic_remap(void) {
     uint8_t a1 = inb(0x21);
     uint8_t a2 = inb(0xA1);
     (void)a1; (void)a2;

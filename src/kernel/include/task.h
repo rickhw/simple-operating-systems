@@ -110,6 +110,7 @@ void schedule();
 int sys_fork(registers_t *regs);
 int sys_exec(registers_t *regs);
 int sys_wait(int pid);
+int sys_kill(int pid);
 
 int task_get_process_list(process_info_t* list, int max_count);
 

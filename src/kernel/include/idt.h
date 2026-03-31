@@ -23,5 +23,6 @@ struct idt_ptr_struct {
 typedef struct idt_ptr_struct idt_ptr_t;
 
 void init_idt(void);
+void pic_remap(void);
 
 #endif

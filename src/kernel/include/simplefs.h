@@ -9,8 +9,8 @@
 #define SIMPLEFS_MAGIC 0x21534653
 
 // 定義檔案型態
-#define FS_FILE 0
-#define FS_DIR  1
+#define SFS_TYPE_FILE 0
+#define SFS_TYPE_DIR  1
 
 // Superblock 結構 (佔用一個 512 bytes 磁區，但只用前面幾個 bytes)
 typedef struct {
@@ -31,6 +31,8 @@ typedef struct {
 } __attribute__((packed)) sfs_file_entry_t;
 
 // disk utils
+extern uint32_t mounted_part_lba;
+
 // 格式化指定的分區
 void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count);
 void simplefs_mount(uint32_t part_lba);
@@ -41,5 +43,7 @@ uint32_t simplefs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t 
 
 // 用相對目錄位址 (dir_lba_rel)
 fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* filename);
+int simplefs_readdir(uint32_t dir_lba_rel, int index, char* out_name, uint32_t* out_size, uint32_t* out_type);
+uint32_t simplefs_get_dir_lba(uint32_t current_dir_lba, char* path);
 
 #endif

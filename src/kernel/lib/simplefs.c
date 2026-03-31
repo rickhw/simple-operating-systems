@@ -29,9 +29,9 @@ static uint32_t shallow_get_dir_lba(uint32_t dir_lba, char* name) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
     read_dir(dir_lba, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (uint32_t i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, name) == 0) {
-            if (entries[i].type == FS_DIR) {
+            if (entries[i].type == SFS_TYPE_DIR) {
                 uint32_t res = entries[i].start_lba;
                 kfree(dir_buf);
                 return res;
@@ -106,11 +106,11 @@ void simplefs_format(uint32_t partition_start_lba, uint32_t sector_count) {
     sfs_file_entry_t* root_entries = (sfs_file_entry_t*)empty_dir;
     strcpy(root_entries[0].filename, ".");
     root_entries[0].start_lba = 1;
-    root_entries[0].type = FS_DIR;
+    root_entries[0].type = SFS_TYPE_DIR;
 
     strcpy(root_entries[1].filename, "..");
     root_entries[1].start_lba = 1;
-    root_entries[1].type = FS_DIR;
+    root_entries[1].type = SFS_TYPE_DIR;
 
     for (int i = 0; i < ROOT_DIR_SECTORS; i++) {
         ata_write_sector(partition_start_lba + 1 + i, empty_dir + (i * 512));
@@ -128,7 +128,7 @@ void simplefs_list_files(void) {
     uint8_t* dir_buf = (uint8_t*) kmalloc(ROOT_DIR_BYTES);
     read_dir(1, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (uint32_t i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] != '\0') {
             kprintf("- [%s]  (Size: [%d] bytes, LBA: [%d])\n",
                     entries[i].filename, entries[i].file_size, entries[i].start_lba);
@@ -151,7 +151,7 @@ int simplefs_create_file(uint32_t dir_lba_rel, char* path, char* data, uint32_t 
     int target_idx = -1;
     uint32_t file_data_lba = 0;
 
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (uint32_t i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] == '\0') {
             if (target_idx == -1) target_idx = i;
         } else if (strcmp(entries[i].filename, filename) == 0) {
@@ -181,7 +181,7 @@ int simplefs_create_file(uint32_t dir_lba_rel, char* path, char* data, uint32_t 
     strcpy(entries[target_idx].filename, filename);
     entries[target_idx].start_lba = file_data_lba;
     entries[target_idx].file_size = size;
-    entries[target_idx].type = FS_FILE;
+    entries[target_idx].type = SFS_TYPE_FILE;
 
     write_dir(target_dir, dir_buf); // 寫回解析到的目標目錄！
     kfree(dir_buf);
@@ -224,7 +224,7 @@ fs_node_t* simplefs_find(uint32_t dir_lba_rel, char* path) {
     read_dir(target_dir, dir_buf);
 
     sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (uint32_t i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, filename) == 0) {
             fs_node_t* node = (fs_node_t*) kmalloc(sizeof(fs_node_t));
             strcpy(node->name, entries[i].filename);
@@ -250,7 +250,7 @@ int simplefs_readdir(uint32_t dir_lba_rel, int index, char* out_name, uint32_t* 
     sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buf;
 
     int valid_count = 0;
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (uint32_t i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] != '\0') {
             if (valid_count == index) {
                 for(int j=0; j<32; j++) out_name[j] = entries[i].filename[j];
@@ -275,7 +275,7 @@ int simplefs_delete_file(uint32_t dir_lba_rel, char* path) {
     read_dir(target_dir, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buf;
 
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (uint32_t i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, filename) == 0) {
             entries[i].filename[0] = '\0';
             write_dir(target_dir, dir_buf);
@@ -296,11 +296,11 @@ int simplefs_mkdir(uint32_t dir_lba_rel, char* path) {
     read_dir(target_dir, dir_buf);
     sfs_file_entry_t* entries = (sfs_file_entry_t*)dir_buf;
 
-    for (int i = 0; i < MAX_FILES; i++) {
+    for (uint32_t i = 0; i < MAX_FILES; i++) {
         if (entries[i].filename[0] == '\0') {
             strcpy(entries[i].filename, dirname);
             entries[i].file_size = 0;
-            entries[i].type = FS_DIR;
+            entries[i].type = SFS_TYPE_DIR;
 
             uint32_t new_dir_lba = simplefs_alloc_blocks(ROOT_DIR_SECTORS);
             entries[i].start_lba = new_dir_lba;
@@ -312,11 +312,11 @@ int simplefs_mkdir(uint32_t dir_lba_rel, char* path) {
 
             strcpy(new_entries[0].filename, ".");
             new_entries[0].start_lba = new_dir_lba;
-            new_entries[0].type = FS_DIR;
+            new_entries[0].type = SFS_TYPE_DIR;
 
             strcpy(new_entries[1].filename, "..");
             new_entries[1].start_lba = target_dir;  // 老爸指向目標目錄
-            new_entries[1].type = FS_DIR;
+            new_entries[1].type = SFS_TYPE_DIR;
 
             write_dir(new_dir_lba, empty_dir);
             kfree(empty_dir);
@@ -362,7 +362,7 @@ void simplefs_getcwd(uint32_t current_lba, char* out_buffer) {
         sfs_file_entry_t* entries = (sfs_file_entry_t*) dir_buf;
 
         uint32_t parent_lba = 0;
-        for (int i = 0; i < MAX_FILES; i++) {
+        for (uint32_t i = 0; i < MAX_FILES; i++) {
             if (entries[i].filename[0] != '\0' && strcmp(entries[i].filename, "..") == 0) {
                 parent_lba = entries[i].start_lba;
                 break;
@@ -377,7 +377,7 @@ void simplefs_getcwd(uint32_t current_lba, char* out_buffer) {
         read_dir(parent_lba, dir_buf);
         entries = (sfs_file_entry_t*) dir_buf;
 
-        for (int i = 0; i < MAX_FILES; i++) {
+        for (uint32_t i = 0; i < MAX_FILES; i++) {
             // 如果某個目錄項的 LBA 剛好等於我們剛剛的 curr，那就是我的名字！
             if (entries[i].filename[0] != '\0' && entries[i].start_lba == curr) {
                 strcpy(names[depth], entries[i].filename);

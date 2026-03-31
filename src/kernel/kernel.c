@@ -16,6 +16,7 @@
 #include "gfx.h"
 #include "mouse.h"
 #include "gui.h"
+#include "config.h"
 
 void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     kprintf("[Kernel] Setting up SimpleFS environment...\n");
@@ -54,6 +55,23 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
 
 }
 
+/**
+ * [Kernel Entry Point]
+ * 
+ * ASCII Flow:
+ * GRUB -> boot.S -> kernel_main()
+ *                      |
+ *                      +--> terminal_initialize()
+ *                      +--> init_gdt() / init_idt()
+ *                      +--> init_paging() / init_pmm() / init_kheap()
+ *                      +--> init_gfx()
+ *                      +--> parse_cmdline() -> GUI or CLI?
+ *                      +--> init_mouse() / sti
+ *                      +--> setup_filesystem()
+ *                      +--> init_multitasking()
+ *                      +--> create_user_task("shell.elf")
+ *                      +--> exit_task() (Kernel becomes idle)
+ */
 void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     (void)magic; // 忽略未使用的警告
 
@@ -64,7 +82,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     init_gdt();
     init_idt();
     init_paging();
-    init_pmm(16384);
+    init_pmm(INITIAL_PMM_SIZE);
     init_kheap();
     init_gfx(mbd);
 
