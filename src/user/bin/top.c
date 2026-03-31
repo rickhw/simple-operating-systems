@@ -38,6 +38,9 @@ int main() {
         // 使用者按了鍵盤！醒來後立刻殺掉還在無窮迴圈的子行程
         kill(child_pid);
 
+        // 【關鍵修復】替兒子收屍，把它從 ZOMBIE 變成 DEAD！
+        wait(child_pid);
+
         // 幫畫面擦屁股，然後優雅地結束自己，把控制權還給 Shell
         clear_screen();
         printf("Top exited. Goodbye!\n");

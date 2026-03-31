@@ -12,7 +12,9 @@ typedef struct {
     int height;
     char title[32];
     int is_active;
+    int owner_pid; // 【Day 68 新增】視窗背後的靈魂 (PID)
 } window_t;
+
 
 // --- GUI API ----
 
@@ -30,7 +32,7 @@ int gui_check_ui_click(int x, int y);
 
 // ---- Window API ----
 // 註冊一個新視窗
-int create_window(int x, int y, int width, int height, const char* title);
+int create_window(int x, int y, int width, int height, const char* title, int owner_pid);
 void close_window(int id);
 
 window_t* get_windows(void);    // 取得全域視窗陣列 (給滑鼠碰撞偵測用)

@@ -134,9 +134,14 @@ void exit_task() {
         free_page_directory(current_task->page_directory);
     }
 
-    // 【Day 67 修改】不要直接 DEAD，變成 ZOMBIE！
-    current_task->state = TASK_ZOMBIE;
-    schedule();    schedule();
+    // 【修改】如果沒有老爸 (ppid == 0)，就直接 DEAD，否則變 ZOMBIE
+    if (current_task->ppid == 0) {
+        current_task->state = TASK_DEAD;
+    } else {
+        current_task->state = TASK_ZOMBIE;
+    }
+
+    schedule();
 }
 
 void schedule() {

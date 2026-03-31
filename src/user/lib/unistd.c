@@ -109,3 +109,13 @@ int get_mem_info(mem_info_t* info) {
     );
     return ret;
 }
+
+int create_gui_window(const char* title, int width, int height) {
+    int ret;
+    __asm__ volatile (
+        "int $128"
+        : "=a" (ret)
+        : "a" (26), "b" (title), "c" (width), "d" (height)
+    );
+    return ret;
+}

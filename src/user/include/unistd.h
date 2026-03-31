@@ -45,4 +45,6 @@ int get_process_list(process_info_t* list, int max_count);
 void clear_screen(void); // 【新增】清空螢幕 API
 int kill(int pid); // 【新增】
 
+int create_gui_window(const char* title, int width, int height);
+
 #endif

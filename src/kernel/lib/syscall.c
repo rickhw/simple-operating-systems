@@ -284,6 +284,28 @@ void syscall_handler(registers_t *regs) {
         ipc_unlock();
     }
 
+    // ==========================================
+    // 【Day 68 新增】Syscall 26: sys_create_window
+    // ==========================================
+    else if (eax == 26) {
+        char* title = (char*)regs->ebx;
+        int width = (int)regs->ecx;
+        int height = (int)regs->edx;
+
+        // 簡單的視窗錯開邏輯，避免視窗全部疊在一起
+        static int win_offset = 0;
+        int x = 200 + win_offset;
+        int y = 150 + win_offset;
+        win_offset = (win_offset + 30) % 200;
+
+        ipc_lock();
+        // 綁定當前呼叫它的行程 PID！
+        regs->eax = create_window(x, y, width, height, title, current_task->pid);
+        extern void gui_redraw(void);
+        gui_redraw(); // 立刻把視窗畫出來
+        ipc_unlock();
+    }
+
     // Syscall: 99
     else if (eax == SYS_SET_DISPLAY_MODE) {
         // 假設 EBX 存放第一個參數 (is_gui)

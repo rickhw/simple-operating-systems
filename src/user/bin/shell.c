@@ -81,7 +81,19 @@ int main(int argc, char** argv) {
         // 解析使用者輸入
         char* parsed_argv[16];
         int parsed_argc = parse_args(cmd_buffer, parsed_argv);
+        if (parsed_argc == 0) continue; // 避免空陣列崩潰
+
         char* cmd = parsed_argv[0];
+
+        // ==========================================
+        // 【Day 68 擴充】檢查最後一個參數是不是 "&" (背景執行)
+        // ==========================================
+        int is_background = 0;
+        if (parsed_argc > 1 && strcmp(parsed_argv[parsed_argc - 1], "&") == 0) {
+            is_background = 1;
+            parsed_argv[parsed_argc - 1] = 0; // 把 "&" 從參數清單拿掉，不傳給應用程式
+            parsed_argc--;
+        }
 
         // 內建指令 (Built-ins)
         if (strcmp(cmd, "help") == 0) {
@@ -172,7 +184,14 @@ int main(int argc, char** argv) {
                 }
                 exit();
             } else {
-                wait(pid);
+                // ==========================================
+                // 【修改】如果是背景執行，老爸就不等了！直接印出 PID 並繼續接客
+                // ==========================================
+                if (is_background) {
+                    printf("[Running in background] PID: %d\n", pid);
+                } else {
+                    wait(pid); // 不是背景執行的話，老爸還是乖乖等兒子死掉
+                }
             }
         }
     }

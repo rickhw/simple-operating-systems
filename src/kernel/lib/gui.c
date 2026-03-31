@@ -173,7 +173,7 @@ void switch_display_mode(int is_gui) {
             }
         }
         if (!found) {
-            int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal");
+            int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1); // 預設由 PID#1 建立
             terminal_bind_window(term_win);
         }
     } else {
@@ -266,12 +266,59 @@ void gui_handle_timer(void) {
 // UI 事件分發中心
 int gui_check_ui_click(int x, int y) {
     // ==========================================
+    // 1. 先檢查「目前有焦點」視窗的 [X]
+    // ==========================================
+    if (focused_window_id != -1 && windows[focused_window_id].is_active) {
+        window_t* win = &windows[focused_window_id];
+        int btn_x = win->x + win->width - 20;
+        int btn_y = win->y + 4;
+        if (x >= btn_x && x <= btn_x + 14 && y >= btn_y && y <= btn_y + 14) {
+            int target_pid = win->owner_pid;
+            close_window(win->id);
+            extern int sys_kill(int pid);
+            if (target_pid > 1) { sys_kill(target_pid); }
+            gui_dirty = 1;
+            return 1;
+        }
+    }
+
+    // ==========================================
+    // 2. 檢查其他視窗的 [X]，或點擊本體來「切換焦點」！
+    // ==========================================
+    // 從後往前找，符合畫面覆蓋 (Z-Order) 的直覺
+    for (int i = MAX_WINDOWS - 1; i >= 0; i--) {
+        if (windows[i].is_active && i != focused_window_id) {
+            window_t* win = &windows[i];
+            int btn_x = win->x + win->width - 20;
+            int btn_y = win->y + 4;
+
+            // 如果點擊了 [X]
+            if (x >= btn_x && x <= btn_x + 14 && y >= btn_y && y <= btn_y + 14) {
+                int target_pid = win->owner_pid;
+                close_window(win->id);
+                extern int sys_kill(int pid);
+                if (target_pid > 1) { sys_kill(target_pid); }
+                gui_dirty = 1;
+                return 1;
+            }
+
+            // 如果點擊了視窗本體 -> 切換焦點並拉到最上層！
+            if (x >= win->x && x <= win->x + win->width && y >= win->y && y <= win->y + win->height) {
+                set_focused_window(i);
+                gui_dirty = 1;
+                return 1;
+            }
+        }
+    }
+
+
+    // ==========================================
     // 0. 檢查是否點擊了桌面圖示
     // ==========================================
     // 點擊 "Terminal" 圖示 (X: 20~52, Y: 20~52)
     if (x >= 20 && x <= 52 && y >= 20 && y <= 52) {
         int offset = window_count * 20;
-        int term_win = create_window(50 + offset, 50 + offset, 368, 228, "Simple OS Terminal");
+        int term_win = create_window(50 + offset, 50 + offset, 368, 228, "Simple OS Terminal", 1); // 預設由 PID#1 建立
         terminal_bind_window(term_win);
         gui_dirty = 1;
         return 1;
@@ -280,7 +327,7 @@ int gui_check_ui_click(int x, int y) {
     // 點擊 "Status" 圖示 (X: 20~52, Y: 80~112)
     if (x >= 20 && x <= 52 && y >= 80 && y <= 112) {
         int offset = window_count * 20;
-        create_window(450 - offset, 100 + offset, 300, 200, "System Status");
+        create_window(450 - offset, 100 + offset, 300, 200, "System Status", 1); // 預設由 PID#1 建立
         gui_dirty = 1;
         return 1;
     }
@@ -312,7 +359,7 @@ int gui_check_ui_click(int x, int y) {
                 // 如果終端機之前被手賤按 [X] 關掉了，我們就在原地幫他把框框畫回來
                 // (註：因為 Shell process 其實還活在背景，所以框框畫回來，綁定回去就又看得到了！)
                 if (!found) {
-                    int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal");
+                    int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1); // 預設由 PID#1 建立
                     terminal_bind_window(term_win);
                 }
             }
@@ -327,7 +374,7 @@ int gui_check_ui_click(int x, int y) {
                     }
                 }
                 if (!found) {
-                    create_window(450, 100, 300, 200, "System Status");
+                    create_window(450, 100, 300, 200, "System Status", 1); // 預設由 PID#1 建立
                 }
             }
             // 點擊 "3. Shutdown"
@@ -361,10 +408,11 @@ int gui_check_ui_click(int x, int y) {
 
 // ---- Window API ----
 
-int create_window(int x, int y, int width, int height, const char* title) {
+int create_window(int x, int y, int width, int height, const char* title, int owner_pid) {
     if (window_count >= MAX_WINDOWS) return -1;
-
     int id = window_count++;
+
+    windows[id].owner_pid = owner_pid; // 【Day 68 新增】
     windows[id].id = id;
     windows[id].x = x;
     windows[id].y = y;

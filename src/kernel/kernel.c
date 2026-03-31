@@ -26,7 +26,7 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     // 【修改】自動巡覽所有模組並寫入 HDD
     if (mbd->mods_count > 0) {
         multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
-        char* filenames[] = {"shell.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf", "touch.elf", "ls.elf", "rm.elf", "mkdir.elf", "ps.elf", "top.elf", "kill.elf", "free.elf"};
+        char* filenames[] = {"shell.elf", "echo.elf", "cat.elf", "ping.elf", "pong.elf", "touch.elf", "ls.elf", "rm.elf", "mkdir.elf", "ps.elf", "top.elf", "kill.elf", "free.elf", "status.elf"};
         uint32_t expected_mods = sizeof(filenames) / sizeof(filenames[0]);
 
         for(uint32_t i = 0; i < mbd->mods_count && i < expected_mods; i++) {
@@ -74,7 +74,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
 
     if (is_gui) {
         init_gui();
-        int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal");
+        int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1); // 預設 PID(1) 建立
         terminal_bind_window(term_win);
         gui_render(400, 300);
 
