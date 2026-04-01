@@ -32,6 +32,8 @@ static volatile int is_rendering = 0;  // 1 代表正在畫圖中，避免重複
 
 // 加入 Focus 判斷與 [X] 按鈕
 static void draw_window_internal(window_t* win) {
+    if (win->is_minimized) return; // [day78] 最小化的視窗不畫本體！
+
     int is_focused = (focused_window_id == win->id);
 
     // 視窗主體與邊框
@@ -46,13 +48,32 @@ static void draw_window_internal(window_t* win) {
     draw_rect(win->x + 2, win->y + 2, win->width - 4, TITLE_BAR_HEIGHT, title_bg);
     draw_string(win->x + 6, win->y + 7, win->title, COLOR_WHITE, title_bg);
 
-    // 【新增】畫出 [X] 關閉按鈕 (在右上角)
+    // 畫出 [X] 關閉按鈕 (在右上角)
     draw_rect(win->x + win->width - 20, win->y + 4, 14, 14, COLOR_WINDOW_BG);
     draw_string(win->x + win->width - 17, win->y + 7, "X", COLOR_BLACK, COLOR_WINDOW_BG);
 
-    // ==========================================
-    // 【修正】把畫布渲染移到「底層」，當作背景！
-    // ==========================================
+    // 【Day 78 新增】畫出四大控制按鈕
+    int btn_y = win->y + 4;
+    int base_x = win->x + win->width;
+
+    // [v] 置底 (Send to Bottom)
+    draw_rect(base_x - 68, btn_y, 14, 14, COLOR_WINDOW_BG);
+    draw_string(base_x - 66, btn_y + 3, "v", COLOR_BLACK, COLOR_WINDOW_BG);
+
+    // [_] 最小化 (Minimize)
+    draw_rect(base_x - 52, btn_y, 14, 14, COLOR_WINDOW_BG);
+    draw_string(base_x - 50, btn_y + 3, "_", COLOR_BLACK, COLOR_WINDOW_BG);
+
+    // [O] 最大化 (Maximize)
+    draw_rect(base_x - 36, btn_y, 14, 14, COLOR_WINDOW_BG);
+    draw_string(base_x - 34, btn_y + 3, "O", COLOR_BLACK, COLOR_WINDOW_BG);
+
+    // [X] 關閉 (Close)
+    draw_rect(base_x - 20, btn_y, 14, 14, COLOR_WINDOW_BG);
+    draw_string(base_x - 17, btn_y + 3, "X", COLOR_BLACK, COLOR_WINDOW_BG);
+
+
+    // 把畫布渲染移到「底層」，當作背景！
     if (win->canvas != 0) {
         int start_x = win->x + 2;
         int start_y = win->y + 22;
@@ -67,9 +88,7 @@ static void draw_window_internal(window_t* win) {
         }
     }
 
-    // ==========================================
-    // 【核心新增】Kernel 原生內容蓋在畫布的最上層！
-    // ==========================================
+    // Kernel 原生內容蓋在畫布的最上層！
     if (strcmp(win->title, "System Status") == 0) {
         draw_string(win->x + 10, win->y + 30, "CPU: x86 32-bit", 0x000000, 0xC0C0C0);
         draw_string(win->x + 10, win->y + 50, "Memory: 16 MB", 0x000000, 0xC0C0C0);
@@ -120,6 +139,29 @@ static void draw_taskbar(void) {
 
     // 畫出時間
     draw_string(tray_x + 10, taskbar_y + 10, time_str, 0x000000, 0xC0C0C0);
+
+    // ==========================================
+    // 【Day 78 新增】畫出最小化視窗的頁籤
+    // ==========================================
+    int task_x = 70; // 緊接在 Start 按鈕右邊
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        if (windows[i].is_active && windows[i].is_minimized) {
+            // 畫一個凸起的頁籤
+            draw_rect(task_x, taskbar_y + 4, 80, 20, COLOR_WINDOW_BG);
+            draw_rect(task_x, taskbar_y + 4, 80, 2, COLOR_WHITE);
+            draw_rect(task_x, taskbar_y + 4, 2, 20, COLOR_WHITE);
+            draw_rect(task_x, taskbar_y + 22, 80, 2, COLOR_DARK_GRAY);
+            draw_rect(task_x + 78, taskbar_y + 4, 2, 20, COLOR_DARK_GRAY);
+
+            // 印出前幾個字的標題
+            char short_title[10];
+            strncpy(short_title, windows[i].title, 9);
+            short_title[9] = '\0';
+            draw_string(task_x + 6, taskbar_y + 10, short_title, COLOR_BLACK, COLOR_WINDOW_BG);
+
+            task_x += 84; // 下一個頁籤往右排
+        }
+    }
 }
 
 // 畫出 3D 開始選單
@@ -235,25 +277,64 @@ static int handle_window_click(int x, int y) {
     // ==========================================
     // 1. 優先檢查擁有焦點的視窗 (Top Window)
     // ==========================================
-    if (focused_window_id != -1 && windows[focused_window_id].is_active) {
+    // 【重要修復】加入 !windows[...].is_minimized，避免點到隱形的視窗
+    if (focused_window_id != -1 && windows[focused_window_id].is_active && !windows[focused_window_id].is_minimized) {
         window_t* win = &windows[focused_window_id];
 
         if (x >= win->x && x <= win->x + win->width && y >= win->y && y <= win->y + win->height) {
-            int btn_x = win->x + win->width - 20;
-            int btn_y = win->y + 4;
 
-            if (x >= btn_x && x <= btn_x + 14 && y >= btn_y && y <= btn_y + 14) {
-                int target_pid = win->owner_pid;
-                close_window(win->id);
-                if (target_pid > 1) { sys_kill(target_pid); }
+            int base_x = win->x + win->width; // 以視窗右邊界為基準往回算
+
+            // 判斷是否點擊在四大按鈕的 Y 軸範圍內
+            if (y >= win->y + 4 && y <= win->y + 18) {
+                if (x >= base_x - 20 && x <= base_x - 6) {
+                    // 1. [X] 關閉
+                    int target_pid = win->owner_pid;
+                    close_window(win->id);
+                    if (target_pid > 1) { sys_kill(target_pid); }
+                }
+                else if (x >= base_x - 36 && x <= base_x - 22) {
+                    // 2. [O] 最大化 / 還原
+                    if (win->is_maximized) {
+                        win->x = win->orig_x; win->y = win->orig_y;
+                        win->width = win->orig_w; win->height = win->orig_h;
+                        win->is_maximized = 0;
+                    } else {
+                        win->orig_x = win->x; win->orig_y = win->y;
+                        win->orig_w = win->width; win->orig_h = win->height;
+                        win->x = 0; win->y = 0;
+                        win->width = SCREEN_WIDTH;
+                        win->height = SCREEN_HEIGHT - TASKBAR_HEIGHT;
+                        win->is_maximized = 1;
+                    }
+                }
+                else if (x >= base_x - 52 && x <= base_x - 38) {
+                    // 3. [_] 最小化
+                    win->is_minimized = 1;
+                    if (focused_window_id == win->id) focused_window_id = -1; // 取消焦點
+                }
+                else if (x >= base_x - 68 && x <= base_x - 54) {
+                    // 4. [v] 置底
+                    win->z_layer = 0; // 丟入置底層
+                    if (focused_window_id == win->id) focused_window_id = -1; // 取消焦點，讓它沉下去
+                }
+                else {
+                    // 點在標題列，但沒點中按鈕：啟動拖曳！
+                    win->z_layer = 1; // 抓取時解除置底
+                    dragged_window_id = win->id;
+                    drag_offset_x = x - win->x;
+                    drag_offset_y = y - win->y;
+                }
             }
+            // 點擊在標題列的其他地方：啟動拖曳！
             else if (y >= win->y && y <= win->y + 20) {
+                win->z_layer = 1; // 抓取時解除置底
                 dragged_window_id = win->id;
                 drag_offset_x = x - win->x;
                 drag_offset_y = y - win->y;
             }
             // ==========================================
-            // 【Day 76 新增】點擊了畫布內部 (Client Area)！
+            // 點擊了畫布內部 (Client Area)！
             // ==========================================
             else if (win->canvas != 0 &&
                      x >= win->x + 2 && x <= win->x + win->width - 2 &&
@@ -273,29 +354,58 @@ static int handle_window_click(int x, int y) {
     // 2. 檢查背景視窗
     // ==========================================
     for (int i = MAX_WINDOWS - 1; i >= 0; i--) {
-        if (windows[i].is_active && i != focused_window_id) {
+        // 【重要修復】同樣加入 !windows[i].is_minimized 判斷
+        if (windows[i].is_active && !windows[i].is_minimized && i != focused_window_id) {
             window_t* win = &windows[i];
 
             if (x >= win->x && x <= win->x + win->width && y >= win->y && y <= win->y + win->height) {
-                set_focused_window(i); // 切換焦點並拉到最上層！
+
+                set_focused_window(i); // 被點到了，切換焦點並拉到最上層！
                 gui_dirty = 1;
 
-                int btn_x = win->x + win->width - 20;
-                int btn_y = win->y + 4;
+                int base_x = win->x + win->width;
 
-                if (x >= btn_x && x <= btn_x + 14 && y >= btn_y && y <= btn_y + 14) {
-                    int target_pid = win->owner_pid;
-                    close_window(win->id);
-                    if (target_pid > 1) { sys_kill(target_pid); }
+                if (y >= win->y + 4 && y <= win->y + 18) {
+                    if (x >= base_x - 20 && x <= base_x - 6) {
+                        int target_pid = win->owner_pid;
+                        close_window(win->id);
+                        if (target_pid > 1) { sys_kill(target_pid); }
+                    }
+                    else if (x >= base_x - 36 && x <= base_x - 22) {
+                        if (win->is_maximized) {
+                            win->x = win->orig_x; win->y = win->orig_y;
+                            win->width = win->orig_w; win->height = win->orig_h;
+                            win->is_maximized = 0;
+                        } else {
+                            win->orig_x = win->x; win->orig_y = win->y;
+                            win->orig_w = win->width; win->orig_h = win->height;
+                            win->x = 0; win->y = 0;
+                            win->width = SCREEN_WIDTH;
+                            win->height = SCREEN_HEIGHT - TASKBAR_HEIGHT;
+                            win->is_maximized = 1;
+                        }
+                    }
+                    else if (x >= base_x - 52 && x <= base_x - 38) {
+                        win->is_minimized = 1;
+                        if (focused_window_id == win->id) focused_window_id = -1;
+                    }
+                    else if (x >= base_x - 68 && x <= base_x - 54) {
+                        win->z_layer = 0;
+                        if (focused_window_id == win->id) focused_window_id = -1;
+                    }
+                    else {
+                        win->z_layer = 1;
+                        dragged_window_id = win->id;
+                        drag_offset_x = x - win->x;
+                        drag_offset_y = y - win->y;
+                    }
                 }
                 else if (y >= win->y && y <= win->y + 20) {
+                    win->z_layer = 1;
                     dragged_window_id = win->id;
                     drag_offset_x = x - win->x;
                     drag_offset_y = y - win->y;
                 }
-                // ==========================================
-                // 【Day 76 新增】背景視窗點擊畫布，切換焦點並傳遞事件！
-                // ==========================================
                 else if (win->canvas != 0 &&
                          x >= win->x + 2 && x <= win->x + win->width - 2 &&
                          y >= win->y + 22 && y <= win->y + win->height - 2) {
@@ -305,7 +415,7 @@ static int handle_window_click(int x, int y) {
                     win->has_new_click = 1;
                 }
 
-                return 1;
+                return 1; // 吞掉點擊！
             }
         }
     }
@@ -336,6 +446,22 @@ static int handle_desktop_click(int x, int y) {
         gui_dirty = 1;
         return 1;
     }
+
+    // [day78] 檢查是否點擊了工作列上的最小化頁籤
+    int task_x = 70;
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        if (windows[i].is_active && windows[i].is_minimized) {
+            if (x >= task_x && x <= task_x + 80 &&
+                y >= SCREEN_HEIGHT - TASKBAR_HEIGHT + 4 && y <= SCREEN_HEIGHT - 8) {
+
+                windows[i].is_minimized = 0; // 解除最小化
+                set_focused_window(i);       // 取得焦點
+                gui_dirty = 1;
+                return 1;
+            }
+            task_x += 84;
+        }
+    }
     return 0;
 }
 
@@ -364,29 +490,35 @@ void gui_render(int mouse_x, int mouse_y) {
     draw_desktop_background();
     draw_desktop_icons();
 
-    // 2. 先畫「沒有焦點」的活躍視窗
-    // draw_rect(0, 0, 800, 600, TERM_BG);
+    // 2. 先畫「置底層 (z_layer == 0)」的視窗
     for (int i = 0; i < MAX_WINDOWS; i++) {
-        if (windows[i].is_active && i != focused_window_id) {
+        if (windows[i].is_active && windows[i].z_layer == 0 && i != focused_window_id) {
             draw_window_internal(&windows[i]);
         }
     }
 
-    // 3. 最後畫「有焦點」的視窗 (讓它疊在最上層！)
+    // 3. 再畫「一般層 (z_layer == 1)」的視窗
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        if (windows[i].is_active && windows[i].z_layer == 1 && i != focused_window_id) {
+            draw_window_internal(&windows[i]);
+        }
+    }
+
+    // 4. 最後畫「有焦點」的最上層視窗
     if (focused_window_id != -1 && windows[focused_window_id].is_active) {
         draw_window_internal(&windows[focused_window_id]);
     }
 
-    // 4. 畫工作列 (Taskbar)
+    // 5. 畫工作列 (Taskbar)
     draw_taskbar();
 
-    // 5. 畫開始選單 (必須疊在所有視窗和工作列上面)
+    // 6. 畫開始選單 (必須疊在所有視窗和工作列上面)
     draw_start_menu();
 
-    // 6. 畫滑鼠游標 (永遠在最最上層)
+    // 7. 畫滑鼠游標 (永遠在最最上層)
     draw_cursor(mouse_x, mouse_y);
 
-    // 交換畫布
+    // 8. 交換畫布
     gfx_swap_buffers();
 }
 
@@ -490,6 +622,11 @@ int create_window(int x, int y, int width, int height, const char* title, int ow
     windows[id].has_new_key = 0;
 
     windows[id].has_new_click = 0; // 【Day 76 新增】初始化事件狀態
+
+    // [day78] window 最大/最小 狀態
+    windows[id].is_minimized = 0;
+    windows[id].is_maximized = 0;
+    windows[id].z_layer = 1; // 預設為一般圖層
     focused_window_id = id; // 新開的視窗預設取得焦點
     return id;
 }

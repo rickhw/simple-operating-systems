@@ -15,9 +15,7 @@ typedef struct {
     int owner_pid; // 【Day 68 新增】視窗背後的靈魂 (PID)
     uint32_t* canvas; // 【Day 69 新增】視窗專屬的像素緩衝區
 
-    // ==========================================
     // 【Day 76 新增】視窗內部事件暫存區
-    // ==========================================
     int last_click_x;    // 點擊在畫布上的相對 X 座標
     int last_click_y;    // 點擊在畫布上的相對 Y 座標
     int has_new_click;   // 1 代表有新事件尚未被 App 讀取
@@ -25,6 +23,15 @@ typedef struct {
     // 【Day 77 新增】鍵盤事件暫存區
     char last_key;
     int has_new_key;
+
+    // 【Day 78 新增】視窗狀態與控制
+    int is_minimized;  // 1 代表縮小到工作列
+    int is_maximized;  // 1 代表最大化
+    int orig_x;        // 記憶最大化之前的 X 座標
+    int orig_y;        // 記憶最大化之前的 Y 座標
+    int orig_w;        // 記憶最大化之前的寬度
+    int orig_h;        // 記憶最大化之前的高度
+    int z_layer;       // 1 為一般層，0 為置底層
 } window_t;
 
 
