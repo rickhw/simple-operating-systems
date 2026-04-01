@@ -107,7 +107,7 @@
 
 ## 實作內容
 
-整個實作大概分成底下六大部分：
+整個實作大概分成底下幾個部分：
 
 1. **環境與中斷實作**：透過組合語言從 Bootloader 開始，實作 GDT / IDT，控制 IRQ 處理鍵盤中斷。
 2. **存儲系統**：實作 MBR 解析與簡易檔案系統 (FileSystem)。
@@ -115,15 +115,10 @@
 4. **記憶體與行程**：實作 MMU Paging，實現記憶體隔離、`fork`/`exec` 機制、`Shell` 的誕生，以及 IPC (進程間通訊) 與 Mutex 機制。
 5. **使用者空間 (User Space)** ：開發 C Library，包含 `malloc`/`free`/`printf` 等基礎函式。透過 Syscall 打造基礎指令（`ls`/`mkdir`/`cat`/`touch`/`rm`）及內建指令（`cd`/`pwd`/`exit`）。
 6. **圖形介面 (GUI)** ：實作簡單的視窗介面，包含滑鼠 I/O、Double Buffering（雙重緩衝）機制、字型渲染，並實作基礎的 Window Manager。
+7. **行程管理 (Process Manager)** ：實作 top、ps、kill 等行程管理
+8. **視窗多工 GUI 生態系** ：實作 File Manager、Task Manager、Event Routing、讀圖 ... 等。
 
-這可以想像成六個 Sprint，每個部分都有約 10 個核心功能需要達成。
-
-底下是完整的課程大綱：
-
-
-![](/about/Course-Overview1.png)
-![](/about/Course-Overview2.png)
-
+這可以想像成幾個 Sprint，每個部分都有約 10 個核心功能需要達成。
 
 
 ### 學習過程
@@ -144,27 +139,7 @@ SMM: enter
 Servicing hardware INT=0x09
 Servicing hardware INT=0x08
 Servicing hardware INT=0x20
-     0: v=20 e=0000 i=0 cpl=0 IP=0008:001002a1 pc=001002a1 SP=0010:00109d38 env->regs[R_EAX]=ffffff50
-EAX=ffffff50 EBX=00105084 ECX=000001f7 EDX=000001f7
-ESI=00109f78 EDI=00109f78 EBP=00002800 ESP=00109d38
-EIP=001002a1 EFL=00000286 [--S--P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-CS =0008 00000000 ffffffff 00cf9a00 DPL=0 CS32 [-R-]
-SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-TR =002b 0010a000 00000068 0000e900 DPL=3 TSS32-avl
-GDT=     0010a080 0000002f
-IDT=     0010a0e0 000007ff
-CR0=80000011 CR2=00000000 CR3=0010f000 CR4=00000000
-DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
-DR6=ffff0ff0 DR7=00000400
-CCS=00000084 CCD=ffffffc0 CCO=EFLAGS
-EFER=0000000000000000
-Servicing hardware INT=0x21
-     
+
      2: v=20 e=0000 i=0 cpl=0 IP=0008:00101870 pc=00101870 SP=0010:00109fc8 env->regs[R_EAX]=c0000030
 EAX=c0000030 EBX=c000000c ECX=00000000 EDX=c0000030
 ESI=c000000c EDI=00105084 EBP=00000000 ESP=00109fc8
