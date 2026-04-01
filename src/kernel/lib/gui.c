@@ -28,6 +28,8 @@ static int drag_offset_y = 0;      // 滑鼠點擊位置與視窗左上角的 Y 
 static volatile int gui_dirty = 1;     // 1 代表畫面需要更新
 static volatile int is_rendering = 0;  // 1 代表正在畫圖中，避免重複進入
 
+// --- UI Interaction Helpers ---
+
 // 加入 Focus 判斷與 [X] 按鈕
 static void draw_window_internal(window_t* win) {
     int is_focused = (focused_window_id == win->id);
@@ -178,36 +180,165 @@ static void draw_desktop_icons(void) {
     draw_desktop_icon(20, 80, "Status", 0x008000);   // 綠色圖示
 }
 
-// 【新增】統籌切換模式的核心 API
-void switch_display_mode(int is_gui) {
-    enable_gui_mode(is_gui);
-    terminal_set_mode(is_gui);
 
-    if (is_gui) {
-        // 切換回 GUI 時，確保有一個 Terminal 視窗可以接管輸入
-        int found = 0;
-        window_t* wins = get_windows();
-        for (int i = 0; i < 10; i++) { // 假設 MAX_WINDOWS = 10
-            if (wins[i].is_active && strcmp(wins[i].title, "Simple OS Terminal") == 0) {
-                terminal_bind_window(i);
-                set_focused_window(i);
-                found = 1;
-                break;
+// ==========================================
+// 【Day 72 重構】統一的 Z-Order UI 事件分發中心
+// 規則：從最上層一路往下檢查，只要命中就「吞掉」事件並 Return 1！
+// ==========================================
+static int handle_start_menu_click(int x, int y) {
+    if (!start_menu_open) return 0;
+
+    int menu_y = SCREEN_HEIGHT - TASKBAR_HEIGHT - START_MENU_HEIGHT;
+    if (x >= 4 && x <= 4 + START_MENU_WIDTH && y >= menu_y && y <= menu_y + START_MENU_HEIGHT) {
+        if (y >= menu_y + 10 && y <= menu_y + 30) {
+            // 點擊 "1. Terminal"
+            int found = 0;
+            for (int i = 0; i < MAX_WINDOWS; i++) {
+                if (windows[i].is_active && strcmp(windows[i].title, "Simple OS Terminal") == 0) {
+                    set_focused_window(i); found = 1; break;
+                }
             }
+            if (!found) {
+                int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1);
+                terminal_bind_window(term_win);
+            }
+        } else if (y >= menu_y + 40 && y <= menu_y + 60) {
+            // 點擊 "2. Sys Status"
+            int found = 0;
+            for (int i = 0; i < MAX_WINDOWS; i++) {
+                if (windows[i].is_active && strcmp(windows[i].title, "System Status") == 0) {
+                    set_focused_window(i); found = 1; break;
+                }
+            }
+            if (!found) create_window(450, 100, 300, 200, "System Status", 1);
+        } else if (y >= menu_y + 70 && y <= menu_y + 90) {
+            // 點擊 "3. Shutdown"
+            draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_BLACK);
+            draw_string(230, 280, "It is now safe to turn off your computer.", 0xFF8000, COLOR_BLACK);
+            gfx_swap_buffers();
+            while(1) __asm__ volatile("cli; hlt");
+        } else if (y >= menu_y + 100 && y <= menu_y + 120) {
+            // 點擊 "4. Exit to CLI"
+            switch_display_mode(0);
         }
-        if (!found) {
-            int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1); // 預設由 PID#1 建立
-            terminal_bind_window(term_win);
-        }
-    } else {
-        // 切換到 CLI 時，解除視窗綁定，讓 TTY 全螢幕輸出
-        terminal_bind_window(-1);
+        start_menu_open = 0;
+        gui_dirty = 1;
+        return 1;
     }
 
-    // 強制畫面大更新
-    extern void gui_redraw(void);
-    gui_redraw();
+    start_menu_open = 0;
+    gui_dirty = 1;
+    return 1;
 }
+
+static int handle_window_click(int x, int y) {
+    // ==========================================
+    // 1. 優先檢查擁有焦點的視窗 (Top Window)
+    // ==========================================
+    if (focused_window_id != -1 && windows[focused_window_id].is_active) {
+        window_t* win = &windows[focused_window_id];
+
+        if (x >= win->x && x <= win->x + win->width && y >= win->y && y <= win->y + win->height) {
+            int btn_x = win->x + win->width - 20;
+            int btn_y = win->y + 4;
+
+            if (x >= btn_x && x <= btn_x + 14 && y >= btn_y && y <= btn_y + 14) {
+                int target_pid = win->owner_pid;
+                close_window(win->id);
+                if (target_pid > 1) { sys_kill(target_pid); }
+            }
+            else if (y >= win->y && y <= win->y + 20) {
+                dragged_window_id = win->id;
+                drag_offset_x = x - win->x;
+                drag_offset_y = y - win->y;
+            }
+            // ==========================================
+            // 【Day 76 新增】點擊了畫布內部 (Client Area)！
+            // ==========================================
+            else if (win->canvas != 0 &&
+                     x >= win->x + 2 && x <= win->x + win->width - 2 &&
+                     y >= win->y + 22 && y <= win->y + win->height - 2) {
+
+                win->last_click_x = x - (win->x + 2);
+                win->last_click_y = y - (win->y + 22);
+                win->has_new_click = 1; // 舉起旗標，等待 App 來領取！
+            }
+
+            gui_dirty = 1;
+            return 1;
+        }
+    }
+
+    // ==========================================
+    // 2. 檢查背景視窗
+    // ==========================================
+    for (int i = MAX_WINDOWS - 1; i >= 0; i--) {
+        if (windows[i].is_active && i != focused_window_id) {
+            window_t* win = &windows[i];
+
+            if (x >= win->x && x <= win->x + win->width && y >= win->y && y <= win->y + win->height) {
+                set_focused_window(i); // 切換焦點並拉到最上層！
+                gui_dirty = 1;
+
+                int btn_x = win->x + win->width - 20;
+                int btn_y = win->y + 4;
+
+                if (x >= btn_x && x <= btn_x + 14 && y >= btn_y && y <= btn_y + 14) {
+                    int target_pid = win->owner_pid;
+                    close_window(win->id);
+                    if (target_pid > 1) { sys_kill(target_pid); }
+                }
+                else if (y >= win->y && y <= win->y + 20) {
+                    dragged_window_id = win->id;
+                    drag_offset_x = x - win->x;
+                    drag_offset_y = y - win->y;
+                }
+                // ==========================================
+                // 【Day 76 新增】背景視窗點擊畫布，切換焦點並傳遞事件！
+                // ==========================================
+                else if (win->canvas != 0 &&
+                         x >= win->x + 2 && x <= win->x + win->width - 2 &&
+                         y >= win->y + 22 && y <= win->y + win->height - 2) {
+
+                    win->last_click_x = x - (win->x + 2);
+                    win->last_click_y = y - (win->y + 22);
+                    win->has_new_click = 1;
+                }
+
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int handle_desktop_click(int x, int y) {
+    // Start 按鈕
+    if (x >= 4 && x <= 64 && y >= SCREEN_HEIGHT - TASKBAR_HEIGHT + 4 && y <= SCREEN_HEIGHT - 8) {
+        start_menu_open = 1;
+        gui_dirty = 1;
+        return 1;
+    }
+
+    // 桌面圖示 1: Terminal
+    if (x >= 20 && x <= 52 && y >= 20 && y <= 52) {
+        int offset = window_count * 20;
+        int term_win = create_window(50 + offset, 50 + offset, 368, 228, "Simple OS Terminal", 1);
+        terminal_bind_window(term_win);
+        gui_dirty = 1;
+        return 1;
+    }
+
+    // 桌面圖示 2: Status
+    if (x >= 20 && x <= 52 && y >= 80 && y <= 112) {
+        int offset = window_count * 20;
+        create_window(450 - offset, 100 + offset, 300, 200, "System Status", 1);
+        gui_dirty = 1;
+        return 1;
+    }
+    return 0;
+}
+
 
 // --- GUI API ----
 
@@ -287,131 +418,43 @@ void gui_handle_timer(void) {
 }
 
 
-// ==========================================
-// 【Day 72 重構】統一的 Z-Order UI 事件分發中心
-// 規則：從最上層一路往下檢查，只要命中就「吞掉」事件並 Return 1！
-// ==========================================
-// --- UI Interaction Helpers ---
-
-static int handle_start_menu_click(int x, int y) {
-    if (!start_menu_open) return 0;
-
-    int menu_y = SCREEN_HEIGHT - TASKBAR_HEIGHT - START_MENU_HEIGHT;
-    if (x >= 4 && x <= 4 + START_MENU_WIDTH && y >= menu_y && y <= menu_y + START_MENU_HEIGHT) {
-        if (y >= menu_y + 10 && y <= menu_y + 30) {
-            // 點擊 "1. Terminal"
-            int found = 0;
-            for (int i = 0; i < MAX_WINDOWS; i++) {
-                if (windows[i].is_active && strcmp(windows[i].title, "Simple OS Terminal") == 0) {
-                    set_focused_window(i); found = 1; break;
-                }
-            }
-            if (!found) {
-                int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1);
-                terminal_bind_window(term_win);
-            }
-        } else if (y >= menu_y + 40 && y <= menu_y + 60) {
-            // 點擊 "2. Sys Status"
-            int found = 0;
-            for (int i = 0; i < MAX_WINDOWS; i++) {
-                if (windows[i].is_active && strcmp(windows[i].title, "System Status") == 0) {
-                    set_focused_window(i); found = 1; break;
-                }
-            }
-            if (!found) create_window(450, 100, 300, 200, "System Status", 1);
-        } else if (y >= menu_y + 70 && y <= menu_y + 90) {
-            // 點擊 "3. Shutdown"
-            draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_BLACK);
-            draw_string(230, 280, "It is now safe to turn off your computer.", 0xFF8000, COLOR_BLACK);
-            gfx_swap_buffers();
-            while(1) __asm__ volatile("cli; hlt");
-        } else if (y >= menu_y + 100 && y <= menu_y + 120) {
-            // 點擊 "4. Exit to CLI"
-            switch_display_mode(0);
-        }
-        start_menu_open = 0;
-        gui_dirty = 1;
-        return 1;
-    }
-
-    start_menu_open = 0;
-    gui_dirty = 1;
-    return 1;
-}
-
-static int handle_window_click(int x, int y) {
-    // 優先檢查擁有焦點的視窗
-    if (focused_window_id != -1 && windows[focused_window_id].is_active) {
-        window_t* win = &windows[focused_window_id];
-        if (x >= win->x && x <= win->x + win->width && y >= win->y && y <= win->y + win->height) {
-            int btn_x = win->x + win->width - 20;
-            int btn_y = win->y + 4;
-
-            if (x >= btn_x && x <= btn_x + 14 && y >= btn_y && y <= btn_y + 14) {
-                int target_pid = win->owner_pid;
-                close_window(win->id);
-                if (target_pid > 1) { sys_kill(target_pid); }
-            } else if (y >= win->y && y <= win->y + 20) {
-                dragged_window_id = win->id;
-                drag_offset_x = x - win->x;
-                drag_offset_y = y - win->y;
-            }
-            gui_dirty = 1;
-            return 1;
-        }
-    }
-
-    // 檢查背景視窗
-    for (int i = MAX_WINDOWS - 1; i >= 0; i--) {
-        if (windows[i].is_active && i != focused_window_id) {
-            window_t* win = &windows[i];
-            if (x >= win->x && x <= win->x + win->width && y >= win->y && y <= win->y + win->height) {
-                set_focused_window(i);
-                gui_dirty = 1;
-                if (y >= win->y && y <= win->y + 20) {
-                    dragged_window_id = win->id;
-                    drag_offset_x = x - win->x;
-                    drag_offset_y = y - win->y;
-                }
-                return 1;
-            }
-        }
-    }
-    return 0;
-}
-
-static int handle_desktop_click(int x, int y) {
-    // Start 按鈕
-    if (x >= 4 && x <= 64 && y >= SCREEN_HEIGHT - TASKBAR_HEIGHT + 4 && y <= SCREEN_HEIGHT - 8) {
-        start_menu_open = 1;
-        gui_dirty = 1;
-        return 1;
-    }
-
-    // 桌面圖示 1: Terminal
-    if (x >= 20 && x <= 52 && y >= 20 && y <= 52) {
-        int offset = window_count * 20;
-        int term_win = create_window(50 + offset, 50 + offset, 368, 228, "Simple OS Terminal", 1);
-        terminal_bind_window(term_win);
-        gui_dirty = 1;
-        return 1;
-    }
-
-    // 桌面圖示 2: Status
-    if (x >= 20 && x <= 52 && y >= 80 && y <= 112) {
-        int offset = window_count * 20;
-        create_window(450 - offset, 100 + offset, 300, 200, "System Status", 1);
-        gui_dirty = 1;
-        return 1;
-    }
-    return 0;
-}
-
 int gui_check_ui_click(int x, int y) {
     if (handle_start_menu_click(x, y)) return 1;
     if (handle_window_click(x, y)) return 1;
     if (handle_desktop_click(x, y)) return 1;
     return 0;
+}
+
+
+// 【新增】統籌切換模式的核心 API
+void switch_display_mode(int is_gui) {
+    enable_gui_mode(is_gui);
+    terminal_set_mode(is_gui);
+
+    if (is_gui) {
+        // 切換回 GUI 時，確保有一個 Terminal 視窗可以接管輸入
+        int found = 0;
+        window_t* wins = get_windows();
+        for (int i = 0; i < 10; i++) { // 假設 MAX_WINDOWS = 10
+            if (wins[i].is_active && strcmp(wins[i].title, "Simple OS Terminal") == 0) {
+                terminal_bind_window(i);
+                set_focused_window(i);
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            int term_win = create_window(50, 50, 368, 228, "Simple OS Terminal", 1); // 預設由 PID#1 建立
+            terminal_bind_window(term_win);
+        }
+    } else {
+        // 切換到 CLI 時，解除視窗綁定，讓 TTY 全螢幕輸出
+        terminal_bind_window(-1);
+    }
+
+    // 強制畫面大更新
+    extern void gui_redraw(void);
+    gui_redraw();
 }
 
 
@@ -445,6 +488,7 @@ int create_window(int x, int y, int width, int height, const char* title, int ow
     strcpy(windows[id].title, title);
     windows[id].is_active = 1;
 
+    windows[id].has_new_click = 0; // 【Day 76 新增】初始化事件狀態
     focused_window_id = id; // 新開的視窗預設取得焦點
     return id;
 }

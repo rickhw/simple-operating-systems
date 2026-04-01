@@ -13,7 +13,7 @@
 但現在是 AI 時代，許多過去看似困難、門檻極高的事，在 AI 的協助下都變得有趣且可行！
 
 
-![](/about/Result-Window_20260331.png)
+![](/about/Result-Window_20260401.png)
 
 
 <!-- more -->
@@ -141,47 +141,6 @@ WARNING: Image format was not specified for 'hdd.img' and probing guessed raw.
          Automatically detecting the format is dangerous for raw images, write operations on block 0 will be restricted.
          Specify the 'raw' format explicitly to remove the restrictions.
 SMM: enter
-EAX=00000000 EBX=00000000 ECX=02000000 EDX=02000628
-ESI=0000000b EDI=02000000 EBP=06feb010 ESP=00006d5c
-EIP=000ebede EFL=00000046 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-CS =0008 00000000 ffffffff 00cf9b00 DPL=0 CS32 [-RA]
-SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-GDT=     000f6220 00000037
-IDT=     000f625e 00000000
-CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
-DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
-DR6=ffff0ff0 DR7=00000400
-CCS=00000044 CCD=ffffffff CCO=EFLAGS
-EFER=0000000000000000
-
-EAX=000000b5 EBX=00007d47 ECX=00005678 EDX=00000003
-ESI=06f31fb0 EDI=06ffee71 EBP=0000695c ESP=0000695c
-EIP=00007d47 EFL=00000006 [-----P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =da80 000da800 ffffffff 00809300
-CS =f000 000f0000 ffffffff 00809b00
-SS =0000 00000000 ffffffff 00809300
-DS =0000 00000000 ffffffff 00809300
-FS =0000 00000000 ffffffff 00809300
-GS =ca00 000ca000 ffffffff 00809300
-LDT=0000 00000000 0000ffff 00008200
-TR =0000 00000000 0000ffff 00008b00
-GDT=     00000000 00000000
-IDT=     00000000 000003ff
-CR0=00000010 CR2=00000000 CR3=00000000 CR4=00000000
-DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
-DR6=ffff0ff0 DR7=00000400
-CCS=00000004 CCD=00000001 CCO=EFLAGS
-EFER=0000000000000000
-Servicing hardware INT=0x08
-Servicing hardware INT=0x08
-Servicing hardware INT=0x08
-
 Servicing hardware INT=0x09
 Servicing hardware INT=0x08
 Servicing hardware INT=0x20
@@ -241,10 +200,9 @@ drwxr-xr-x@ 7 rickhwang  staff   224B Mar 26 21:15 kernel
 drwxr-xr-x@ 6 rickhwang  staff   192B Mar 26 21:10 user
 ```
 
-底下錄影分別 Demo 了 Terminal 和 Window：
+底下錄影 Demo 整個過程，包含編譯與執行：
 
-[![Watch the video](https://img.youtube.com/vi/07ytT9O286E/0.jpg)](https://www.youtube.com/watch?v=07ytT9O286E)
-[![Watch the video](https://img.youtube.com/vi/WVQSnAE8AJM/0.jpg)](https://www.youtube.com/watch?v=WVQSnAE8AJM)
+[![Watch the video](https://img.youtube.com/vi/zXh80VTh-5E/0.jpg)](https://www.youtube.com/watch?v=zXh80VTh-5E)
 
 
 原始碼放在 [GitHub](https://github.com/rickhw/simple-operating-systems) 上，結構如下：

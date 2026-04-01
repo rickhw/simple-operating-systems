@@ -14,6 +14,13 @@ typedef struct {
     int is_active;
     int owner_pid; // 【Day 68 新增】視窗背後的靈魂 (PID)
     uint32_t* canvas; // 【Day 69 新增】視窗專屬的像素緩衝區
+
+    // ==========================================
+    // 【Day 76 新增】視窗內部事件暫存區
+    // ==========================================
+    int last_click_x;    // 點擊在畫布上的相對 X 座標
+    int last_click_y;    // 點擊在畫布上的相對 Y 座標
+    int has_new_click;   // 1 代表有新事件尚未被 App 讀取
 } window_t;
 
 

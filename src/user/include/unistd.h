@@ -57,6 +57,7 @@ void update_gui_window(int win_id, unsigned int* buffer);
 int set_display_mode(int is_gui);
 void clear_screen(void); // 【新增】清空螢幕 API
 
+int get_window_event(int win_id, int* x, int* y);
 
 // Time API
 void get_time(int* h, int* m);

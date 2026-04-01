@@ -187,6 +187,30 @@ void syscall_handler(registers_t *regs) {
         ipc_unlock();
     }
 
+    // ==========================================
+    // 【Day 76 新增】Syscall 29: sys_get_window_event
+    // ==========================================
+    else if (eax == 29) {
+        int win_id = (int)regs->ebx;
+        int* out_x = (int*)regs->ecx;
+        int* out_y = (int*)regs->edx;
+
+        ipc_lock();
+        extern window_t* get_window(int id);
+        window_t* win = get_window(win_id);
+
+        // 安全性檢查：確認視窗存在，且確實是這個程式擁有的
+        if (win != 0 && win->owner_pid == current_task->pid && win->has_new_click) {
+            *out_x = win->last_click_x;
+            *out_y = win->last_click_y;
+            win->has_new_click = 0; // 事件已讀取，降下旗標
+            regs->eax = 1; // 回傳 1 代表有新事件
+        } else {
+            regs->eax = 0; // 回傳 0 代表沒有事件
+        }
+        ipc_unlock();
+    }
+
     ipc_lock();
     handle_fs_syscalls(eax, regs);
     handle_task_syscalls(eax, regs);

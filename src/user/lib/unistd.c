@@ -138,6 +138,16 @@ void update_gui_window(int win_id, unsigned int* buffer) {
     );
 }
 
+int get_window_event(int win_id, int* x, int* y) {
+    int ret;
+    __asm__ volatile (
+        "int $128"
+        : "=a" (ret)
+        : "a" (29), "b" (win_id), "c" (x), "d" (y)
+    );
+    return ret;
+}
+
 
 // Time API
 void get_time(int* h, int* m) {
