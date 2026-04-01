@@ -120,12 +120,18 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
 }
 
 void exit_task() {
+    // 1. 【修復 Ghost Window】程式自己正常退出時，也要收起視窗！
+    extern void gui_close_windows_by_pid(int pid);
+    gui_close_windows_by_pid(current_task->pid);
+
     task_t *temp = current_task->next;
+    int parent_waiting = 0;
+
     while (temp != current_task) {
-        // 【Day 62 修改】改用 pid 判斷
         if (temp->state == TASK_WAITING && temp->wait_pid == current_task->pid) {
             temp->state = TASK_RUNNING;
             temp->wait_pid = 0;
+            parent_waiting = 1;
         }
         temp = temp->next;
     }
@@ -134,8 +140,8 @@ void exit_task() {
         free_page_directory(current_task->page_directory);
     }
 
-    // 【修改】如果沒有老爸 (ppid == 0)，就直接 DEAD，否則變 ZOMBIE
-    if (current_task->ppid == 0) {
+    // 2. 【修復 Zombie】如果沒有老爸等著收屍，就直接 DEAD
+    if (current_task->ppid == 0 || !parent_waiting) {
         current_task->state = TASK_DEAD;
     } else {
         current_task->state = TASK_ZOMBIE;
@@ -417,18 +423,29 @@ int sys_kill(int pid) {
     // 遍歷所有行程尋找目標
     do {
         if (temp->pid == (uint32_t)pid && temp->state != TASK_DEAD) {
-            // 【Day 67 修改】變成殭屍
-            temp->state = TASK_ZOMBIE;
+            // 1. 【修復 Ghost Window】呼叫 GUI 引擎，把這個行程的視窗全關了！
+            extern void gui_close_windows_by_pid(int pid);
+            gui_close_windows_by_pid(pid);
 
-            // 【Day 67 新增】如果老爸正在等它死，我們要順便把老爸叫醒！
-            task_t *parent = (task_t*)current_task;
+            // 2. 檢查老爸是不是正在等它死？
+            task_t *parent = current_task;
+            int parent_waiting = 0;
             do {
-                if (parent->pid == temp->ppid && parent->state == TASK_WAITING && parent->wait_pid == (uint32_t)pid) {
+                if (parent->pid == temp->ppid && parent->state == TASK_WAITING && parent->wait_pid == pid) {
                     parent->state = TASK_RUNNING;
                     parent->wait_pid = 0;
+                    parent_waiting = 1;
+                    break;
                 }
                 parent = parent->next;
-            } while (parent != (task_t*)current_task);
+            } while (parent != current_task);
+
+            // 3. 【修復 Zombie】如果老爸沒在等 (例如背景執行的程式)，直接入土為安！
+            if (parent_waiting) {
+                temp->state = TASK_ZOMBIE;
+            } else {
+                temp->state = TASK_DEAD;
+            }
 
             found = 1;
             break;

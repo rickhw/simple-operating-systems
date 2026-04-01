@@ -549,3 +549,16 @@ void gui_mouse_up(void) {
     // 放開滑鼠，解除拖曳狀態
     dragged_window_id = -1;
 }
+
+
+// ==========================================
+// 【Day 76 修復】根據 PID 關閉該行程擁有的所有視窗
+// ==========================================
+void gui_close_windows_by_pid(int pid) {
+    for (int i = 0; i < MAX_WINDOWS; i++) {
+        if (windows[i].is_active && windows[i].owner_pid == pid) {
+            close_window(windows[i].id);
+        }
+    }
+    gui_dirty = 1; // 標記畫面需要重繪
+}

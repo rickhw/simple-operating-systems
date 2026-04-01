@@ -62,5 +62,7 @@ int get_window_event(int win_id, int* x, int* y);
 // Time API
 void get_time(int* h, int* m);
 
+// String API
+int strcmp(const char *s1, const char *s2);
 
 #endif

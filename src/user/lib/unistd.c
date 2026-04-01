@@ -153,3 +153,11 @@ int get_window_event(int win_id, int* x, int* y) {
 void get_time(int* h, int* m) {
     syscall(28, (int)h, (int)m, 0, 0, 0);
 }
+
+
+// String API
+// User Space 專用的字串比對工具
+int strcmp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) { s1++; s2++; }
+    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}

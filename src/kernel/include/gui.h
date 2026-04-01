@@ -55,4 +55,6 @@ void switch_display_mode(int is_gui);
 void gui_mouse_down(int x, int y);
 void gui_mouse_up(void);
 
+void gui_close_windows_by_pid(int pid);
+
 #endif

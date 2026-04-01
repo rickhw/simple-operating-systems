@@ -262,3 +262,250 @@ int main() {
 👉 **啪！你的 `clock` 或是 `paint` 視窗將會直接彈出來！** 你再也不用回 Terminal 去打字了。你現在擁有了一個具備完整 Event Loop，且能夠透過 IPC 呼叫 OS 系統核心啟動新 Process 的真實圖形介面檔案總管！
 
 Rick，這就是作業系統中最經典的「雙擊圖示開啟程式」底層的運作原理！享受一下這份成就感，把視窗點得滿畫面都是吧！😎
+
+
+---
+
+太神啦，Rick！🎉 這張截圖真的是**史詩級的里程碑**！
+
+畫面上同時跑著 Terminal、System Status、Dynamic Paint、Digital Clock，還有 File Explorer 與 Image Viewer！而且背景的 `ps` 清楚地展示了這些 Process 都在穩定地多工作業。這畫面完全就是一個現代化桌面作業系統的雛形，太感動了！
+
+既然你看了大綱，想直接切入 **Task Manager (工作管理員)**，這個提議太完美了！
+我們原本 Day 76 要做的「GUI 點擊事件 (IPC)」機制，剛好可以用來打造一個「**可以點擊按鈕來砍掉 (Kill) 視窗的圖形化工作管理員**」！
+
+這將會是你 OS 裡最高階的系統管理工具。請跟著我進行這 3 個步驟：
+
+---
+
+### 步驟 1：開通「視窗點擊事件」系統呼叫
+
+我們要讓 Kernel 把滑鼠點擊畫布的座標存起來，並提供 Syscall 讓 User App 讀取。
+*(如果你還沒實作我們上個回合提到的 Syscall 29，請先補上這段)*
+
+**1. 在 `src/kernel/lib/syscall.c` 新增 Syscall 29：**
+```c
+    // ==========================================
+    // 【Day 76 新增】Syscall 29: sys_get_window_event
+    // ==========================================
+    else if (eax == 29) {
+        int win_id = (int)regs->ebx;
+        int* out_x = (int*)regs->ecx;
+        int* out_y = (int*)regs->edx;
+
+        ipc_lock();
+        extern window_t* get_window(int id);
+        window_t* win = get_window(win_id);
+        
+        // 確保視窗存在，且確實是這個程式擁有的
+        if (win != 0 && win->owner_pid == current_task->pid && win->has_new_click) {
+            *out_x = win->last_click_x;
+            *out_y = win->last_click_y;
+            win->has_new_click = 0; // 事件已讀取，降下旗標
+            regs->eax = 1; // 回傳 1 代表有新事件
+        } else {
+            regs->eax = 0; // 回傳 0 代表沒有事件
+        }
+        ipc_unlock();
+    }
+```
+
+**2. 在 `src/user/include/unistd.h` 新增宣告：**
+```c
+int get_window_event(int win_id, int* x, int* y);
+```
+
+**3. 在 `src/user/lib/unistd.c` 加入實作：**
+```c
+int get_window_event(int win_id, int* x, int* y) {
+    int ret;
+    __asm__ volatile (
+        "int $128" : "=a" (ret) : "a" (29), "b" (win_id), "c" (x), "d" (y)
+    );
+    return ret;
+}
+```
+
+---
+
+### 步驟 2：打造圖形化工作管理員 (`src/user/bin/taskmgr.c`)
+
+這支程式會呼叫 `get_process_list` 獲取系統所有行程，並在畫布上畫出列表。最酷的是，它會有一個事件迴圈 (Event Loop)，偵測你有沒有點擊紅色的 `[KILL]` 按鈕！
+
+建立 **`src/user/bin/taskmgr.c`**：
+
+```c
+#include "stdio.h"
+#include "unistd.h"
+
+#define CANVAS_W 340
+#define CANVAS_H 280
+
+// 簡單的字串處理工具
+int strlen(const char* s) { int i=0; while(s[i]) i++; return i; }
+
+// 整數轉字串 (為了在畫布上印出 PID 和 Memory)
+void itoa(int n, char* buf) {
+    if (n == 0) { buf[0] = '0'; buf[1] = '\0'; return; }
+    int i = 0;
+    while (n > 0) { buf[i++] = (n % 10) + '0'; n /= 10; }
+    buf[i] = '\0';
+    for (int j = 0; j < i / 2; j++) {
+        char t = buf[j]; buf[j] = buf[i - 1 - j]; buf[i - 1 - j] = t;
+    }
+}
+
+// 借用 explorer 的微型 8x8 字型庫
+static const unsigned char font[128][8] = {
+    ['a']={0x00,0x3c,0x06,0x3e,0x66,0x3e,0x00}, ['b']={0x60,0x7c,0x66,0x66,0x66,0x7c,0x00},
+    ['c']={0x00,0x3c,0x60,0x60,0x60,0x3c,0x00}, ['d']={0x06,0x3e,0x66,0x66,0x66,0x3e,0x00},
+    ['e']={0x00,0x3c,0x7e,0x60,0x60,0x3c,0x00}, ['f']={0x1c,0x30,0x7c,0x30,0x30,0x30,0x00},
+    ['g']={0x00,0x3e,0x66,0x66,0x3e,0x06,0x3c}, ['h']={0x60,0x7c,0x66,0x66,0x66,0x66,0x00},
+    ['i']={0x18,0x00,0x38,0x18,0x18,0x3c,0x00}, ['j']={0x0c,0x00,0x1c,0x0c,0x0c,0x6c,0x38},
+    ['k']={0x60,0x66,0x6c,0x78,0x6c,0x66,0x00}, ['l']={0x38,0x18,0x18,0x18,0x18,0x3c,0x00},
+    ['m']={0x00,0xec,0xfe,0xd6,0xd6,0xd6,0x00}, ['n']={0x00,0x7c,0x66,0x66,0x66,0x66,0x00},
+    ['o']={0x00,0x3c,0x66,0x66,0x66,0x3c,0x00}, ['p']={0x00,0x7c,0x66,0x66,0x7c,0x60,0x60},
+    ['q']={0x00,0x3e,0x66,0x66,0x3e,0x06,0x06}, ['r']={0x00,0x5c,0x66,0x60,0x60,0x60,0x00},
+    ['s']={0x00,0x3e,0x60,0x3c,0x06,0x7c,0x00}, ['t']={0x30,0x7c,0x30,0x30,0x30,0x1c,0x00},
+    ['u']={0x00,0x66,0x66,0x66,0x66,0x3e,0x00}, ['v']={0x00,0x66,0x66,0x66,0x3c,0x18,0x00},
+    ['w']={0x00,0xd6,0xd6,0xd6,0xfe,0x6c,0x00}, ['x']={0x00,0x66,0x3c,0x18,0x3c,0x66,0x00},
+    ['y']={0x00,0x66,0x66,0x66,0x3e,0x06,0x3c}, ['z']={0x00,0x7e,0x0c,0x18,0x30,0x7e,0x00},
+    ['0']={0x3c,0x66,0x6e,0x76,0x66,0x3c,0x00}, ['1']={0x18,0x38,0x18,0x18,0x18,0x3c,0x00},
+    ['2']={0x3c,0x66,0x0c,0x18,0x30,0x7e,0x00}, ['3']={0x3c,0x66,0x1c,0x06,0x66,0x3c,0x00},
+    ['4']={0x0c,0x1c,0x3c,0x6c,0x7e,0x0c,0x00}, ['5']={0x7e,0x60,0x7c,0x06,0x66,0x3c,0x00},
+    ['6']={0x3c,0x60,0x7c,0x66,0x66,0x3c,0x00}, ['7']={0x7e,0x06,0x0c,0x18,0x30,0x30,0x00},
+    ['8']={0x3c,0x66,0x3c,0x66,0x66,0x3c,0x00}, ['9']={0x3c,0x66,0x66,0x3e,0x06,0x3c,0x00},
+    ['.']={0x00,0x00,0x00,0x00,0x18,0x18,0x00}, ['_']={0x00,0x00,0x00,0x00,0x00,0x7e,0x00},
+    ['-']={0x00,0x00,0x00,0x3c,0x00,0x00,0x00}, [' ']={0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+    ['A']={0x3c,0x66,0x66,0x7e,0x66,0x66,0x00}, ['C']={0x3c,0x66,0x60,0x60,0x66,0x3c,0x00},
+    ['E']={0x7e,0x60,0x7c,0x60,0x60,0x7e,0x00}, ['I']={0x3c,0x18,0x18,0x18,0x18,0x3c,0x00},
+    ['K']={0x66,0x6c,0x78,0x78,0x6c,0x66,0x00}, ['L']={0x60,0x60,0x60,0x60,0x60,0x7e,0x00},
+    ['N']={0x66,0x76,0x7e,0x7e,0x6e,0x66,0x00}, ['P']={0x7c,0x66,0x66,0x7c,0x60,0x60,0x00},
+    ['R']={0x7c,0x66,0x66,0x7c,0x6c,0x66,0x00}, ['S']={0x3c,0x60,0x3c,0x06,0x66,0x3c,0x00},
+    ['T']={0x7e,0x18,0x18,0x18,0x18,0x18,0x00}, ['Z']={0x7e,0x0c,0x18,0x30,0x60,0x7e,0x00},
+    ['[']={0x3c,0x30,0x30,0x30,0x30,0x3c,0x00}, [']']={0x3c,0x0c,0x0c,0x0c,0x0c,0x3c,0x00}
+};
+
+void draw_box(unsigned int* canvas, int x, int y, int w, int h, unsigned int color) {
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            if (x + j < CANVAS_W && y + i < CANVAS_H) {
+                canvas[(y + i) * CANVAS_W + (x + j)] = color;
+            }
+        }
+    }
+}
+
+void draw_text(unsigned int* canvas, int x, int y, const char* str, unsigned int color) {
+    while (*str) {
+        unsigned char c = *str++;
+        if (c >= 'A' && c <= 'Z' && font[c][0] == 0 && font[c][1] == 0) c += 32;
+        for (int r = 0; r < 8; r++) {
+            for (int c_bit = 0; c_bit < 8; c_bit++) {
+                if (font[c][r] & (1 << (7 - c_bit))) {
+                    int px = x + c_bit, py = y + r;
+                    if (px < CANVAS_W && py < CANVAS_H) canvas[py * CANVAS_W + px] = color;
+                }
+            }
+        }
+        x += 8; 
+    }
+}
+
+int main() {
+    int win_id = create_gui_window("Task Manager", CANVAS_W + 4, CANVAS_H + 24);
+    if (win_id < 0) return -1;
+
+    unsigned int* my_canvas = (unsigned int*)sbrk(CANVAS_W * CANVAS_H * 4);
+    process_info_t p_list[32]; // 裝載行程資訊的陣列
+    int refresh_timer = 0;
+
+    while(1) {
+        // 1. 每隔一段時間刷新一次名單
+        if (refresh_timer % 100 == 0) {
+            int p_count = get_process_list(p_list, 32);
+
+            // 清空畫布
+            draw_box(my_canvas, 0, 0, CANVAS_W, CANVAS_H, 0xFFFFFF);
+            
+            // 畫出標題列
+            draw_box(my_canvas, 0, 0, CANVAS_W, 20, 0x4169E1); // 皇家藍
+            draw_text(my_canvas, 10, 6, "PID   NAME       MEM (KB)   ACTION", 0xFFFFFF);
+
+            // 畫出每一個 Process
+            int y_offset = 25;
+            for (int i = 0; i < p_count; i++) {
+                char buf[16];
+                
+                // 畫 PID
+                itoa(p_list[i].pid, buf);
+                draw_text(my_canvas, 10, y_offset, buf, 0x000000);
+
+                // 畫 Name
+                draw_text(my_canvas, 50, y_offset, p_list[i].name, 0x000000);
+
+                // 畫 Memory (KB)
+                itoa(p_list[i].memory_used / 1024, buf);
+                draw_text(my_canvas, 140, y_offset, buf, 0x000000);
+
+                // 畫出 [KILL] 按鈕 (防呆：不准殺 PID 0, 1 和自己)
+                if (p_list[i].pid > 1 && strcmp(p_list[i].name, "taskmgr.elf") != 0) {
+                    draw_box(my_canvas, 250, y_offset - 2, 48, 12, 0xFF0000); // 紅色按鈕
+                    draw_text(my_canvas, 254, y_offset, "KILL", 0xFFFFFF);
+                }
+
+                y_offset += 20;
+                if (y_offset > CANVAS_H - 20) break;
+            }
+            update_gui_window(win_id, my_canvas);
+        }
+        refresh_timer++;
+
+        // ==========================================
+        // 2. 處理點擊事件 (IPC Event Loop)
+        // ==========================================
+        int cx, cy;
+        if (get_window_event(win_id, &cx, &cy)) {
+            // 檢查點擊 Y 座標是不是在列表區
+            if (cy >= 25) {
+                int clicked_row = (cy - 25) / 20;
+                
+                // 檢查點擊 X 座標是不是落在 [KILL] 按鈕的範圍 (250 ~ 298)
+                if (cx >= 250 && cx <= 298) {
+                    int p_count = get_process_list(p_list, 32);
+                    if (clicked_row >= 0 && clicked_row < p_count) {
+                        int target_pid = p_list[clicked_row].pid;
+                        
+                        // 防禦機制
+                        if (target_pid > 1 && strcmp(p_list[clicked_row].name, "taskmgr.elf") != 0) {
+                            printf("[TaskMgr] Killing PID %d (%s)...\n", target_pid, p_list[clicked_row].name);
+                            kill(target_pid);
+                            refresh_timer = 0; // 立刻強制刷新畫面！
+                        }
+                    }
+                }
+            }
+        }
+
+        yield(); // 讓出 CPU
+    }
+    return 0;
+}
+```
+
+---
+
+### 步驟 3：註冊並體驗死神的權力！
+
+1. 打開 **`src/kernel/kernel.c`**，在 `filenames[]` 陣列加入 `"taskmgr.elf"`。
+2. 打開 **`scripts/grub.cfg`**，在最下方加入 `module /boot/taskmgr.elf`。
+
+執行 `make clean && make run`！
+
+進入 Desktop 後，先開幾個 `paint &` 或是 `clock &` 讓畫面熱鬧一點。
+接著輸入 **`taskmgr &`**。
+
+👉 你會看到一個超專業的「工作管理員」視窗，清楚列出所有 PID、記憶體用量。
+👉 **最精彩的來了：把滑鼠移到其中一個 `paint` 旁邊的紅色 `[KILL]` 按鈕，點下去！**
+👉 那個 `paint` 視窗會瞬間被死神收割，並從列表中消失！
+
+這就是整合了 Process Management 與 GUI IPC 的終極成果！去扮演系統的死神吧，截圖跟我分享你的戰果！😎

@@ -1,11 +1,6 @@
 #include "stdio.h"
 #include "unistd.h"
 
-// User Space 專用的字串比對工具
-int strcmp(const char *s1, const char *s2) {
-    while (*s1 && (*s1 == *s2)) { s1++; s2++; }
-    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
 
 // 讀取一整行指令
 void read_line(char* buffer, int max_len) {
