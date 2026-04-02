@@ -137,7 +137,16 @@ clean:
 	rm -rf $(SRC_DIR)/isodir
 
 run: all hdd.img
-	qemu-system-i386 -cdrom myos.iso -monitor stdio -hda hdd.img -boot d
+	qemu-system-i386 -cdrom myos.iso -monitor stdio \
+	    -netdev user,id=n0 \
+		-device rtl8139,netdev=n0 \
+		-hda hdd.img \
+		-boot d
 
 debug: all hdd.img
-	qemu-system-i386 -cdrom myos.iso -d int -no-reboot -hda hdd.img -boot d
+	qemu-system-i386 -cdrom myos.iso \
+	    -d int -no-reboot \
+	    -netdev user,id=n0 \
+		-device rtl8139,netdev=n0 \
+		-hda hdd.img \
+		-boot d

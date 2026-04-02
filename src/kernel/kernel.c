@@ -17,6 +17,7 @@
 #include "mouse.h"
 #include "gui.h"
 #include "config.h"
+#include "pci.h"
 
 void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     kprintf("[Kernel] Setting up SimpleFS environment...\n");
@@ -50,7 +51,7 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
 
         for(uint32_t i = 0; i < mbd->mods_count && i < expected_mods; i++) {
             uint32_t size = mod[i].mod_end - mod[i].mod_start;
-            kprintf("[Kernel] Installing [%s] to HDD (Size: %d bytes)...\n", filenames[i], size);
+            // kprintf("[Kernel] Installing [%s] to HDD (Size: %d bytes)...\n", filenames[i], size);
             simplefs_create_file(1, filenames[i], (char*)mod[i].mod_start, size);
         }
     }
@@ -123,6 +124,8 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     init_mouse();
 
     __asm__ volatile ("sti");
+
+    init_pci();     // [day81]
 
     // 左上角的終端機文字會自然地印在藍綠色的桌面上
     kprintf("=== OS Subsystems Ready ===\n\n");
