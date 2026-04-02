@@ -79,3 +79,49 @@ void arp_update_table(uint8_t* ip, uint8_t* mac) {
         }
     }
 }
+
+// ==========================================
+// 【Day 88 新增】當收到別人的尋人啟事時，回傳我們的 MAC 位址！
+// ==========================================
+void arp_send_reply(uint8_t* target_ip, uint8_t* target_mac) {
+    uint8_t packet[sizeof(ethernet_header_t) + sizeof(arp_packet_t)];
+    ethernet_header_t* eth = (ethernet_header_t*)packet;
+    arp_packet_t* arp = (arp_packet_t*)(packet + sizeof(ethernet_header_t));
+
+    uint8_t* my_mac = rtl8139_get_mac();
+
+    // 1. Ethernet Header (直接回傳給詢問者)
+    memcpy(eth->dest_mac, target_mac, 6);
+    memcpy(eth->src_mac, my_mac, 6);
+    eth->ethertype = htons(ETHERTYPE_ARP);
+
+    // 2. ARP Header
+    arp->hardware_type = htons(0x0001);
+    arp->protocol_type = htons(ETHERTYPE_IPv4);
+    arp->hw_addr_len = 6;
+    arp->proto_addr_len = 4;
+    arp->opcode = htons(ARP_REPLY); // 【關鍵】這是一封 Reply (2)
+
+    // 來源是我們自己
+    memcpy(arp->src_mac, my_mac, 6);
+    memcpy(arp->src_ip, my_ip, 4);
+
+    // 目標是剛才發問的人
+    memcpy(arp->dest_mac, target_mac, 6);
+    memcpy(arp->dest_ip, target_ip, 4);
+
+    rtl8139_send_packet(packet, sizeof(packet));
+    kprintf("[ARP] Reply sent to %d.%d.%d.%d\n", target_ip[0], target_ip[1], target_ip[2], target_ip[3]);
+}
+
+// ==========================================
+// 【Day 88 升級】查詢電話簿 (ARP Lookup)
+// ==========================================
+uint8_t* arp_lookup(uint8_t* ip) {
+    for (int i = 0; i < ARP_TABLE_SIZE; i++) {
+        if (arp_table[i].is_valid && memcmp(arp_table[i].ip, ip, 4) == 0) {
+            return arp_table[i].mac; // 找到了，回傳 MAC！
+        }
+    }
+    return 0; // 找不到
+}

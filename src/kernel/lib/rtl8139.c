@@ -4,6 +4,9 @@
 #include "tty.h"
 #include "ethernet.h"
 #include "arp.h"
+#include "ipv4.h"
+#include "icmp.h"
+#include "utils.h"
 
 // 儲存網卡的 I/O 基準位址與 MAC 位址
 static uint32_t rtl_iobase = 0;
@@ -19,8 +22,11 @@ static uint8_t rx_buffer[8192 + 16 + 1500] __attribute__((aligned(4096)));
 // [day84] 用來追蹤目前讀取到緩衝區的哪個位置
 static uint16_t rx_offset = 0;
 
-// 【Day 85 提前預習】網卡發送函式
+// ==========================================
+// 【Day 88 終極修復】網卡發送函式 (支援 4 槽輪詢)
+// ==========================================
 static uint8_t tx_buffer[1536] __attribute__((aligned(4096)));
+static uint8_t tx_cur = 0; // 記錄現在輪到哪一個發送槽 (0~3)
 
 
 void init_rtl8139(uint8_t bus, uint8_t slot) {
@@ -144,23 +150,44 @@ void rtl8139_handler(void) {
 
             uint16_t type = ntohs(eth->ethertype);
             if (type == ETHERTYPE_ARP) {
-                kprintf("  -> Protocol: ARP\n");
-
                 // 轉型為 ARP 封包
-                // arp_packet_t* arp = (arp_packet_t*)packet_data;
                 arp_packet_t* arp = (arp_packet_t*)(packet_data + sizeof(ethernet_header_t));
+                uint16_t arp_op = ntohs(arp->opcode);
 
-                kprintf("    ARP OPCode: [%d]\n", ntohs(arp->opcode));
+                kprintf("  -> Protocol: ARP\n");
+                kprintf("  -> ARP OPCode: [%d]\n", arp_op);
 
                 // 如果這是一封 ARP Reply (Opcode == 2)
-                if (ntohs(arp->opcode) == ARP_REPLY) {
+                if (arp_op == ARP_REPLY) {
                     // 呼叫我們剛剛寫的 API，把對方的 IP 和 MAC 記下來！
                     extern void arp_update_table(uint8_t* ip, uint8_t* mac);
                     arp_update_table(arp->src_ip, arp->src_mac);
                 }
+                // ==========================================
+                // 【Day 88 新增】如果別人在找我們，立刻回覆！
+                // ==========================================
+                else if (arp_op == ARP_REQUEST) {
+                    // 檢查他找的 IP 是不是我們？(10.0.2.15)
+                    uint8_t my_ip[4] = {10, 0, 2, 15};
+                    if (memcmp(arp->dest_ip, my_ip, 4) == 0) {
+                        kprintf("[ARP] Someone is asking for our MAC! Replying...\n");
+                        extern void arp_send_reply(uint8_t* target_ip, uint8_t* target_mac);
+                        // 把發問者的 IP 和 MAC 傳給回覆函式
+                        arp_send_reply(arp->src_ip, arp->src_mac);
+                    }
+                }
             }
             else if (type == ETHERTYPE_IPv4) {
                 kprintf("  -> Protocol: IPv4\n");
+                // 跳過 Ethernet Header
+                ipv4_header_t* ip = (ipv4_header_t*)(packet_data + sizeof(ethernet_header_t));
+                if (ip->protocol == 1) { // 1 代表 ICMP
+                    icmp_header_t* icmp = (icmp_header_t*)(packet_data + sizeof(ethernet_header_t) + (ip->ihl * 4));
+                    if (icmp->type == 0) { // 0 代表 Echo Reply
+                        kprintf("[Ping] Reply received from [%d.%d.%d.%d]!\n",
+                                ip->src_ip[0], ip->src_ip[1], ip->src_ip[2], ip->src_ip[3]);
+                    }
+                }
             }
             else {
                 kprintf("  -> Protocol: Unknown (%x)\n", type);
@@ -188,18 +215,47 @@ void rtl8139_handler(void) {
 }
 
 
+// void rtl8139_send_packet(void* data, uint32_t len) {
+//     // 1. 將資料拷貝到對齊的實體緩衝區
+//     memcpy(tx_buffer, data, len);
+
+//     // 2. 告訴網卡緩衝區的位址 (TSAD0 = 0x20)
+//     outl(rtl_iobase + 0x20, (uint32_t)tx_buffer);
+
+//     // 3. 開始傳輸！設定長度並觸發 (TSD0 = 0x10)
+//     // 我們將傳輸門檻設為 0 (立刻開始)，Bit 0~12 是長度
+//     outl(rtl_iobase + 0x10, len & 0x1FFF);
+
+//     // kprintf("[Net] Packet Sent! Len: %d\n", len);
+// }
+
 void rtl8139_send_packet(void* data, uint32_t len) {
-    // 1. 將資料拷貝到對齊的實體緩衝區
+    uint32_t send_len = len;
+    // 乙太網路最小限制 60 Bytes，不足要補 0 (Padding)
+    if (send_len < 60) send_len = 60;
+
+    // 計算當前要用的暫存器位址 (每個槽相差 4 bytes)
+    // TSD: 0x10, 0x14, 0x18, 0x1C
+    // TSAD: 0x20, 0x24, 0x28, 0x2C
+    uint32_t tsd_port = rtl_iobase + 0x10 + (tx_cur * 4);
+    uint32_t tsad_port = rtl_iobase + 0x20 + (tx_cur * 4);
+
+    // 等待當前的發送槽有空 (Bit 13 為 1 代表 Owned by Host)
+    while ((inl(tsd_port) & (1 << 13)) == 0) {
+        // Busy wait (等待上一次這個槽的資料送完)
+    }
+
+    // 將資料拷貝到實體緩衝區 (先清零以防夾帶垃圾資料)
+    memset(tx_buffer, 0, send_len);
     memcpy(tx_buffer, data, len);
 
-    // 2. 告訴網卡緩衝區的位址 (TSAD0 = 0x20)
-    outl(rtl_iobase + 0x20, (uint32_t)tx_buffer);
+    // 寫入實體位址到 TSAD
+    outl(tsad_port, (uint32_t)tx_buffer);
+    // 寫入長度並觸發發送 TSD
+    outl(tsd_port, send_len & 0x1FFF);
 
-    // 3. 開始傳輸！設定長度並觸發 (TSD0 = 0x10)
-    // 我們將傳輸門檻設為 0 (立刻開始)，Bit 0~12 是長度
-    outl(rtl_iobase + 0x10, len & 0x1FFF);
-
-    // kprintf("[Net] Packet Sent! Len: %d\n", len);
+    // 輪到下一個發送槽 (0->1->2->3->0)
+    tx_cur = (tx_cur + 1) % 4;
 }
 
 // [Day 85 新增] 讓其他模組取得本機的 MAC 位址

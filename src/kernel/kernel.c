@@ -153,11 +153,25 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     __asm__ volatile ("sti");
 
     init_pci();     // [day81]
-    // test_net_packet();  // [day84]
-    // 【Day 85 新增】主動尋找路由器的 MAC 位址！
+
+    // ==========================================
+    // 完美的網路通訊劇本：ARP -> Reply -> Ping
+    // ==========================================
     uint8_t router_ip[4] = {10, 0, 2, 2};
-    // arp_send_request(router_ip);
-    ping_send_request(router_ip);
+
+    // 1. 先主動問路由器 MAC 是多少
+    arp_send_request(router_ip);
+
+    // 2. 等待一下，讓網卡接收 ARP Reply 並寫入 ARP Table
+    for (volatile int j = 0; j < 100000000; j++) {}
+
+    // 3. 現在 ARP Table 有資料了，發射 4 顆 Ping！
+    for (int i = 0; i < 4; i++) {
+        ping_send_request(router_ip);
+
+        // 每顆 Ping 之間間隔一下
+        for (volatile int j = 0; j < 100000000; j++) {}
+    }
 
     // 左上角的終端機文字會自然地印在藍綠色的桌面上
     kprintf("=== OS Subsystems Ready ===\n\n");

@@ -22,6 +22,8 @@ typedef struct {
 
 
 void arp_send_request(uint8_t* target_ip);
+void arp_send_reply(uint8_t* target_ip, uint8_t* target_mac);
 void arp_update_table(uint8_t* ip, uint8_t* mac);
+uint8_t* arp_lookup(uint8_t* ip);
 
 #endif

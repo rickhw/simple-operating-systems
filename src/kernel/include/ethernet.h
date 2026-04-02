@@ -2,6 +2,17 @@
 #define ETHERNET_H
 
 #include <stdint.h>
+// ntohs: network to host short
+// 說明：它的主要功能是將一個 16 位元（2 位元組） 的整數從 網路位元組順序（Network Byte Order） 轉換為 主機位元組順序（Host Byte Order）。
+// 用途：通常用於處理從網路接收到的資料（如 TCP/UDP 埠號），因為網路通訊協定規定使用「大端序」（Big-Endian），而許多電腦（如 x86 架構）內部使用「小端序」（Little-Endian）。
+// 參數與回傳值：它接收一個網路順序的 16 位元無符號短整數（uint16_t），並回傳該數值在當前主機系統上的正確順序。
+// 平台差異：如果主機本身就使用大端序，此函式通常不執行任何操作；若主機使用小端序，它會將位元組順序反轉。
+//
+// htons: host to network short
+// ntohl: network to host long
+// htonl: host to network long
+// more see: https://linux.die.net/man/3/ntohs
+#define htons ntohs
 
 // 乙太網路標頭 (長度剛好 14 bytes)
 typedef struct {
@@ -18,6 +29,6 @@ typedef struct {
 static inline uint16_t ntohs(uint16_t netshort) {
     return ((netshort & 0xFF) << 8) | ((netshort & 0xFF00) >> 8);
 }
-#define htons ntohs
+
 
 #endif

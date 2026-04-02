@@ -2,14 +2,20 @@
 #include "rtl8139.h"
 #include "utils.h"
 #include "tty.h"
+#include "arp.h" // 【新增】引入 ARP 查詢
 
 static uint8_t my_ip[4] = {10, 0, 2, 15};
-// QEMU SLIRP 路由器的固定 MAC 位址
-static uint8_t router_mac[6] = {0x52, 0x55, 0x0a, 0x00, 0x02, 0x02};
-
 static uint16_t ping_seq = 1;
 
 void ping_send_request(uint8_t* target_ip) {
+    // 【修復】真實 OS 邏輯：先查 ARP 電話簿！
+    uint8_t* target_mac = arp_lookup(target_ip);
+    if (target_mac == 0) {
+        kprintf("[Ping] Target MAC unknown! Cannot send ping to %d.%d.%d.%d\n",
+                target_ip[0], target_ip[1], target_ip[2], target_ip[3]);
+        return; // 不知道 MAC，直接拒絕發送！
+    }
+
     // 總大小 = Eth(14) + IP(20) + ICMP(8) + Payload(32) = 74 bytes
     uint32_t packet_size = sizeof(ethernet_header_t) + sizeof(ipv4_header_t) + sizeof(icmp_header_t) + 32;
     uint8_t packet[74];
@@ -23,7 +29,7 @@ void ping_send_request(uint8_t* target_ip) {
     uint8_t* my_mac = rtl8139_get_mac();
 
     // 1. Ethernet Header
-    memcpy(eth->dest_mac, router_mac, 6);
+    memcpy(eth->dest_mac, target_mac, 6);
     memcpy(eth->src_mac, my_mac, 6);
     eth->ethertype = htons(ETHERTYPE_IPv4);
 
@@ -56,6 +62,6 @@ void ping_send_request(uint8_t* target_ip) {
 
     // 4. 發射！
     rtl8139_send_packet(packet, packet_size);
-    kprintf("[Ping] Sending Echo Request to %d.%d.%d.%d...\n",
+    kprintf("[Ping] Sending Echo Request to [%d.%d.%d.%d]...\n",
             target_ip[0], target_ip[1], target_ip[2], target_ip[3]);
 }
