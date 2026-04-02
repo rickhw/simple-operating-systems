@@ -1,3 +1,107 @@
+編譯 arp.c 的時候出現 undefined ref error, 我檢查過了 utils.c 裡是有 memcmp 的 ...
+
+---
+``bash
+==> 編譯 Kernel Core: src/kernel/kernel.c
+docker run --platform linux/amd64 --rm -v /Users/rickhwang/Repos/ai-lab/simple-operating-systems:/workspace -w /workspace/src os-builder gcc -m32 -ffreestanding -O2 -Wall -Wextra -Ikernel/include -Ikernel/lib -c kernel/kernel.c -o kernel/kernel.o
+docker run --platform linux/amd64 --rm -v /Users/rickhwang/Repos/ai-lab/simple-operating-systems:/workspace -w /workspace/src os-builder ld -m elf_i386 -n -T ../scripts/linker.ld -o myos.bin kernel/asm/boot.o kernel/asm/gdt_flush.o kernel/asm/interrupts.o kernel/asm/paging.o kernel/asm/switch_task.o kernel/asm/user_mode.o kernel/lib/arp.o kernel/lib/ata.o kernel/lib/elf.o kernel/lib/gdt.o kernel/lib/gfx.o kernel/lib/gui.o kernel/lib/idt.o kernel/lib/keyboard.o kernel/lib/kheap.o kernel/lib/mbr.o kernel/lib/mouse.o kernel/lib/paging.o kernel/lib/pci.o kernel/lib/pmm.o kernel/lib/rtc.o kernel/lib/rtl8139.o kernel/lib/simplefs.o kernel/lib/syscall.o kernel/lib/task.o kernel/lib/timer.o kernel/lib/tty.o kernel/lib/utils.o kernel/lib/vfs.o kernel/kernel.o
+ld: kernel/lib/arp.o: in function `arp_update_table':
+arp.c:(.text+0x118): undefined reference to `memcmp'
+make: *** [src/myos.bin] Error 1
+rm src/user/lib/unistd.o src/user/lib/syscall.o src/user/lib/simpleui.o src/user/lib/stdio.o src/user/asm/crt0.o src/user/lib/stdlib.o
+```
+
+---
+
+arp.c
+```c
+#include "arp.h"
+#include "rtl8139.h"
+#include "tty.h"
+#include "utils.h" // 需要用到 memcpy
+
+// 簡單的 ARP Table 結構
+typedef struct {
+    uint8_t ip[4];
+    uint8_t mac[6];
+    int is_valid;
+} arp_entry_t;
+
+#define ARP_TABLE_SIZE 16
+static arp_entry_t arp_table[ARP_TABLE_SIZE];
+
+// QEMU SLIRP 預設分配給我們虛擬機的 IP
+static uint8_t my_ip[4] = {10, 0, 2, 15};
+
+void arp_send_request(uint8_t* target_ip) {
+    // 整個封包大小 = Ethernet 標頭 (14) + ARP 標頭 (28) = 42 Bytes
+    uint8_t packet[sizeof(ethernet_header_t) + sizeof(arp_packet_t)];
+
+    // 將陣列指標轉型，方便我們填寫欄位
+    ethernet_header_t* eth = (ethernet_header_t*)packet;
+    arp_packet_t* arp = (arp_packet_t*)(packet + sizeof(ethernet_header_t));
+
+    uint8_t* my_mac = rtl8139_get_mac();
+
+    // ==========================================
+    // 1. 填寫 Ethernet Header (L2)
+    // ==========================================
+    for(int i=0; i<6; i++) {
+        eth->dest_mac[i] = 0xFF; // 廣播給網路上所有人
+        eth->src_mac[i] = my_mac[i];
+    }
+    eth->ethertype = htons(ETHERTYPE_ARP);
+
+    // ==========================================
+    // 2. 填寫 ARP Header (L2.5)
+    // ==========================================
+    arp->hardware_type = htons(0x0001); // Ethernet
+    arp->protocol_type = htons(ETHERTYPE_IPv4);
+    arp->hw_addr_len = 6;
+    arp->proto_addr_len = 4;
+    arp->opcode = htons(ARP_REQUEST);
+
+    for(int i=0; i<6; i++) {
+        arp->src_mac[i] = my_mac[i];
+        arp->dest_mac[i] = 0x00; // 還不知道對方的 MAC，所以填 0
+    }
+
+    for(int i=0; i<4; i++) {
+        arp->src_ip[i] = my_ip[i];
+        arp->dest_ip[i] = target_ip[i];
+    }
+
+    // ==========================================
+    // 3. 透過網卡發送！(雖然只有 42 bytes，但網卡會自動幫我們 padding 到 60 bytes)
+    // ==========================================
+    rtl8139_send_packet(packet, sizeof(packet));
+
+    kprintf("[ARP] Broadcast Request sent: Who has [%d.%d.%d.%d]?\n",
+            target_ip[0], target_ip[1], target_ip[2], target_ip[3]);
+}
+
+
+// 更新電話簿的 API
+void arp_update_table(uint8_t* ip, uint8_t* mac) {
+    // 尋找空位或已存在的 IP 並更新 MAC
+    for (int i = 0; i < ARP_TABLE_SIZE; i++) {
+        if (!arp_table[i].is_valid || memcmp(arp_table[i].ip, ip, 4) == 0) {
+            memcpy(arp_table[i].ip, ip, 4);
+            memcpy(arp_table[i].mac, mac, 6);
+            arp_table[i].is_valid = 1;
+            kprintf("[ARP] Table Updated: %d.%d.%d.%d -> %x:%x:%x:%x:%x:%x\n",
+                    ip[0], ip[1], ip[2], ip[3],
+                    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+            return;
+        }
+    }
+}
+```
+
+---
+
+utils.c
+```c
 #include "tty.h"
 #include "gui.h"
 
@@ -23,19 +127,6 @@ void* memset(void* bufptr, int value, size_t size) {
         buf[i] = (unsigned char) value;
     }
     return bufptr;
-}
-
-// 比較兩塊記憶體前 n 個 bytes 是否相同
-int memcmp(const void *s1, const void *s2, size_t n) {
-    const unsigned char *p1 = (const unsigned char *)s1;
-    const unsigned char *p2 = (const unsigned char *)s2;
-
-    for (size_t i = 0; i < n; i++) {
-        if (p1[i] != p2[i]) {
-            return p1[i] - p2[i]; // 只要有不同，就回傳差值
-        }
-    }
-    return 0; // 完全相同回傳 0
 }
 
 // === StringUilts ===
@@ -202,3 +293,39 @@ void kprintf(const char* format, ...) {
     // 整句 kprintf 組合完畢後，再一次性渲染到螢幕上！
     gui_redraw();
 }
+```
+
+---
+utils.h
+```c
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <stdint.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+// === Memory Utils ===
+void* memcpy(void* dstptr, const void* srcptr, size_t size);
+void* memset(void* bufptr, int value, size_t size);
+
+// === String Utils ===
+void reverse_string(char* str, int length);
+void reverse_string(char* str, int length);
+int strcmp(const char *s1, const char *s2);
+char *strcpy(char *dest, const char *src);
+int strlen(const char* str);
+// 尋找子字串 (如果找到 needle，回傳它在 haystack 中的指標，否則回傳 0)
+char* strstr(const char* haystack, const char* needle);
+// 安全的字串拷貝 (最多拷貝 n 個字元，並保證 null 結尾)
+char *strncpy(char *dest, const char *src, size_t n);
+
+// 核心工具：整數轉字串 (itoa), value: 要轉換的數字, str: 存放結果的陣列, base: 進位制 (10或16)
+void itoa(int value, char* str, int base);
+
+// === IO Utils ===
+void kprintf(const char* format, ...);
+
+#endif
+```
