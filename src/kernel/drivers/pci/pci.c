@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/pci/pci.c
- * @brief Main logic and program flow for pci.c.
- *
- * This file handles the operations and logic associated with pci.c.
- */
-
 #include "pci.h"
 #include "io.h"
 #include "utils.h"

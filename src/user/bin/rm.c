@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/rm.c
- * @brief Main logic and program flow for rm.c.
- *
- * This file handles the operations and logic associated with rm.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
 

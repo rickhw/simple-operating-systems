@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/mm/pmm.c
- * @brief Main logic and program flow for pmm.c.
- *
- * This file handles the operations and logic associated with pmm.c.
- */
-
 // Physical Memory Manager: Physical Memory Management
 #include "pmm.h"
 #include "utils.h"

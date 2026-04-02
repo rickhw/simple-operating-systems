@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/net/icmp.c
- * @brief Main logic and program flow for icmp.c.
- *
- * This file handles the operations and logic associated with icmp.c.
- */
-
 #include "icmp.h"
 #include "rtl8139.h"
 #include "utils.h"

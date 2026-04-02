@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/viewer.c
- * @brief Main logic and program flow for viewer.c.
- *
- * This file handles the operations and logic associated with viewer.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
 

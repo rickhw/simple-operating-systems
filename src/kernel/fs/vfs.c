@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/fs/vfs.c
- * @brief Main logic and program flow for vfs.c.
- *
- * This file handles the operations and logic associated with vfs.c.
- */
-
 // Virtual File System: Virtual File System
 #include "vfs.h"
 #include "tty.h"

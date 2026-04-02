@@ -1,5 +1,3 @@
-
-
 ; [目的] 啟動 MMU 分頁機制 (Paging)
 ; [暫存器說明]
 ;  CR3: 存放「頁目錄 (Page Directory)」的物理位址。

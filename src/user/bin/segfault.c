@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/segfault.c
- * @brief Main logic and program flow for segfault.c.
- *
- * This file handles the operations and logic associated with segfault.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
 

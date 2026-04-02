@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/kernel/gui.c
- * @brief Main logic and program flow for gui.c.
- *
- * This file handles the operations and logic associated with gui.c.
- */
-
 #include "gui.h"
 #include "gfx.h"
 #include "utils.h"
@@ -603,7 +596,7 @@ int create_window(int x, int y, int width, int height, const char* title, uint32
     if (window_count >= MAX_WINDOWS) return -1;
     int id = window_count++;
 
-    windows[id].owner_pid = owner_pid; // 
+    windows[id].owner_pid = owner_pid; //
 
     // 計算畫布大小並分配記憶體
     // 畫布寬度 = 總寬 - 左右邊框 (4)

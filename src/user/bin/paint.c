@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/paint.c
- * @brief Main logic and program flow for paint.c.
- *
- * This file handles the operations and logic associated with paint.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
 

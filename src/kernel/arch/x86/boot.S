@@ -1,5 +1,3 @@
-
-
 ; [Purpose] Kernel Entry Point and environment initialization (VESA support)
 ; [Flow] GRUB -> _start -> kernel_main
 

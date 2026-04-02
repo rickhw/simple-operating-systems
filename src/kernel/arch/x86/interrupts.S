@@ -1,5 +1,3 @@
-
-
 ; [目的] 中斷服務例程 (ISR) 總匯與 Interrupt Descriptor Table 載入
 ; [流程 - 以 System Call 0x128 為例]
 ; User App 執行 int 0x128 (eax=功能號)
@@ -71,27 +69,27 @@ isr32:
     iret
 
 isr33:
-    push 0          ; 
+    push 0          ;
     pusha
     call keyboard_handler
     popa
-    add esp, 4      ; 
+    add esp, 4      ;
     iret
 
 isr43:
-    push 0          ; 
+    push 0          ;
     pusha
     call rtl8139_handler
     popa
-    add esp, 4      ; 
+    add esp, 4      ;
     iret
 
 isr44:
-    push 0          ; 
+    push 0          ;
     pusha
     call mouse_handler
     popa
-    add esp, 4      ; 
+    add esp, 4      ;
     iret
 
 ; 第 128 號中斷 (System Call 窗口)

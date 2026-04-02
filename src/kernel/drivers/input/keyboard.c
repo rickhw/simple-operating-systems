@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/input/keyboard.c
- * @brief Main logic and program flow for keyboard.c.
- *
- * This file handles the operations and logic associated with keyboard.c.
- */
-
 #include <stdint.h>
 #include <stddef.h>
 #include "keyboard.h"

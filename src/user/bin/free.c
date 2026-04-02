@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/free.c
- * @brief Main logic and program flow for free.c.
- *
- * This file handles the operations and logic associated with free.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
 
@@ -25,7 +18,7 @@ int main() {
     printf("  Total: %d KB (%d Frames)\n", total_kb, mem.total_frames);
     printf("  Used : %d KB (%d Frames)\n", used_kb, mem.used_frames);
     printf("  Free : %d KB (%d Frames)\n", free_kb, mem.free_frames);
-    
+
     printf("\nVirtual Memory (Paging):\n");
     printf("  Active Universes : %d / 16\n", mem.active_universes);
     printf("===============================\n\n");

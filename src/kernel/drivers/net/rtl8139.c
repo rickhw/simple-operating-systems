@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/net/rtl8139.c
- * @brief Main logic and program flow for rtl8139.c.
- *
- * This file handles the operations and logic associated with rtl8139.c.
- */
-
 #include "io.h"
 #include "rtl8139.h"
 #include "pci.h"

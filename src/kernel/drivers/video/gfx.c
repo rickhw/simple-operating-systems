@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/video/gfx.c
- * @brief Main logic and program flow for gfx.c.
- *
- * This file handles the operations and logic associated with gfx.c.
- */
-
 #include "gfx.h"
 #include "paging.h"
 #include "tty.h"

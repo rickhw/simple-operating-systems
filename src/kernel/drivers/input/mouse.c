@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/input/mouse.c
- * @brief Main logic and program flow for mouse.c.
- *
- * This file handles the operations and logic associated with mouse.c.
- */
-
 #include <stdint.h>
 #include "io.h"
 #include "mouse.h"

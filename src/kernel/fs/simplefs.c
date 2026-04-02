@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/fs/simplefs.c
- * @brief Main logic and program flow for simplefs.c.
- *
- * This file handles the operations and logic associated with simplefs.c.
- */
-
 #include "simplefs.h"
 #include "ata.h"
 #include "tty.h"

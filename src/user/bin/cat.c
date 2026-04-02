@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/cat.c
- * @brief Main logic and program flow for cat.c.
- *
- * This file handles the operations and logic associated with cat.c.
- */
-
 #include "stdio.h"
 
 int main(int argc, char** argv) {

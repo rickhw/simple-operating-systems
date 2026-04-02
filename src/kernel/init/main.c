@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/init/main.c
- * @brief Main logic and program flow for main.c.
- *
- * This file handles the operations and logic associated with main.c.
- */
-
 #include "tty.h"
 #include "utils.h"
 #include "gdt.h"

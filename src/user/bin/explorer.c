@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/explorer.c
- * @brief Main logic and program flow for explorer.c.
- *
- * This file handles the operations and logic associated with explorer.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
 #include "simpleui.h"

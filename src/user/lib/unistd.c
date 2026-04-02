@@ -1,13 +1,5 @@
-/**
- * @file src/user/lib/unistd.c
- * @brief Main logic and program flow for unistd.c.
- *
- * This file handles the operations and logic associated with unistd.c.
- */
-
 #include "unistd.h"
 #include "syscall.h"
-
 
 // process
 int fork() { return syscall(8, 0, 0, 0, 0, 0); }

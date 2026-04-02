@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/fs/elf.c
- * @brief Main logic and program flow for elf.c.
- *
- * This file handles the operations and logic associated with elf.c.
- */
-
 // ELF: Executable and Linkable Format
 #include "elf.h"
 #include "tty.h"

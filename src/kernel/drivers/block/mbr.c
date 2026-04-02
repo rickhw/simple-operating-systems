@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/block/mbr.c
- * @brief Main logic and program flow for mbr.c.
- *
- * This file handles the operations and logic associated with mbr.c.
- */
-
 #include "mbr.h"
 #include "ata.h"
 #include "tty.h"

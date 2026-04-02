@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/mm/kheap.c
- * @brief Main logic and program flow for kheap.c.
- *
- * This file handles the operations and logic associated with kheap.c.
- */
-
 #include "kheap.h"
 #include "pmm.h"
 #include "paging.h"

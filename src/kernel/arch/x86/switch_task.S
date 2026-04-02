@@ -1,5 +1,3 @@
-
-
 ; [目的] 進程上下文切換 (Context Switch) 與位址空間切換
 ; [流程 - switch_task(old_esp, new_esp, next_cr3)]
 ;

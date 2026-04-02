@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/block/ata.c
- * @brief Main logic and program flow for ata.c.
- *
- * This file handles the operations and logic associated with ata.c.
- */
-
 // ATA: Advanced Technology Attachment
 // LBA: Logical Block Addressing
 #include "ata.h"

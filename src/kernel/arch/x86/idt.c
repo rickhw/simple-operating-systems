@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/arch/x86/idt.c
- * @brief Main logic and program flow for idt.c.
- *
- * This file handles the operations and logic associated with idt.c.
- */
-
 // Interrupt Descriptor Table: Interrupt Descriptor Table
 // Intel 8259: https://zh.wikipedia.org/zh-tw/Intel_8259
 // PIC: [Programmable Interrupt Controller](https://en.wikipedia.org/wiki/Programmable_interrupt_controller)

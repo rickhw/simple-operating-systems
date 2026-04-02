@@ -1,5 +1,3 @@
-
-
 ; [目的] 套用新的 Global Descriptor Table 配置並載入任務暫存器 (TR)
 ; [流程]
 ; 1. gdt_flush:

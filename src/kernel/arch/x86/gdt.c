@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/arch/x86/gdt.c
- * @brief Main logic and program flow for gdt.c.
- *
- * This file handles the operations and logic associated with gdt.c.
- */
-
 // Global Descriptor Table: Global Descriptor Table
 // TSS: Task State Segment
 #include <stdint.h>

@@ -1,10 +1,3 @@
-/**
- * @file src/user/bin/taskmgr.c
- * @brief Main logic and program flow for taskmgr.c.
- *
- * This file handles the operations and logic associated with taskmgr.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
 #include "simpleui.h"

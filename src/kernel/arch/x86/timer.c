@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/arch/x86/timer.c
- * @brief Main logic and program flow for timer.c.
- *
- * This file handles the operations and logic associated with timer.c.
- */
-
 #include <stddef.h>
 #include "timer.h"
 #include "io.h"

@@ -1,13 +1,5 @@
-/**
- * @file src/user/bin/shell.c
- * @brief Main logic and program flow for shell.c.
- *
- * This file handles the operations and logic associated with shell.c.
- */
-
 #include "stdio.h"
 #include "unistd.h"
-
 
 // 讀取一整行指令
 void read_line(char* buffer, int max_len) {

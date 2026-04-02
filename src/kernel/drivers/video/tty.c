@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/video/tty.c
- * @brief Main logic and program flow for tty.c.
- *
- * This file handles the operations and logic associated with tty.c.
- */
-
 #include <stdint.h>
 #include <stddef.h>
 #include "tty.h"

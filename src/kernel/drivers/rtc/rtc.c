@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/drivers/rtc/rtc.c
- * @brief Main logic and program flow for rtc.c.
- *
- * This file handles the operations and logic associated with rtc.c.
- */
-
 // RTC: Real-Time Clock
 #include "io.h"
 #include "rtc.h"

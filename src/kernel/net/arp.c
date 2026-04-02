@@ -1,10 +1,3 @@
-/**
- * @file src/kernel/net/arp.c
- * @brief Main logic and program flow for arp.c.
- *
- * This file handles the operations and logic associated with arp.c.
- */
-
 #include "arp.h"
 #include "rtl8139.h"
 #include "tty.h"
