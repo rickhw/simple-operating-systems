@@ -1,11 +1,11 @@
-// GDT: Global Descriptor Table
+// Global Descriptor Table: Global Descriptor Table
 // TSS: Task State Segment
 #ifndef GDT_H
 #define GDT_H
 
 #include <stdint.h>
 
-// GDT 單一條目的結構
+// Global Descriptor Table 單一條目的結構
 struct gdt_entry_struct {
     uint16_t limit_low;   // 區塊長度 (下半部)
     uint16_t base_low;    // 區塊起始位址 (下半部)
@@ -16,10 +16,10 @@ struct gdt_entry_struct {
 } __attribute__((packed));
 typedef struct gdt_entry_struct gdt_entry_t;
 
-// 指向 GDT 陣列的指標結構 (給 lgdt 指令用的)
+// 指向 Global Descriptor Table 陣列的指標結構 (給 lgdt 指令用的)
 struct gdt_ptr_struct {
-    uint16_t limit;       // GDT 陣列的總長度 - 1
-    uint32_t base;        // GDT 陣列的起始位址
+    uint16_t limit;       // Global Descriptor Table 陣列的總長度 - 1
+    uint32_t base;        // Global Descriptor Table 陣列的起始位址
 } __attribute__((packed));
 typedef struct gdt_ptr_struct gdt_ptr_t;
 
@@ -33,7 +33,7 @@ struct tss_entry_struct {
 typedef struct tss_entry_struct tss_entry_t;
 
 
-// 初始化 GDT 的公開函式
+// 初始化 Global Descriptor Table 的公開函式
 void init_gdt(void);
 
 // 新增在 lib/gdt.h

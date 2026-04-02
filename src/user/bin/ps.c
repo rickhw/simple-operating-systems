@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/ps.c
+ * @brief Main logic and program flow for ps.c.
+ *
+ * This file handles the operations and logic associated with ps.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

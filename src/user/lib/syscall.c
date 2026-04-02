@@ -1,3 +1,10 @@
+/**
+ * @file src/user/lib/syscall.c
+ * @brief Main logic and program flow for syscall.c.
+ *
+ * This file handles the operations and logic associated with syscall.c.
+ */
+
 #include "syscall.h"
 
 // 萬用系統呼叫封裝 (支援最多 5 個參數)

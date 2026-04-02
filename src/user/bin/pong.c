@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/pong.c
+ * @brief Main logic and program flow for pong.c.
+ *
+ * This file handles the operations and logic associated with pong.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

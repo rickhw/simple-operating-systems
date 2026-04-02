@@ -1,3 +1,10 @@
+/**
+ * @file src/user/lib/stdio.c
+ * @brief Main logic and program flow for stdio.c.
+ *
+ * This file handles the operations and logic associated with stdio.c.
+ */
+
 #include "stdio.h"
 #include "syscall.h"
 #include "stdarg.h"

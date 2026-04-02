@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/shell.c
+ * @brief Main logic and program flow for shell.c.
+ *
+ * This file handles the operations and logic associated with shell.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 
@@ -81,7 +88,7 @@ int main(int argc, char** argv) {
         char* cmd = parsed_argv[0];
 
         // ==========================================
-        // 【Day 68 擴充】檢查最後一個參數是不是 "&" (背景執行)
+        // 檢查最後一個參數是不是 "&" (背景執行)
         // ==========================================
         int is_background = 0;
         if (parsed_argc > 1 && strcmp(parsed_argv[parsed_argc - 1], "&") == 0) {

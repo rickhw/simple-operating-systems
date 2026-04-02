@@ -1,3 +1,10 @@
+/**
+ * @file src/user/lib/simpleui.c
+ * @brief Main logic and program flow for simpleui.c.
+ *
+ * This file handles the operations and logic associated with simpleui.c.
+ */
+
 #include "simpleui.h"
 
 // ==========================================

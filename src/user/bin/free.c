@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/free.c
+ * @brief Main logic and program flow for free.c.
+ *
+ * This file handles the operations and logic associated with free.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

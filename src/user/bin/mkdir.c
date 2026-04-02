@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/mkdir.c
+ * @brief Main logic and program flow for mkdir.c.
+ *
+ * This file handles the operations and logic associated with mkdir.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

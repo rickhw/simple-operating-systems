@@ -48,7 +48,7 @@ typedef struct {
     uint32_t ecx;    // Counter Register: 常用於迴圈計數
     uint32_t eax;    // Accumulator Register: 函式回傳值或 Syscall 編號
 
-    /* 【Day 70 新增】由 CPU 在某些例外發生時自動壓入的錯誤碼 */
+    /* 由 CPU 在某些例外發生時自動壓入的錯誤碼 */
     /* 如果是一般中斷，我們會在 ASM 裡手動補一個 0，確保結構對齊 */
     uint32_t err_code;
 
@@ -67,13 +67,13 @@ typedef struct task {
     uint32_t esp;
 
     // ==========================================
-    // 【Day 62 修改與新增】行程身分資訊 (PCB 擴充)
+    // 行程身分資訊 (PCB 擴充)
     // ==========================================
     uint32_t pid;               // 將原本的 id 改名為 pid (更符合 OS 慣例)
     uint32_t ppid;              // 【新增】父行程 ID (Parent PID)
     char name[32];              // 【新增】行程名稱 (例如 "shell.elf")
 
-    // 【Day 65 新增】記錄這個行程總共跑了多少個 Ticks
+    // 記錄這個行程總共跑了多少個 Ticks
     uint32_t total_ticks;
 
     uint32_t page_directory;    // 這個 Task 專屬的分頁目錄實體位址 (CR3)
@@ -88,14 +88,14 @@ typedef struct task {
     struct task *next;
 } task_t;
 
-// 【Day 63 新增】用於傳遞給 User Space 的行程資訊
+// 用於傳遞給 User Space 的行程資訊
 typedef struct {
     uint32_t pid;
     uint32_t ppid;
     char name[32];
     uint32_t state;
     uint32_t memory_used; // 佔用記憶體大小 (Bytes)
-    uint32_t total_ticks; // 【Day 65 新增】
+    uint32_t total_ticks; // 
 } process_info_t;
 
 
@@ -109,8 +109,8 @@ void exit_task();
 void schedule();
 int sys_fork(registers_t *regs);
 int sys_exec(registers_t *regs);
-int sys_wait(int pid);
-int sys_kill(int pid);
+int sys_wait(uint32_t pid);
+int sys_kill(uint32_t pid);
 
 int task_get_process_list(process_info_t* list, int max_count);
 

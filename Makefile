@@ -6,8 +6,6 @@ SCRIPT_DIR  = scripts
 
 # Kernel 相關目錄
 KERNEL_DIR     = $(SRC_DIR)/kernel
-KERNEL_ASM_DIR = $(KERNEL_DIR)/asm
-KERNEL_LIB_DIR = $(KERNEL_DIR)/lib
 KERNEL_INC     = -Ikernel/include -Ikernel/lib
 
 # User 相關目錄
@@ -32,13 +30,15 @@ APP_CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protecto
 # -----------------------------------------------------------------------------
 
 # [Kernel]
-C_LIB_SOURCES  = $(wildcard $(KERNEL_LIB_DIR)/*.c)
-C_CORE_SOURCES = $(wildcard $(KERNEL_DIR)/*.c)
-C_OBJS         = $(C_LIB_SOURCES:.c=.o) $(C_CORE_SOURCES:.c=.o)
-ASM_SOURCES    = $(wildcard $(KERNEL_ASM_DIR)/*.S)
-ASM_OBJS       = $(ASM_SOURCES:.S=.o)
+ALL_KERNEL_C_SOURCES = $(shell find $(KERNEL_DIR) -name "*.c")
+ALL_KERNEL_S_SOURCES = $(shell find $(KERNEL_DIR) -name "*.S")
 
-OBJS = $(KERNEL_ASM_DIR)/boot.o $(filter-out $(KERNEL_ASM_DIR)/boot.o, $(ASM_OBJS)) $(C_OBJS)
+C_OBJS         = $(ALL_KERNEL_C_SOURCES:.c=.o)
+ASM_OBJS       = $(ALL_KERNEL_S_SOURCES:.S=.o)
+
+# 核心引導檔案，必須放在最前面
+BOOT_OBJ       = $(KERNEL_DIR)/arch/x86/boot.o
+OBJS           = $(BOOT_OBJ) $(filter-out $(BOOT_OBJ), $(ASM_OBJS) $(C_OBJS))
 
 # [User]
 CRT0_OBJ      = $(USER_ASM_DIR)/crt0.o
@@ -65,16 +65,13 @@ build-env:
 # -----------------------------------------------------------------------------
 
 ## [Kernel 編譯]
-$(KERNEL_ASM_DIR)/%.o: $(KERNEL_ASM_DIR)/%.S
+# 支援遞迴目錄的規則
+$(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.S
 	@echo "==> 編譯 Kernel ASM: $<"
 	$(DOCKER_CMD) nasm -f elf32 $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
-$(KERNEL_LIB_DIR)/%.o: $(KERNEL_LIB_DIR)/%.c
-	@echo "==> 編譯 Kernel Lib: $<"
-	$(DOCKER_CMD) gcc $(CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
-
 $(KERNEL_DIR)/%.o: $(KERNEL_DIR)/%.c
-	@echo "==> 編譯 Kernel Core: $<"
+	@echo "==> 編譯 Kernel C: $<"
 	$(DOCKER_CMD) gcc $(CFLAGS) -c $(subst $(SRC_DIR)/,,$<) -o $(subst $(SRC_DIR)/,,$@)
 
 ## [User 編譯]

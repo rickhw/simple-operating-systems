@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/kill.c
+ * @brief Main logic and program flow for kill.c.
+ *
+ * This file handles the operations and logic associated with kill.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

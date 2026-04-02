@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/echo.c
+ * @brief Main logic and program flow for echo.c.
+ *
+ * This file handles the operations and logic associated with echo.c.
+ */
+
 #include "stdio.h"
 #include "stdlib.h"
 

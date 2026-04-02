@@ -13,7 +13,7 @@
 但現在是 AI 時代，許多過去看似困難、門檻極高的事，在 AI 的協助下都變得有趣且可行！
 
 
-![](/about/Result-Window_20260401.png)
+![](/about/Result-Window_20260402.png)
 
 
 <!-- more -->

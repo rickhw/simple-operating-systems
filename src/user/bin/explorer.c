@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/explorer.c
+ * @brief Main logic and program flow for explorer.c.
+ *
+ * This file handles the operations and logic associated with explorer.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 #include "simpleui.h"
@@ -21,7 +28,7 @@ int main() {
     ui_draw_text(my_canvas, CANVAS_W, CANVAS_H, 10, 8, "Path: /", UI_COLOR_BLACK);
 
     // ==========================================
-    // 【Day 76 新增】建立陣列，記住所有掃描到的檔案
+    // 建立陣列，記住所有掃描到的檔案
     // ==========================================
     char file_names[64][32];
     int total_files = 0;
@@ -56,7 +63,7 @@ int main() {
     update_gui_window(win_id, my_canvas);
 
     // ==========================================
-    // 【Day 76 新增】動態事件迴圈 (Event Loop)
+    // 動態事件迴圈 (Event Loop)
     // ==========================================
     while(1) {
         int click_x, click_y;

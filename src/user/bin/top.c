@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/top.c
+ * @brief Main logic and program flow for top.c.
+ *
+ * This file handles the operations and logic associated with top.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

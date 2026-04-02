@@ -1,3 +1,10 @@
+/**
+ * @file src/user/lib/stdlib.c
+ * @brief Main logic and program flow for stdlib.c.
+ *
+ * This file handles the operations and logic associated with stdlib.c.
+ */
+
 #include "stdlib.h"
 #include "unistd.h"
 

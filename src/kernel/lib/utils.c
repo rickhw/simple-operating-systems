@@ -1,3 +1,10 @@
+/**
+ * @file src/kernel/lib/utils.c
+ * @brief Main logic and program flow for utils.c.
+ *
+ * This file handles the operations and logic associated with utils.c.
+ */
+
 #include "tty.h"
 #include "gui.h"
 

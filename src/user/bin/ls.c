@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/ls.c
+ * @brief Main logic and program flow for ls.c.
+ *
+ * This file handles the operations and logic associated with ls.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

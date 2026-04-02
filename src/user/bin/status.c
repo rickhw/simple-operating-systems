@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/status.c
+ * @brief Main logic and program flow for status.c.
+ *
+ * This file handles the operations and logic associated with status.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 

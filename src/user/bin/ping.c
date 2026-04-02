@@ -1,3 +1,10 @@
+/**
+ * @file src/user/bin/ping.c
+ * @brief Main logic and program flow for ping.c.
+ *
+ * This file handles the operations and logic associated with ping.c.
+ */
+
 #include "stdio.h"
 #include "unistd.h"
 // void sys_printf(char* msg) { __asm__ volatile ("int $0x80" : : "a"(2), "b"(msg) : "memory"); }

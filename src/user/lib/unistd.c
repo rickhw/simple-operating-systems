@@ -1,3 +1,10 @@
+/**
+ * @file src/user/lib/unistd.c
+ * @brief Main logic and program flow for unistd.c.
+ *
+ * This file handles the operations and logic associated with unistd.c.
+ */
+
 #include "unistd.h"
 #include "syscall.h"
 
@@ -24,7 +31,7 @@ int remove(const char* filename) {
     return syscall(16, (int)filename, 0, 0, 0, 0);
 }
 
-// 【Day 73 新增】檔案 I/O 操作
+// 檔案 I/O 操作
 int open(const char* filename) {
     return syscall(3, (int)filename, 0, 0, 0, 0);
 }
@@ -65,7 +72,7 @@ int set_display_mode(int is_gui) {
 }
 
 
-// 【Day 63 新增】取得自己的 PID
+// 取得自己的 PID
 int getpid(void) {
     int ret;
     __asm__ volatile (
@@ -76,7 +83,7 @@ int getpid(void) {
     return ret;
 }
 
-// 【Day 63 新增】取得系統行程列表
+// 取得系統行程列表
 int get_process_list(process_info_t* list, int max_count) {
     int ret;
     __asm__ volatile (

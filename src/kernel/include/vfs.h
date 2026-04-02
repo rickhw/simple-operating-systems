@@ -1,4 +1,4 @@
-// VFS: Virtual File System
+// Virtual File System: Virtual File System
 #ifndef VFS_H
 #define VFS_H
 
@@ -22,7 +22,7 @@ typedef uint32_t (*write_type_t)(struct fs_node*, uint32_t, uint32_t, uint8_t*);
 typedef void (*open_type_t)(struct fs_node*);
 typedef void (*close_type_t)(struct fs_node*);
 
-// VFS 核心節點結構 (類似 Linux 的 inode)
+// Virtual File System 核心節點結構 (類似 Linux 的 inode)
 typedef struct fs_node {
     char name[128];     // 檔案名稱
     uint32_t flags;     // 節點類型 (FS_FILE, FS_DIRECTORY 等)
@@ -42,7 +42,7 @@ typedef struct fs_node {
 // 系統全域的「根目錄」節點
 extern fs_node_t *fs_root;
 
-// VFS 暴露給 Kernel 其他模組呼叫的通用 API
+// Virtual File System 暴露給 Kernel 其他模組呼叫的通用 API
 void vfs_open(fs_node_t *node);
 void vfs_close(fs_node_t *node);
 
