@@ -43,7 +43,8 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
             "segfault.elf",
             "viewer.elf", "logo.bmp",
             "clock.elf", "explorer.elf",
-            "taskmgr.elf", "notepad.elf"
+            "taskmgr.elf", "notepad.elf",
+            "tictactoe.elf"
         };
         uint32_t expected_mods = sizeof(filenames) / sizeof(filenames[0]);
 
