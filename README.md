@@ -183,30 +183,49 @@ drwxr-xr-x@ 6 rickhwang  staff   192B Mar 26 21:10 user
 原始碼放在 [GitHub](https://github.com/rickhw/simple-operating-systems) 上，結構如下：
 
 ```bash
-├── Dockerfile      // 用來 Compile 的 GCC container
-├── Makefile
-├── README.md
-├── scripts         
-│   ├── grub.cfg    // GRUB 配置
-│   └── linker.ld
-└── src
-    ├── kernel      // Kernel 部分
-    │   ├── asm         // 組合語言，主要是用來執行 CPU 指令集, 可以參閱 (x86_Instruction.md)
-    │   │   └── *.S
-    │   ├── include
-    │   │   └── *.h
-    │   ├── kernel.c    // 主要的 Kernel 流程
-    │   └── lib
-    │       └── *.c     // Kernel 相關 Lib，包含 ata, gdt, idc, mbr, paging, pmm, syscall, timer, tty ... etc.
-    └── user        // User Space 部分
-        ├── asm
-        │   └── crt0.S  // C Runtime Zero
-        ├── bin         // User Space 的程式, 包含 cat, echo, ls, mkdir, rm, shell, touch
-        │   └── *.c
-        ├── include
-        │   └── *.h
-        └── lib         // syscall, stdlib, stdio, unistd
-            └── *.c
+/ (Root)
+├── Makefile           # 專案編譯腳本 (支援 Docker 編譯環境)
+├── Dockerfile         # 定義編譯環境 (GCC, NASM, GRUB 等工具)
+├── README.md          # 專案簡介與快速上手指南
+├── DIRECTORY.md       # 目錄結構說明 (本文件)
+├── SKILLS.md          # 專案開發所需的底層技術與知識彙整
+├── scripts/           # 系統組態與連結腳本
+│   ├── grub.cfg       # GRUB 開機選單設定
+│   └── linker.ld      # 核心連結腳本 (定義記憶體分佈)
+├── src/               # 原始碼主目錄
+│   ├── kernel/        # 核心 (Kernel) 原始碼
+│   └── user/          # 使用者空間 (User Space) 原始碼
+└── course/            # 課程開發進度 (Day 1 ~ Day 80+)
+```
+
+核心原始碼 (src/kernel/)：核心程式碼採用功能模組化分類，實現高度解耦：
+
+```bash
+src/kernel/
+├── arch/x86/          # 處理器架構相關實作
+├── drivers/           # 硬體驅動程式
+├── fs/                # 檔案系統層
+├── init/              # 系統引導與入口
+│   └── main.c         # 核心主程式 (初始化所有次系統)
+├── kernel/            # 核心邏輯層
+├── mm/                # 記憶體管理
+├── net/               # 網路協定棧
+├── lib/               # 核心基礎函式庫 (utils, string, memory)
+└── include/           # 核心標頭檔 (.h)
+```
+
+使用者空間 (src/user/)：包含應用程式、函式庫與系統呼叫介面：
+
+```bash
+src/user/
+├── bin/               # 應用程式原始碼
+│   ├── shell/         # 命令列介面
+│   ├── explorer/      # 檔案管理器
+│   ├── clock/         # 數位時鐘
+│   └── ...            # 其他 GUI/CLI 應用
+├── lib/               # 使用者端函式庫 (libc)
+├── asm/               # User-mode 引導組合語言 (crt0.S)
+└── include/       
 ```
 
 用 Branch 分開每個階段的內容：
