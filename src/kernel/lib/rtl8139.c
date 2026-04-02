@@ -181,3 +181,8 @@ void rtl8139_send_packet(void* data, uint32_t len) {
 
     // kprintf("[Net] Packet Sent! Len: %d\n", len);
 }
+
+// [Day 85 新增] 讓其他模組取得本機的 MAC 位址
+uint8_t* rtl8139_get_mac(void) {
+    return mac_addr;
+}

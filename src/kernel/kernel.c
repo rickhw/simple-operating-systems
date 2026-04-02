@@ -19,6 +19,7 @@
 #include "config.h"
 #include "pci.h"
 #include "ethernet.h"
+#include "arp.h"
 
 void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     kprintf("[Kernel] Setting up SimpleFS environment...\n");
@@ -151,7 +152,10 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     __asm__ volatile ("sti");
 
     init_pci();     // [day81]
-    test_net_packet();
+    // test_net_packet();  // [day84]
+    // 【Day 85 新增】主動尋找路由器的 MAC 位址！
+    uint8_t router_ip[4] = {10, 0, 2, 2};
+    arp_send_request(router_ip);
 
     // 左上角的終端機文字會自然地印在藍綠色的桌面上
     kprintf("=== OS Subsystems Ready ===\n\n");
