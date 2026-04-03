@@ -163,22 +163,33 @@ EFER=0000000000000000
 ```
 
 
-### 結果與原始碼
-
-整個作業系統 binary (`myos.bin`) 大小僅約 48 KB。
-
-```bash
-❯ ls -lh
-total 96
-drwxr-xr-x@ 7 rickhwang  staff   224B Mar 26 21:15 kernel
--rwxr-xr-x  1 rickhwang  staff    48K Mar 26 21:15 myos.bin
-drwxr-xr-x@ 6 rickhwang  staff   192B Mar 26 21:10 user
-```
+### 結果
 
 底下錄影 Demo 整個過程，包含編譯與執行：
 
 [![Watch the video](https://img.youtube.com/vi/zXh80VTh-5E/0.jpg)](https://www.youtube.com/watch?v=zXh80VTh-5E)
 
+
+網路實作：
+
+- 驅動 RTL8139 (Kernel Space)
+- 實作 Ethernet Layer, ARP, ICMP (Kernel Space)
+- 封裝 Ping (User Space)
+
+![](/about/result/net_rtl8139-arp-icmp-ping_20260403.png)
+
+
+### Binary & 原始碼
+
+整個作業系統 binary (`myos.bin`) 大小僅約 62 KB。
+
+```bash
+❯ ls -lh
+total 128
+drwxr-xr-x@ 11 rickhwang  staff   352B Apr  2 22:46 kernel
+-rwxr-xr-x   1 rickhwang  staff    62K Apr  3 13:54 myos.bin
+drwxr-xr-x@  6 rickhwang  staff   192B Mar 26 21:10 user
+```
 
 原始碼放在 [GitHub](https://github.com/rickhw/simple-operating-systems) 上，結構如下：
 
@@ -239,7 +250,6 @@ src/user/
 - [每個階段的原始碼](https://github.com/rickhw/simple-operating-systems/tree/main/course)
 - [專有名詞對照表](https://github.com/rickhw/simple-operating-systems/blob/main/course/Terms.md)
 - [x86 Instruction](https://github.com/rickhw/simple-operating-systems/blob/main/course/x86_Instruction.md)
-
 
 
 ### 課前知識與準備
