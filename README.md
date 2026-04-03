@@ -190,6 +190,7 @@ EFER=0000000000000000
 - 封裝 Ping (User Space)
 
 ![](/about/result/net_rtl8139-arp-icmp-ping_20260403.png)
+![](/about/result/net_icmp-wireshark_20260403.png)
 
 
 ### Binary & 原始碼
