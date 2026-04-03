@@ -177,17 +177,23 @@ EFER=0000000000000000
 - memory: free, segfault
 - network: ping
 
-底下則是 Window App
+底下則是 Window App 的實作:
 
 - clock, notepad (筆記本), paint, viewer, 
 - explorer, taskmgr, status
 - tictactoe (圈圈叉叉)
 
-網路實作：
+上述簡單的 window app，驗證 desktop 底層的機制沒問題，包含 event routing, gui event (IPC), window dragging, ui toolkit ... 等 graphic 底層必要的機制, 像是 double buffering, window event. 其實這塊，跟我去年在做 手工開發遊戲 很像, 不過機制要自己實作, 挑戰更高. 有這些機制與 toolkit, 就可實作常用的 window app, 這次實作的有 clock, notepad (筆記本), paint (動態繪圖), viewer (讀 bitmap), explorer (簡易檔案總管), taskmgr, status, tictactoe (小遊戲. 圈圈叉叉) ...
+
+
+網路實作包含以下：
 
 - 驅動 RTL8139 (Kernel Space)
 - 實作 Ethernet Layer, ARP, ICMP (Kernel Space)
 - 封裝 Ping (User Space)
+
+網路功能, 用 ping 來驗收. 用結果論來看沒啥, 但實作的內容卻超過前面 windows app 全部做的, 就是增加網路的部分. 包含了網卡驅動程式 (rtl8139), 底層協議 ethernet layer, 通訊協議實作 (ARP, ARP Cache, ICMP, Ping) 等實作. 這部分的難度遠超過 前面一堆看起來花俏的 window app, 而且 debug 不太容易, 要搭配 wireshark 才能搞定.
+
 
 ![](/about/result/net_rtl8139-arp-icmp-ping_20260403.png)
 ![](/about/result/net_icmp-wireshark_20260403.png)
