@@ -169,6 +169,19 @@ EFER=0000000000000000
 
 [![Watch the video](https://img.youtube.com/vi/zXh80VTh-5E/0.jpg)](https://www.youtube.com/watch?v=zXh80VTh-5E)
 
+底下是實作的 Terminal 指令：
+
+- system: shell, echo
+- file：touch, cat, ls, rm, mkdir
+- Proces: ps, top, kill
+- memory: free, segfault
+- network: ping
+
+底下則是 Window App
+
+- clock, notepad (筆記本), paint, viewer, 
+- explorer, taskmgr, status
+- tictactoe (圈圈叉叉)
 
 網路實作：
 
