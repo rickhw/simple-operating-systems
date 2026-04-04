@@ -181,9 +181,9 @@ EFER=0000000000000000
 
 - clock, notepad (筆記本), paint, viewer, 
 - explorer, taskmgr, status
-- tictactoe (圈圈叉叉)
+- tictactoe (井字遊戲)
 
-上述簡單的 window app，驗證 desktop 底層的機制沒問題，包含 event routing, gui event (IPC), window dragging, ui toolkit ... 等 graphic 底層必要的機制, 像是 double buffering, window event. 其實這塊，跟我去年在做 手工開發遊戲 很像, 不過機制要自己實作, 挑戰更高. 有這些機制與 toolkit, 就可實作常用的 window app, 這次實作的有 clock, notepad (筆記本), paint (動態繪圖), viewer (讀 bitmap), explorer (簡易檔案總管), taskmgr, status, tictactoe (小遊戲. 圈圈叉叉) ...
+過實作一些簡單的 window app，驗證 desktop 底層的機制沒問題，包含 double buffering, window event, event routing, gui event (IPC), window dragging, ui toolkit ... 等 graphic 底層必要的機制. 其實這塊，跟我去年在做 手工開發遊戲 很像, 不過機制要自己實作, 挑戰更高. 有這些機制與 toolkit, 就可實作常用的 window app, 這次實作的有 clock, notepad (筆記本), paint (動態繪圖), viewer (讀 bitmap), explorer (簡易檔案總管), taskmgr, status, tictactoe (井字遊戲) ...
 
 
 網路實作包含以下：
@@ -245,7 +245,7 @@ src/kernel/
 └── include/           # 核心標頭檔 (.h)
 ```
 
-使用者空間 (src/user/)：包含應用程式、函式庫與系統呼叫介面：
+User Space (src/user/)：包含應用程式、函式庫與系統呼叫介面：
 
 ```bash
 src/user/
@@ -275,9 +275,9 @@ src/user/
 ### 課前知識與準備
 
 1. C 語言, 組合語言
-1. 對計算機組織有基本認識: 記憶體
-1. 在 macOS / Ubuntu 24.04 都可以正常編譯
-1. Docker (推薦 OrbStack) 與 QEMU
+1. 對計算機組織有基本認識
+1. 一台 macOS or Ubuntu 24.04
+1. Docker (macOS 推薦 OrbStack) 與 QEMU
 
 ```bash
 ❯ qemu-system-i386 -version
