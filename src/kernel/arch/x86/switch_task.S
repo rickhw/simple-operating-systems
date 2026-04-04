@@ -7,8 +7,8 @@
 ;    | (pusha, pushf)    |             |                   |
 ;    | [esp] -> old_esp  |             |                   |
 ;    +---------|---------+             +---------|---------+
-;              |                                 A
-;              |      [ 切換 ESP & CR3 ]         |
+;              |                                           A
+;              |      [ 切換 ESP & CR3 ]                   |
 ;              +---------------------------------+
 ;              |--> mov edx, [esp+48] (取得 next_cr3)
 ;              |--> mov esp, [next_esp] (換堆疊)
@@ -23,6 +23,20 @@
 global switch_task
 global child_ret_stub
 
+; =========================================================
+; 常數定義 (Magic Numbers 解釋)
+; 堆疊偏移量計算：
+; pusha (32 bytes) + pushf (4 bytes) + Return EIP (4 bytes) = 40 bytes
+; 因此參數在堆疊中的偏移為：
+; +40 = 第一個參數 (current_esp)
+; +44 = 第二個參數 (next_esp)
+; +48 = 第三個參數 (next_cr3)
+; =========================================================
+OFFSET_CURRENT_ESP equ 40
+OFFSET_NEXT_ESP    equ 44
+OFFSET_NEXT_CR3    equ 48
+USER_DATA_SEG      equ 0x23
+
 ; extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3);
 switch_task:
     pusha
@@ -31,16 +45,16 @@ switch_task:
     ; =========================================================
     ; 【關鍵修復：拯救 CR3】
     ; 必須在修改 ESP「之前」，先從舊堆疊拿出第三個參數 next_cr3
-    ; 我們把它暫存在 EDX 裡 (稍後 popa 會從新堆疊覆蓋掉 EDX，所以借放一下非常安全)
+    ; 我們把它暫存在 EDX 裡 (稍後 popa 會從新堆疊覆蓋掉 EDX，非常安全)
     ; =========================================================
-    mov edx, [esp + 48]
+    mov edx, [esp + OFFSET_NEXT_CR3]
 
     ; 保存 current_esp
-    mov eax, [esp + 40]
+    mov eax, [esp + OFFSET_CURRENT_ESP]
     mov [eax], esp
 
     ; 載入 next_esp (這一步之後，我們就正式跨入新任務的堆疊了！)
-    mov eax, [esp + 44]
+    mov eax, [esp + OFFSET_NEXT_ESP]
     mov esp, [eax]
 
     ; 【跨越宇宙】堆疊切換完成，現在將剛才暫存的 CR3 寫入硬體！
@@ -65,7 +79,7 @@ child_ret_stub:
     pop ebp       ; 這裡拿回了完美修正過的 EBP！
 
     ; 2. 換上平民服裝 (User Data Segment = 0x23)
-    mov cx, 0x23
+    mov cx, USER_DATA_SEG
     mov ds, cx
     mov es, cx
     mov fs, cx

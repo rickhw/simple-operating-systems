@@ -1,124 +1,114 @@
-// Interrupt Descriptor Table: Interrupt Descriptor Table
-// Intel 8259: https://zh.wikipedia.org/zh-tw/Intel_8259
-// PIC: [Programmable Interrupt Controller](https://en.wikipedia.org/wiki/Programmable_interrupt_controller)
+/**
+ * [idt.c] - 中斷描述符表 (Interrupt Descriptor Table) 實作
+ * * 核心功能：
+ * 1. 定義 IDT 結構並填充 256 個中斷閘 (Gates)。
+ * 2. 重新映射可程式化中斷控制器 (PIC 8259)，避免硬體中斷與 CPU 異常衝突。
+ * 3. 實作特定的中斷處理邏輯 (如 Divide by Zero)。
+ */
+
 #include "idt.h"
 #include "io.h"
 
+// 外部 C 函式宣告
 extern void kprintf(const char* format, ...);
 
-// 宣告一個長度為 256 的 Interrupt Descriptor Table 陣列
-idt_entry_t idt_entries[256];
-idt_ptr_t   idt_ptr;
+// 核心資料結構
+idt_entry_t idt_entries[256]; // 存放 256 個中斷條目
+idt_ptr_t   idt_ptr;          // 傳遞給 LIDT 指令的指標結構
 
-// 外部組合語言函式：載入 Interrupt Descriptor Table 與中斷處理入口
-extern void idt_flush(uint32_t);
-extern void isr0();     // 第 0  號中斷：的 Assembly 進入點
-extern void isr14();    // 第 14 號中斷：Page Fault
-extern void isr32();    // 第 32 號中斷：Timer IRQ 0
-extern void isr33();    // 第 33 號中斷：宣告組合語言的鍵盤跳板
-extern void isr43();    // 第 43 號中斷：rtl8139_handler
-extern void isr44();    // 第 44 號中斷：Mouse Handler
-extern void isr128();   // 第 128 號中斷：system calls
+// 宣告位於 interrupts.S 的彙編進入點 (ISRs)
+extern void idt_flush(uint32_t); // 執行 lidt 指令
+extern void isr0();              // 0: Divide by Zero
+extern void isr14();             // 14: Page Fault
+extern void isr32();             // 32: Timer (IRQ0)
+extern void isr33();             // 33: Keyboard (IRQ1)
+extern void isr43();             // 43: Network (IRQ11, RTL8139)
+extern void isr44();             // 44: Mouse (IRQ12)
+extern void isr128();            // 128: System Call (0x80)
 
-// 設定單一 Interrupt Descriptor Table 條目的輔助函式
+/**
+ * 設定 IDT 單一條目 (Gate)
+ * @param num   中斷編號 (0-255)
+ * @param base  中斷處理常式的偏移位址
+ * @param sel   段選擇子 (通常指向 Kernel Code Segment 0x08)
+ * @param flags 屬性位元 (包含 DPL 權限與存在位)
+ */
 static void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
-    idt_entries[num].base_lo = base & 0xFFFF;
-    idt_entries[num].base_hi = (base >> 16) & 0xFFFF;
+    idt_entries[num].base_lo = base & 0xFFFF;         // 低 16 位元
+    idt_entries[num].base_hi = (base >> 16) & 0xFFFF;  // 高 16 位元
     idt_entries[num].sel     = sel;
     idt_entries[num].always0 = 0;
-    // flags 0x8E 代表：這是一個 32-bit 的中斷閘 (Interrupt Gate)，運行在 Ring 0，且此條目有效(Present)
     idt_entries[num].flags   = flags;
+    /* Flags 常見值:
+       0x8E: 10001110b (Present, Ring 0, Interrupt Gate)
+       0xEE: 11101110b (Present, Ring 3, Interrupt Gate) -> 用於 Syscall
+    */
 }
 
-
-// --- 公開 API ---
-
+/**
+ * 初始化 IDT：清空、掛載 ISRs、重映射 PIC、正式啟用
+ */
 void init_idt(void) {
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
     idt_ptr.base  = (uint32_t)&idt_entries;
 
-    // 先把 256 個中斷全部清空 (避免指到未知的記憶體)
-    // 這裡我們簡單用迴圈清零 (你也可以 include 昨天寫的 memset)
+    // 1. 初始化全數條目為空
     for (uint32_t i = 0; i < 256; i++) {
         idt_set_gate(i, 0, 0, 0);
     }
 
-    // 掛載第 0 號中斷：除以零
-    // 0x08 是我們昨天在 Global Descriptor Table 設定的 Kernel Code Segment
-    idt_set_gate(0, (uint32_t)isr0, 0x08, 0x8E);
+    // 2. 掛載 CPU 異常 (Exceptions)
+    idt_set_gate(0, (uint32_t)isr0, 0x08, 0x8E);   // 除以零
+    idt_set_gate(14, (uint32_t)isr14, 0x08, 0x8E); // 分頁錯誤
 
-    // 掛載第 14 號中斷：Page Fault
-    idt_set_gate(14, (uint32_t)isr14, 0x08, 0x8E);
-
-
-    // 重新映射 PIC
+    // 3. 重新映射 8259 PIC (硬體中斷 IRQ 0-15 映射至 IDT 32-47)
     pic_remap();
 
-    // 掛載第 32 號中斷 (IRQ0: Timer)
-    idt_set_gate(32, (uint32_t)isr32, 0x08, 0x8E);
+    // 4. 掛載硬體中斷 (IRQs)
+    idt_set_gate(32, (uint32_t)isr32, 0x08, 0x8E); // Timer
+    idt_set_gate(33, (uint32_t)isr33, 0x08, 0x8E); // Keyboard
+    idt_set_gate(43, (uint32_t)isr43, 0x08, 0x8E); // Network
+    idt_set_gate(44, (uint32_t)isr44, 0x08, 0x8E); // Mouse
 
-    // 掛載第 33 號中斷 (IRQ1: Keyboard)
-    idt_set_gate(33, (uint32_t)isr33, 0x08, 0x8E);
-
-    // 掛載第 43 號中斷 (IRQ11: RTL8139)
-    idt_set_gate(43, (uint32_t)isr43, 0x08, 0x8E);
-
-    // 掛載第 44 號中斷 (IRQ1: Mouse)
-    idt_set_gate(44, (uint32_t)isr44, 0x08, 0x8E);
-
-    // 掛載第 128 號中斷 (System Call)
-    // 注意！旗標是 0xEE (允許 Ring 3 呼叫)
+    // 5. 掛載系統呼叫 (System Call)
+    // 必須使用 0xEE (DPL=3)，否則 User Mode 執行 int 0x80 會觸發 General Protection Fault
     idt_set_gate(128, (uint32_t)isr128, 0x08, 0xEE);
 
-    // 呼叫組合語言，正式套用新的 Interrupt Descriptor Table
+    // 6. 將 IDT 指標載入 CPU
     idt_flush((uint32_t)&idt_ptr);
 }
 
-
-// ---
-
-// 這是當「除以零」發生時，實際會執行的 C 語言函式
-void isr0_handler(void) {
-    kprintf("\n[KERNEL PANIC] Exception 0: Divide by Zero!\n");
-    kprintf("System Halted.\n");
-    // 發生嚴重錯誤，直接把系統凍結
-    __asm__ volatile ("cli; hlt");
-}
-
-// 初始化 8259 PIC，將 IRQ 0~15 重映射到 Interrupt Descriptor Table 的 32~47
-// Intel 8259: https://zh.wikipedia.org/zh-tw/Intel_8259
+/**
+ * [PIC 重映射]
+ * 預設 BIOS 將 IRQ 0-7 映射到 IDT 8-15，這與 CPU 內建異常衝突。
+ * 故將其改為 IRQ 0-7 -> IDT 32-39, IRQ 8-15 -> IDT 40-47。
+ */
 void pic_remap(void) {
-    uint8_t a1 = inb(0x21);
-    uint8_t a2 = inb(0xA1);
-    (void)a1; (void)a2;
-
-    // ICW1: 開始初始化序列
+    // ICW1: 開始初始化
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
 
-    // ICW2: 設定 Master PIC 偏移量為 0x20 (32)
-    outb(0x21, 0x20);
-    // ICW2: 設定 Slave PIC 偏移量為 0x28 (40)
-    outb(0xA1, 0x28);
+    // ICW2: 設定向量偏移 (Vector Offset)
+    outb(0x21, 0x20); // Master -> 0x20 (32)
+    outb(0xA1, 0x28); // Slave  -> 0x28 (40)
 
-    // ICW3: Master 告訴 Slave 接在 IRQ2
-    outb(0x21, 0x04);
-    // ICW3: Slave 確認身分
-    outb(0xA1, 0x02);
+    // ICW3: 級聯 (Cascading)
+    outb(0x21, 0x04); // Master 的 IRQ2 接 Slave
+    outb(0xA1, 0x02); // Slave 接在 Master 的第 2 號
 
-    // ICW4: 設定為 8086 模式
-    outb(0x21, 0x01);
+    // ICW4: 環境設定
+    outb(0x21, 0x01); // 8086 模式
     outb(0xA1, 0x01);
 
-    // ==========================================================
-    // 遮罩 (Masks)：0 代表開啟，1 代表屏蔽
-    // 為了讓 IRQ 12 (滑鼠) 通過，我們必須：
-    // 1. 開啟 Master PIC 的 IRQ 0(Timer), 1(Keyboard), 2(Slave連線) -> 1111 1000 = 0xF8
-    // 2. 開啟 Slave PIC 的 IRQ 12 (第 4 個 bit) -> 1110 1111 = 0xEF
-    // ==========================================================
+    // [中斷遮罩設定] 0 為開啟，1 為屏蔽
+    // Master: 開啟 IRQ0(Timer), IRQ1(KB), IRQ2(Slave) -> 11111000 (0xF8)
     outb(0x21, 0xF8);
-
-    // 把 0xEF 改成 0xE7！
+    // Slave: 開啟 IRQ11(Net), IRQ12(Mouse) -> 11100111 (0xE7)
     outb(0xA1, 0xE7);
-    // outb(0xA1, 0xEF);
+}
+
+// 範例異常處理函式
+void isr0_handler(void) {
+    kprintf("\n[KERNEL PANIC] Exception 0: Divide by Zero!\n");
+    __asm__ volatile ("cli; hlt");
 }

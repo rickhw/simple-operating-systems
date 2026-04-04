@@ -1,23 +1,40 @@
-; [目的] 啟動 MMU 分頁機制 (Paging)
-; [暫存器說明]
-;  CR3: 存放「頁目錄 (Page Directory)」的物理位址。
-;  CR0: Bit 31 (PG) 為分頁開關。
+; ====================================================================
+; [目的] 啟動硬體 MMU 分頁機制 (Paging)
+;
+; [暫存器觀念說明]
+;  CR3 暫存器: 存放當前「Page Directory」的【實體起始位址】。
+;  CR0 暫存器: Bit 31 (PG) 控制整個系統的虛擬記憶體開關。
+;
 ; [流程]
-; load_page_directory(dir_addr) --> 把地圖交給 CPU (mov cr3, eax)
-; enable_paging()               --> 把開關打開 (or eax, 0x80000000)
+; 1. load_page_directory(dir_addr) -> 將 Page Directory 位址寫入 CR3。
+; 2. enable_paging()               -> 將 CR0 最高位設為 1 以啟用分頁。
+; ====================================================================
 
 global load_page_directory
 global enable_paging
 
+; --------------------------------------------------------------------
 ; void load_page_directory(uint32_t* dir);
+; --------------------------------------------------------------------
 load_page_directory:
-    mov eax, [esp+4]  ; 取得 C 語言傳進來的 page_directory 陣列位址
-    mov cr3, eax      ; 將位址存入 CR3 暫存器
+    ; 透過 Stack 取得 C 語言呼叫傳入的參數 (page_directory 的實體位址)
+    mov eax, [esp+4]
+
+    ; 將位址存入 CR3 暫存器，告訴 CPU 地圖在哪裡
+    mov cr3, eax
     ret
 
+; --------------------------------------------------------------------
 ; void enable_paging(void);
+; --------------------------------------------------------------------
 enable_paging:
-    mov eax, cr0      ; 讀取目前的 CR0 狀態
-    or eax, 0x80000000; 使用 OR 運算，把最高位 (PG bit 31) 強制設為 1
-    mov cr0, eax      ; 寫回 CR0，虛擬記憶體機制瞬間啟動！
+    ; 讀取目前的 CR0 暫存器狀態
+    mov eax, cr0
+
+    ; 使用 OR 運算，確保其他 bit 狀態不變的情況下，
+    ; 將最高位元 (PG bit 31，即 0x80000000) 設為 1
+    or eax, 0x80000000
+
+    ; 將修改後的值寫回 CR0，寫入瞬間分頁機制即刻生效！
+    mov cr0, eax
     ret
