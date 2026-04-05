@@ -117,6 +117,7 @@
 6. **圖形介面 (GUI)** ：實作簡單的視窗介面，包含滑鼠 I/O、Double Buffering（雙重緩衝）機制、字型渲染，並實作基礎的 Window Manager。
 7. **行程管理 (Process Manager)** ：實作 top、ps、kill 等行程管理
 8. **視窗多工 GUI 生態系** ：實作 File Manager、Task Manager、Event Routing、讀圖 ... 等。
+9. **網路 (Network)**: 實作網路卡驅動程式 (rtl8139)、底層協議 ethernet layer、通訊協議實作 (ARP, ARP Cache, ICMP, Ping) 等.
 
 這可以想像成幾個 Sprint，每個部分都有約 10 個核心功能需要達成。
 
