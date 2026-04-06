@@ -49,6 +49,9 @@ typedef struct {
     unsigned int active_universes;
 } mem_info_t;
 
+/** @brief 系統呼叫處理函式原型 */
+typedef int (*syscall_t)(registers_t*);
+
 /** @brief 初始化系統呼叫子系統 */
 void init_syscalls(void);
 

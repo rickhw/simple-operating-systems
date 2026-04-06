@@ -1,6 +1,9 @@
 /**
  * @file src/kernel/kernel/task.c
- * @brief Task management and multitasking system.
+ * @brief 核心多工任務管理系統 (Kernel Multitasking System)
+ * 
+ * 本檔案負責處理進程控制區塊 (PCB) 的管理、任務排程 (Scheduling)、
+ * 垃圾回收 (GC) 以及系統呼叫如 fork, exec, wait 的核心實作。
  */
 
 #include <stdint.h>
@@ -16,151 +19,192 @@
 #include "elf.h"
 #include "gui.h"
 
-// ==========================================
-// 記憶體分佈與權限常數定義
-// ==========================================
-#define PAGE_SIZE           4096
-#define USER_HEAP_START     0x10000000
-#define USER_HEAP_PAGES     256
-#define USER_STACK_TOP      0x083FF000
-#define USER_STACK_PADDING  64
-#define USER_ARGS_LIMIT     0x08000000
-#define MAX_EXEC_ARGS       16
-
-#define USER_DS             0x23
-#define USER_CS             0x1B
-#define EFLAGS_DEFAULT      0x0202
-
-#define KERNEL_IDLE_PID     9999
-
+/** @brief 當前正在執行的任務指標 */
 volatile task_t *current_task = 0;
+/** @brief 排程器準備佇列的起點 (目前採環狀鏈結串列) */
 volatile task_t *ready_queue = 0;
+/** @brief 下一個可分配的 PID */
 uint32_t next_pid = 0;
+/** @brief 閒置任務 (Idle Task)，當系統無事可做時執行 */
 task_t *idle_task = 0;
 
 extern uint32_t page_directory[];
 extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3);
 extern void child_ret_stub();
 
-/** @brief Idle loop for the idle task. */
+/**
+ * @brief 根據 PID 尋找特定的任務控制區塊
+ * @param pid 目標 PID
+ * @return 找到回傳 task_t 指標，否則回傳 NULL
+ */
+static task_t* get_task_by_pid(uint32_t pid) {
+    if (!current_task) return 0;
+    task_t *start = (task_t*)current_task;
+    task_t *temp = start;
+    do {
+        if (temp->pid == pid) return temp;
+        temp = temp->next;
+    } while (temp != start);
+    return 0;
+}
+
+/**
+ * @brief 垃圾回收器 (Task Garbage Collector)
+ * 
+ * 掃描任務鏈結串列，尋找標記為 TASK_DEAD 的任務，並釋放其佔用的
+ * 核心堆疊 (Kernel Stack) 與 PCB 記憶體空間。
+ */
+static void task_gc() {
+    if (!current_task) return;
+
+    task_t *prev = (task_t*)current_task;
+    task_t *curr = prev->next;
+
+    while (curr != current_task) {
+        if (curr->state == TASK_DEAD) {
+            // 從環狀鏈結串列中移除
+            prev->next = curr->next;
+
+            // 釋放核心堆疊 (kfree 回到分配時的起始點)
+            if (curr->kernel_stack != 0) {
+                kfree((void*)(curr->kernel_stack - PAGE_SIZE));
+            }
+            // 釋放 PCB 結構
+            kfree((void*)curr);
+
+            curr = prev->next;
+        } else {
+            prev = curr;
+            curr = curr->next;
+        }
+    }
+}
+
+/** 
+ * @brief 閒置任務迴圈 
+ * 當系統中沒有任何可執行的任務時，CPU 將在此執行 hlt (休眠) 節省電力，
+ * 直到下一次時脈中斷觸發排程。
+ */
 void idle_loop() {
-    // sti 開啟中斷，hlt 讓 CPU 進入休眠，直到下一次時鐘中斷到來
     while(1) { __asm__ volatile("sti; hlt"); }
 }
 
+/**
+ * @brief 初始化多工系統
+ * 
+ * 將目前的執行流包裝成 PID 0 (kernel_main)，並建立閒置任務。
+ */
 void init_multitasking() {
     // ----------------------------------------------------
-    // 階段 1：將當下正在執行的 Kernel 初始化流程轉換為 main_task (PID 0)
+    // 1. 初始化 Kernel 主任務 (PID 0)
     // ----------------------------------------------------
     task_t *main_task = (task_t*) kmalloc(sizeof(task_t));
     main_task->pid = next_pid++;
     main_task->ppid = 0;
     strcpy(main_task->name, "[kernel_main]");
 
-    main_task->esp = 0;         // 等到真的被切換出去時，才會寫入真實數值
+    main_task->esp = 0; // 初始值，將在第一次切換時由 ASM 寫入
     main_task->kernel_stack = 0;
     main_task->state = TASK_RUNNING;
     main_task->wait_pid = 0;
-    main_task->page_directory = (uint32_t) page_directory; // 使用 Kernel 的初始分頁表
+    main_task->page_directory = (uint32_t) page_directory;
     main_task->cwd_lba = 0;
     main_task->total_ticks = 0;
 
-    // 初始化環狀鏈結串列
+    // 建立環狀串列
     main_task->next = main_task;
     current_task = main_task;
     ready_queue = main_task;
 
     // ----------------------------------------------------
-    // 階段 2：建立 idle_task (兜底任務)
-    // 當系統中沒有任何 TASK_RUNNING 行程時，會執行此行程避免 CPU 掛起
+    // 2. 建立 Idle Task (PID 9999)
     // ----------------------------------------------------
     idle_task = (task_t*) kmalloc(sizeof(task_t));
     idle_task->pid = KERNEL_IDLE_PID;
     idle_task->ppid = 0;
     strcpy(idle_task->name, "[kernel_idle]");
     idle_task->state = TASK_RUNNING;
-    idle_task->wait_pid = 0;
     idle_task->page_directory = (uint32_t) page_directory;
-    idle_task->cwd_lba = 0;
-    idle_task->total_ticks = 0;
 
-    // 為 idle_task 配置專屬的核心堆疊
+    // 為 Idle Task 配置獨立核心堆疊
     uint32_t *kstack_mem = (uint32_t*) kmalloc(PAGE_SIZE);
     uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + PAGE_SIZE);
     idle_task->kernel_stack = (uint32_t) kstack;
 
-    // 手動偽造中斷堆疊幀，假裝它剛被中斷，準備 IRET 回到 idle_loop
-    *(--kstack) = (uint32_t) idle_loop; // EIP
-    for(int i = 0; i < 8; i++) *(--kstack) = 0; // Pusha (通用暫存器)
-    *(--kstack) = EFLAGS_DEFAULT;       // EFLAGS 開啟中斷
+    // 偽造中斷堆疊幀，模擬該任務曾被中斷
+    *(--kstack) = (uint32_t) idle_loop; // EIP: 跳轉到閒置迴圈
+    for(int i = 0; i < 8; i++) *(--kstack) = 0; // Pusha (暫存器清零)
+    *(--kstack) = EFLAGS_DEFAULT;       // EFLAGS: 開啟中斷 (IF=1)
 
     idle_task->esp = (uint32_t) kstack;
 }
 
+/**
+ * @brief 建立使用者模式任務
+ * @param entry_point 程式起始位址
+ * @param user_stack_top 使用者堆疊頂部位址
+ * 
+ * 此函式負責建立一個 Ring 3 任務，並手動佈置堆疊以確保 IRET 後能切換到 User Mode。
+ */
 void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
-    // ----------------------------------------------------
-    // 階段 1：建立 PCB 與基礎資料
-    // ----------------------------------------------------
     task_t *new_task = (task_t*) kmalloc(sizeof(task_t));
     new_task->pid = next_pid++;
     new_task->ppid = current_task->pid;
-    strcpy(new_task->name, "init"); // 系統第一隻行程固定命名為 init
+    strcpy(new_task->name, "init");
 
     new_task->state = TASK_RUNNING;
-    new_task->wait_pid = 0;
     new_task->page_directory = current_task->page_directory;
     new_task->cwd_lba = 0;
-    new_task->total_ticks = 0;
 
     // ----------------------------------------------------
-    // 階段 2：初始化 User Heap (給 malloc 等函式使用)
-    // 預分配 1MB (256 pages) 的物理記憶體並映射
+    // 1. 初始化使用者堆積 (User Heap)
     // ----------------------------------------------------
     for (int i = 0; i < USER_HEAP_PAGES; i++) {
         uint32_t heap_phys = (uint32_t)pmm_alloc_page();
-        map_page(USER_HEAP_START + (i * PAGE_SIZE), heap_phys, 7); // 7 = User+RW+Present
+        map_page(USER_HEAP_START + (i * PAGE_SIZE), heap_phys, 7); // User, RW, Present
     }
     new_task->heap_start = USER_HEAP_START;
     new_task->heap_end = USER_HEAP_START;
 
     // ----------------------------------------------------
-    // 階段 3：準備 Kernel Stack 與 User Stack
+    // 2. 佈置使用者堆疊與核心堆疊
     // ----------------------------------------------------
     uint32_t *kstack_mem = (uint32_t*) kmalloc(PAGE_SIZE);
     uint32_t *kstack = (uint32_t*) ((uint32_t)kstack_mem + PAGE_SIZE);
     new_task->kernel_stack = (uint32_t) kstack;
 
-    // 偽造 C 語言的 entry_point(int argc, char** argv) 參數佈局
+    // 模擬 C main(argc, argv) 參數佈局
     uint32_t *ustack = (uint32_t*) (user_stack_top - USER_STACK_PADDING);
-    *(--ustack) = 0;                    // NULL 結尾
+    *(--ustack) = 0;         // NULL argv 結尾
     uint32_t argv_ptr = (uint32_t) ustack;
-    *(--ustack) = argv_ptr;             // char** argv
-    *(--ustack) = 0;                    // int argc = 0
-    *(--ustack) = 0;                    // Return address (User mode 不能直接 return)
+    *(--ustack) = argv_ptr;  // argv
+    *(--ustack) = 0;         // argc
+    *(--ustack) = 0;         // Dummy return address
 
     // ----------------------------------------------------
-    // 階段 4：手造中斷返回幀 (IRET Frame) 實現 Ring0 -> Ring3 切換
+    // 3. 偽造 IRET 中斷幀 (切換 Ring 0 -> Ring 3)
     // ----------------------------------------------------
-    *(--kstack) = USER_DS;              // User SS
-    *(--kstack) = (uint32_t)ustack;     // User ESP
-    *(--kstack) = EFLAGS_DEFAULT;       // EFLAGS (IF=1)
-    *(--kstack) = USER_CS;              // User CS
-    *(--kstack) = entry_point;          // User EIP
+    *(--kstack) = USER_DS;          // User SS
+    *(--kstack) = (uint32_t)ustack; // User ESP
+    *(--kstack) = EFLAGS_DEFAULT;   // EFLAGS
+    *(--kstack) = USER_CS;          // User CS
+    *(--kstack) = entry_point;      // User EIP
 
-    // 偽造被中斷時的通用暫存器 (供 child_ret_stub 彈出)
+    // 偽造 child_ret_stub 彈出的暫存器
     *(--kstack) = 0; // EBP
     *(--kstack) = 0; // EBX
     *(--kstack) = 0; // ESI
     *(--kstack) = 0; // EDI
 
-    *(--kstack) = (uint32_t) child_ret_stub; // 讓 switch_task 執行 ret 時跳轉到這裡
+    *(--kstack) = (uint32_t) child_ret_stub; // 返回位址
 
-    for(int i = 0; i < 8; i++) *(--kstack) = 0; // 再給 switch_task 的 popa 準備的空間
+    // 為 switch_task 的彈出指令留空位
+    for(int i = 0; i < 8; i++) *(--kstack) = 0;
     *(--kstack) = EFLAGS_DEFAULT;
 
     new_task->esp = (uint32_t) kstack;
 
-    // 插入環狀鏈結串列
+    // 加入排程鏈結串列
     new_task->next = current_task->next;
     current_task->next = new_task;
 }
@@ -203,31 +247,10 @@ void exit_task() {
 void schedule() {
     if (!current_task) return;
 
-    task_t *curr = (task_t*)current_task;
-    task_t *next_node = curr->next;
-
     // ----------------------------------------------------
     // 階段 1：垃圾回收 (Garbage Collection)
-    // 掃描鏈結串列，將所有標記為 TASK_DEAD 的行程資源徹底釋放
     // ----------------------------------------------------
-    while (next_node != current_task) {
-        if (next_node->state == TASK_DEAD) {
-            // 從鏈結串列中剔除
-            curr->next = next_node->next;
-
-            // 釋放 Kernel Stack 記憶體 (回到當初 kmalloc 取得的起始位址)
-            if (next_node->kernel_stack != 0) {
-                kfree((void*)(next_node->kernel_stack - PAGE_SIZE));
-            }
-            // 釋放 PCB 結構本身
-            kfree((void*)next_node);
-
-            next_node = curr->next;
-        } else {
-            curr = next_node;
-            next_node = curr->next;
-        }
-    }
+    task_gc();
 
     // ----------------------------------------------------
     // 階段 2：尋找下一個準備就緒 (RUNNING) 的行程
@@ -520,48 +543,38 @@ int sys_wait(uint32_t pid) {
 
 int sys_kill(uint32_t pid) {
     // 防止自殺或誤殺系統核心 (Kernel Main PID 1 / Idle PID 9999)
-    if (pid <= 1) return -1;
+    if (pid <= 1 || pid == KERNEL_IDLE_PID) return -1;
 
     // 因為牽涉到跨行程狀態修改，鎖定中斷避免 Race Condition
     __asm__ volatile("cli");
-    task_t *temp = (task_t*)current_task;
-    int found = 0;
+    
+    task_t *target = get_task_by_pid(pid);
+    if (!target || target->state == TASK_DEAD) {
+        __asm__ volatile("sti");
+        return -1;
+    }
 
-    // 走訪所有行程尋找目標
-    do {
-        if (temp->pid == pid && temp->state != TASK_DEAD) {
-            // 1. 強制關閉它擁有的 GUI 視窗
-            gui_close_windows_by_pid(pid);
+    // 1. 強制關閉它擁有的 GUI 視窗
+    gui_close_windows_by_pid(pid);
 
-            // 2. 檢查目標的父行程是否正在 wait() 它
-            volatile task_t *parent = current_task;
-            int parent_waiting = 0;
-            do {
-                if (parent->pid == temp->ppid && parent->state == TASK_WAITING && parent->wait_pid == pid) {
-                    parent->state = TASK_RUNNING; // 喚醒父行程
-                    parent->wait_pid = 0;
-                    parent_waiting = 1;
-                    break;
-                }
-                parent = parent->next;
-            } while (parent != current_task);
+    // 2. 檢查目標的父行程是否正在 wait() 它
+    task_t *parent = get_task_by_pid(target->ppid);
+    int parent_waiting = 0;
+    if (parent && parent->state == TASK_WAITING && parent->wait_pid == pid) {
+        parent->state = TASK_RUNNING; // 喚醒父行程
+        parent->wait_pid = 0;
+        parent_waiting = 1;
+    }
 
-            // 3. 根據父行程狀態決定它是變殭屍還是直接死透
-            if (parent_waiting) {
-                temp->state = TASK_ZOMBIE;
-            } else {
-                temp->state = TASK_DEAD;
-            }
-
-            found = 1;
-            break;
-        }
-        temp = temp->next;
-    } while (temp != current_task);
+    // 3. 根據父行程狀態決定它是變殭屍還是直接死透
+    if (parent_waiting) {
+        target->state = TASK_ZOMBIE;
+    } else {
+        target->state = TASK_DEAD;
+    }
 
     __asm__ volatile("sti");
-
-    return found ? 0 : -1;
+    return 0;
 }
 
 int task_get_process_list(process_info_t* list, int max_count) {

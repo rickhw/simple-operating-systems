@@ -2,11 +2,32 @@
 #define TASK_H
 #include <stdint.h>
 
+// ==========================================
+// 記憶體分佈與權限常數定義 (Memory Layout & Privileges)
+// ==========================================
+#define PAGE_SIZE           4096
+#define USER_HEAP_START     0x10000000
+#define USER_HEAP_PAGES     256
+#define USER_STACK_TOP      0x083FF000
+#define USER_STACK_PADDING  64
+#define USER_ARGS_LIMIT     0x08000000
+#define MAX_EXEC_ARGS       16
+
+// 段選擇子 (Segment Selectors)
+#define USER_DS             0x23
+#define USER_CS             0x1B
+#define KERNEL_DS           0x10
+#define KERNEL_CS           0x08
+#define EFLAGS_DEFAULT      0x0202
+
+#define KERNEL_IDLE_PID     9999
+
 /** 行程狀態定義 */
 #define TASK_RUNNING 0
 #define TASK_DEAD    1
 #define TASK_WAITING 2
 #define TASK_ZOMBIE  3  ///< 行程已結束，但父行程尚未 wait() 回收它
+#define TASK_SLEEPING 4 ///< 睡眠中 (未來擴充使用)
 
 /**
  * @brief 中斷上下文快照 (Interrupt Context Snapshot)
