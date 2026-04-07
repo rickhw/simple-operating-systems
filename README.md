@@ -164,11 +164,12 @@ EFER=0000000000000000
 ```
 
 
-### 結果
+### 結果 - Demo & Screenshot
 
 底下錄影 Demo 整個過程，包含編譯與執行：
 
 [![Watch the video](https://img.youtube.com/vi/zXh80VTh-5E/0.jpg)](https://www.youtube.com/watch?v=zXh80VTh-5E)
+
 
 底下是實作的 Terminal 指令：
 
@@ -178,6 +179,9 @@ EFER=0000000000000000
 - memory: free, segfault
 - network: ping
 
+
+### 結果: Desktop and Window Apps
+
 底下則是 Window App 的實作:
 
 - clock, notepad (筆記本), paint, viewer, 
@@ -186,6 +190,10 @@ EFER=0000000000000000
 
 過實作一些簡單的 window app，驗證 desktop 底層的機制沒問題，包含 double buffering, window event, event routing, gui event (IPC), window dragging, ui toolkit ... 等 graphic 底層必要的機制. 其實這塊，跟我去年在做 手工開發遊戲 很像, 不過機制要自己實作, 挑戰更高. 有這些機制與 toolkit, 就可實作常用的 window app, 這次實作的有 clock, notepad (筆記本), paint (動態繪圖), viewer (讀 bitmap), explorer (簡易檔案總管), taskmgr, status, tictactoe (井字遊戲) ...
 
+![](/about/Result-Window_20260402.png)
+
+
+### 結果: 網路
 
 網路實作包含以下：
 
