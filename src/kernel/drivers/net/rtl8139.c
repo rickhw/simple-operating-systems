@@ -1,12 +1,13 @@
 #include "io.h"
-#include "rtl8139.h"
+#include "utils.h"
 #include "pci.h"
 #include "tty.h"
+#include "rtl8139.h"
 #include "ethernet.h"
 #include "arp.h"
 #include "ipv4.h"
 #include "icmp.h"
-#include "utils.h"
+#include "udp.h"
 
 // 儲存網卡的 I/O 基準位址與 MAC 位址
 static uint32_t rtl_iobase = 0;
@@ -178,15 +179,36 @@ void rtl8139_handler(void) {
                 }
             }
             else if (type == ETHERTYPE_IPv4) {
-                // kprintf("  -> Protocol: IPv4\n");
                 // 跳過 Ethernet Header
                 ipv4_header_t* ip = (ipv4_header_t*)(packet_data + sizeof(ethernet_header_t));
-                if (ip->protocol == 1) { // 1 代表 ICMP
+
+                if (ip->protocol == IPV4_PROTO_ICMP) { // 1 代表 ICMP
                     icmp_header_t* icmp = (icmp_header_t*)(packet_data + sizeof(ethernet_header_t) + (ip->ihl * 4));
                     if (icmp->type == 0) { // 0 代表 Echo Reply
                         kprintf("[Ping] Reply received from [%d.%d.%d.%d]!\n\n",
                                 ip->src_ip[0], ip->src_ip[1], ip->src_ip[2], ip->src_ip[3]);
                     }
+                }
+
+                // 【Day 91 新增】17 代表 UDP！
+                else if (ip->protocol == IPV4_PROTO_UDP) {
+                    // 跳過 Ethernet Header 和 IPv4 Header
+                    udp_header_t* udp = (udp_header_t*)(packet_data + sizeof(ethernet_header_t) + (ip->ihl * 4));
+
+                    // Payload 的位置在 UDP Header 之後
+                    uint8_t* payload = (uint8_t*)udp + sizeof(udp_header_t);
+
+                    // 計算真實資料的長度 (UDP 總長度 - UDP 標頭長度)
+                    uint16_t payload_len = ntohs(udp->length) - sizeof(udp_header_t);
+
+                    // 為了安全印出字串，我們把它拷貝到一個有 Null-terminator 的 Buffer
+                    char msg_buf[128] = {0};
+                    int copy_len = (payload_len < 127) ? payload_len : 127;
+                    memcpy(msg_buf, payload, copy_len);
+
+                    kprintf("[UDP Rx] %d.%d.%d.%d:%d -> Port %d: '%s'\n",
+                            ip->src_ip[0], ip->src_ip[1], ip->src_ip[2], ip->src_ip[3],
+                            ntohs(udp->src_port), ntohs(udp->dest_port), msg_buf);
                 }
             }
             else {
