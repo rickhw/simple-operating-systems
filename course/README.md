@@ -133,3 +133,30 @@
     * 結合 SimpleFS 檔案系統，將下載下來的網頁直接寫入你的虛擬硬碟中！
 
 ---
+
+## Network Overview
+
+![](/about/NetworkOverview.png)
+
+### 👈 左半部：Simple OS 網路分層架構圖 (Conceptual Architecture)
+
+這部分採用上下分層（Top-Down）的概念，表達資料從 User Space（Ring 3）一路下放到實體硬體（Ring 0）的過程。
+
+* **1. User Application Layer (User Space)：** 這是你的應用程式，像是 `udpsend.elf` 或 `ping.elf`。它們只需要知道你要傳送的文字和目標 IP/Port，完全不需要管底層細節。
+* **2. Syscall Interface (The Boundary)：** 這是 Ring 3 和 Ring 0 的分界線。User App 透過呼叫特殊的指令（圖中標記為 `int 128 (0x80)`）來觸發 Kernel 接手。這裡標記了我們的 `syscall.c` 和 `syscall_lib.c` 處理的部分。
+* **3. Transport Layer (Kernel Space)：** 這是核心的協定棧。這裡負責處理 UDP 標頭（例如 Port）或 ICMP 標頭（例如 Ping 類型），並計算 Checksum。標記了 `udp.c` 和 `icmp.c`。
+* **4. Network Layer (Kernel Space)：** 這裡負責 L3 的邏輯。如果是 ARP 請求，會在這裡封裝 ARP 標頭（標記 `arp.c`），並在 ARP 表中查詢 MAC 位址。如果是正常的 IP 資料，會在這裡封裝 IPv4 標頭（標記 `ipv4.h`）並負責路由判斷。
+* **5. Data Link Layer (Driver)：** 這裡負責把 L3 的封包貼上乙太網路標頭（標記 `ethernet.h`），並把完整的資料拷貝到網卡 DMA 緩衝區（Rx Ring Buffer）。標記了 `rtl8139.c` 的發送槽管理邏輯。
+* **6. PCI & Hardware Layer：** 最底層的硬體。這裡負責 PCI 的掃描（標記 `pci.c`）來揪出網卡，以及網卡硬體本身（如 Tx/Rx 埠）把資料變成真正的 bit 噴射出去。
+
+---
+
+### 👉 右半部：網路封包概念圖 (Network Packet Conceptual Diagram)
+
+這部分採用**俄羅斯娃娃（嵌套）**的概念，表達一個封包在不同層級是如何被一層一層包裝起來的。
+
+* **Ethernet Frame (Blue)：** 這是最外層的信封（L2），所有封包都必須穿上它。它包含了目標 MAC（`Dest MAC`）和來源 MAC（`Src MAC`）。關鍵欄位是 `EtherType`，如果填 `0x0806`，裡面包的就是 ARP；如果填 `0x0800`，裡面包的就是 IPv4。
+    * **分支：ARP Packet (Green)：** 當 EtherType 為 `0x0806` 時。這顆封包用來問「誰的 IP 是 10.0.2.2？」。它包含了 ARP 的專屬欄位，像是 Opcode（1 Request/2 Reply）、來源/目標 MAC/IP。
+* **IPv4 Header (Green)：** 當 EtherType 為 `0x0800` 時（L3）。這是 IP 信封，它包含了來源 IP (`10.0.2.15`) 和目標 IP (`10.0.2.2`)。關鍵欄位是 `Protocol`，如果是 `1`，裡面包的就是 ICMP；如果是 `17`，裡面包的就是 UDP。
+    * **分支：ICMP Packet (Yellow)：** 當 Protocol 為 `1` 時（Ping）。它包含了 Ping 的專屬欄位，像是 Type（8 Request/0 Reply）、我特別標記了你用來 Debug 的 `Ident 0x1337`，以及垃圾資料 Payload ("ABCD...")。
+    * **分支：UDP Packet (Yellow)：** 當 Protocol 為 `17` 時（資料）。這就是你昨天成功的 UDP 封包。它包含了來源 Port (`12345`)、目標 Port (`8080`)，Checksum 欄位我標記為 `0`（不檢查）。最後就是你最感動的那個文字 Payload（**"Hello QEMU"**）。
