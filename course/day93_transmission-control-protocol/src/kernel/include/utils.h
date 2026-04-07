@@ -1,0 +1,34 @@
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <stdint.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+// === Memory Utils ===
+void* memcpy(void* dstptr, const void* srcptr, size_t size);
+void* memset(void* bufptr, int value, size_t size);
+// 比較兩塊記憶體前 n 個 bytes 是否相同
+int memcmp(const void *s1, const void *s2, size_t n);
+
+// === String Utils ===
+void reverse_string(char* str, int length);
+void reverse_string(char* str, int length);
+int strcmp(const char *s1, const char *s2);
+char *strcpy(char *dest, const char *src);
+int strlen(const char* str);
+// 尋找子字串 (如果找到 needle，回傳它在 haystack 中的指標，否則回傳 0)
+char* strstr(const char* haystack, const char* needle);
+// 安全的字串拷貝 (最多拷貝 n 個字元，並保證 null 結尾)
+char *strncpy(char *dest, const char *src, size_t n);
+
+// 核心工具：整數轉字串 (itoa), value: 要轉換的數字, str: 存放結果的陣列, base: 進位制 (10或16)
+void itoa(int value, char* str, int base);
+
+uint16_t calculate_checksum(void* data, int count);
+
+// === IO Utils ===
+void kprintf(const char* format, ...);
+
+#endif
