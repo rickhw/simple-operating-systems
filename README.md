@@ -117,7 +117,7 @@
 6. **圖形介面 (GUI)** ：實作簡單的視窗介面，包含滑鼠 I/O、Double Buffering（雙重緩衝）機制、字型渲染，並實作基礎的 Window Manager。
 7. **行程管理 (Process Manager)** ：實作 top、ps、kill 等行程管理
 8. **視窗多工 GUI 生態系** ：實作 File Manager、Task Manager、Event Routing、讀圖 ... 等。
-9. **網路 (Network)**: 實作網路卡驅動程式 (rtl8139)、底層協議 ethernet layer, IPv4、通訊協議實作 (ARP, ARP Cache, ICMP, Ping, UDP) 等.
+9. **網路 (Network)**: 實作網路卡驅動程式 (rtl8139)、底層協議 ethernet layer, IPv4、通訊協議實作 (ARP, ARP Cache, ICMP, Ping, UDP, TCP) 等.
 
 這可以想像成幾個 Sprint，每個部分都有約 10 個核心功能需要達成。
 
@@ -198,13 +198,15 @@ EFER=0000000000000000
 網路實作包含以下：
 
 - 驅動 RTL8139 (Kernel Space)
-- 實作 Ethernet Layer, IPv4, ARP, ICMP (Kernel Space)
-- 封裝 Ping (User Space), UDP, Socket API between Kernel and User Space
+- 實作 (Kernel Space) Ethernet Layer, IPv4, ARP, ICMP, UDP, TCP
+- 封裝 (User Space) Ping, UDP/TCP test, Socket API between Kernel and User Space
 
-網路功能, 用 ping 來驗收. 用結果論來看沒啥, 但實作的內容卻超過前面 windows app 全部做的, 就是增加網路的部分. 包含了網卡驅動程式 (rtl8139), 底層協議 ethernet layer, 通訊協議實作 (ARP, ARP Cache, IPv4, ICMP, Ping, UDP, Socket API) 等實作. 這部分的難度遠超過 前面一堆看起來花俏的 window app, 而且 debug 不太容易, 要搭配 wireshark 才能搞定.
-
+下圖是大概的內容：
 
 ![](/about/NetworkOverview.png)
+
+網路功能, 用 ping (UDP) 來驗收. 用結果論來看沒啥, 但實作的內容卻超過前面 windows app 全部做的, 就是增加網路的部分. 包含了網卡驅動程式 (rtl8139), 底層協議 ethernet layer, 通訊協議實作 (ARP, ARP Cache, IPv4, ICMP, Ping, UDP, Socket API) 等實作. 這部分的難度遠超過 前面一堆看起來花俏的 window app, 而且 debug 不太容易, 要搭配 wireshark 才能搞定.
+
 
 ![](/about/result/net_rtl8139-arp-icmp-ping_20260403.png)
 ![](/about/result/net_icmp-wireshark_20260403.png)
