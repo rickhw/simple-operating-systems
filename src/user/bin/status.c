@@ -1,5 +1,6 @@
 #include "stdio.h"
 #include "unistd.h"
+#include "simpleui.h"
 
 int main() {
     // 1. 向 Window Manager 申請一個名為 "System Status" 的視窗

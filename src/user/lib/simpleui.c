@@ -1,7 +1,33 @@
 #include "simpleui.h"
+#include "syscall.h"
+
+/**
+ * @file simpleui.c
+ * @brief 使用者界面繪圖與視窗管理實作
+ */
 
 // ==========================================
-// 1. 微型 8x8 字型庫 (請把完整版貼在這裡)
+// 1. 視窗管理系統呼叫 (Window Management Syscalls)
+// ==========================================
+
+int create_gui_window(const char* title, int width, int height) {
+    return syscall(SYS_CREATE_WINDOW, (int)title, width, height, 0, 0);
+}
+
+void update_gui_window(int win_id, unsigned int* buffer) {
+    syscall(SYS_UPDATE_WINDOW, win_id, (int)buffer, 0, 0, 0);
+}
+
+int get_window_event(int win_id, int* x, int* y) {
+    return syscall(SYS_GET_WIN_EVENT, win_id, (int)x, (int)y, 0, 0);
+}
+
+int get_window_key_event(int win_id, char* key) {
+    return syscall(SYS_GET_WIN_KEY, win_id, (int)key, 0, 0, 0);
+}
+
+// ==========================================
+// 2. 微型 8x8 字型庫
 // ==========================================
 static const unsigned char font[128][8] = {
     ['a']={0x00,0x3c,0x06,0x3e,0x66,0x3e,0x00}, ['b']={0x60,0x7c,0x66,0x66,0x66,0x7c,0x00},
@@ -41,8 +67,9 @@ static const unsigned char font[128][8] = {
 };
 
 // ==========================================
-// 2. 基礎繪圖實作
+// 3. 基礎繪圖實作
 // ==========================================
+
 void ui_draw_rect(unsigned int* canvas, int cw, int ch, int x, int y, int w, int h, unsigned int color) {
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -56,7 +83,8 @@ void ui_draw_rect(unsigned int* canvas, int cw, int ch, int x, int y, int w, int
 void ui_draw_text(unsigned int* canvas, int cw, int ch, int x, int y, const char* str, unsigned int color) {
     while (*str) {
         unsigned char c = *str++;
-        if (c >= 'A' && c <= 'Z' && font[c][0] == 0 && font[c][1] == 0) c += 32; // 降級保護
+        // 簡易的大寫轉小寫，如果字型庫沒定義的話
+        if (c >= 'A' && c <= 'Z' && font[c][0] == 0 && font[c][1] == 0) c += 32;
         for (int r = 0; r < 8; r++) {
             for (int c_bit = 0; c_bit < 8; c_bit++) {
                 if (font[c][r] & (1 << (7 - c_bit))) {
@@ -72,8 +100,9 @@ void ui_draw_text(unsigned int* canvas, int cw, int ch, int x, int y, const char
 }
 
 // ==========================================
-// 3. 元件實作：立體按鈕 (Button)
+// 4. 元件實作：立體按鈕 (Button)
 // ==========================================
+
 void ui_draw_button(unsigned int* canvas, int cw, int ch, ui_button_t* btn) {
     // 畫按鈕底色
     ui_draw_rect(canvas, cw, ch, btn->x, btn->y, btn->w, btn->h, btn->bg_color);
@@ -105,17 +134,18 @@ void ui_draw_button(unsigned int* canvas, int cw, int ch, ui_button_t* btn) {
     ui_draw_text(canvas, cw, ch, tx, ty, btn->text, btn->text_color);
 }
 
-// 碰撞偵測輔助
 int ui_is_clicked(ui_button_t* btn, int cx, int cy) {
     return (cx >= btn->x && cx <= btn->x + btn->w && cy >= btn->y && cy <= btn->y + btn->h);
 }
 
+// ==========================================
+// 5. 繪圖元件：超迷你 3x5 像素字型引擎
+// ==========================================
 
-// 超迷你 3x5 像素字型引擎！(1 代表有顏色，0 代表透明)
 void ui_draw_digit(unsigned int* canvas, int cw, int ch, int digit, int ox, int oy, unsigned int color) {
-    unsigned int font[10][5] = {
-        {7,5,5,5,7}, // 0 (111, 101, 101, 101, 111)
-        {2,2,2,2,2}, // 1 (010, 010, 010, 010, 010)
+    static const unsigned int digit_font[10][5] = {
+        {7,5,5,5,7}, // 0
+        {2,2,2,2,2}, // 1
         {7,1,7,4,7}, // 2
         {7,1,7,1,7}, // 3
         {5,5,7,1,1}, // 4
@@ -126,11 +156,12 @@ void ui_draw_digit(unsigned int* canvas, int cw, int ch, int digit, int ox, int 
         {7,5,7,1,7}  // 9
     };
 
+    if (digit < 0 || digit > 9) return;
+
     for(int y = 0; y < 5; y++) {
         for(int x = 0; x < 3; x++) {
-            // 用 bitwise 取出每一格是 1 還是 0
-            if (font[digit][y] & (1 << (2 - x))) {
-                // 每一個邏輯像素，我們用 5x5 的真實像素來畫，讓它看起來變大！
+            if (digit_font[digit][y] & (1 << (2 - x))) {
+                // 每一個邏輯像素放大為 5x5 的真實像素
                 ui_draw_rect(canvas, cw, ch, ox + x * 5, oy + y * 5, 5, 5, color);
             }
         }

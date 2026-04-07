@@ -1,5 +1,6 @@
 #include "stdio.h"
 #include "unistd.h"
+#include "simpleui.h"
 
 int main() {
     printf("Starting Image Viewer...\n");

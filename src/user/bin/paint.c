@@ -1,5 +1,6 @@
 #include "stdio.h"
 #include "unistd.h"
+#include "simpleui.h"
 
 #define CANVAS_W 200
 #define CANVAS_H 150

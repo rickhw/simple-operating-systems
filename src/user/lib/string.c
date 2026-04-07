@@ -1,23 +1,33 @@
 #include "string.h"
 
+/**
+ * @file string.c
+ * @brief 標準字串處理函式實作
+ */
 
 int strlen(const char* s) {
-    int i=0; while(s[i]) i++; return i;
+    int i = 0;
+    while (s[i]) i++;
+    return i;
 }
 
 void strcpy(char* dest, const char* src) {
-    while(*src) *dest++ = *src++; *dest = '\0';
+    while (*src) *dest++ = *src++;
+    *dest = '\0';
 }
 
 int strcmp(const char *s1, const char *s2) {
-    while (*s1 && (*s1 == *s2)) { s1++; s2++; }
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
     return *(const unsigned char*)s1 - *(const unsigned char*)s2;
 }
 
 int parse_args(char* input, char** argv) {
     int argc = 0, i = 0;
     int in_word = 0;
-    int in_quote = 0; // 新增狀態：是否在雙引號內
+    int in_quote = 0; // 狀態：是否在雙引號內
 
     while (input[i] != '\0') {
         if (input[i] == '"') {
@@ -32,7 +42,7 @@ int parse_args(char* input, char** argv) {
             }
         }
         else if (input[i] == ' ' && !in_quote) {
-            // 只有在「引號外面」的空白，才會斷開字串
+            // 只有在引號外的空白，才會斷開字串
             input[i] = '\0';
             in_word = 0;
         }

@@ -1,8 +1,24 @@
-#ifndef SIMPLEUI_H
-#define SIMPLEUI_H
+#ifndef _LIBC_NET_H
+#define _LIBC_NET_H
 
 #include <stdint.h>
 
+/**
+ * @file net.h
+ * @brief 網路相關工具與系統呼叫介面
+ */
+
+/**
+ * @brief 簡易的字串轉 IP 陣列函式
+ * @param str IP 字串 (例如 "10.0.2.2")
+ * @param ip 輸出的 4 位元組 IP 陣列
+ */
 void parse_ip(char* str, uint8_t* ip);
+
+/**
+ * @brief 發送 ICMP Ping 請求
+ * @param ip 目標 IP 陣列
+ */
+void sys_ping(uint8_t* ip);
 
 #endif

@@ -2,17 +2,26 @@
 #include "syscall.h"
 #include "stdarg.h"
 
+/**
+ * @file stdio.c
+ * @brief 標準輸入輸出函式實作
+ */
+
 // Syscall 2: sys_print
 void print(const char* str) {
-    syscall(2, (int)str, 0, 0, 0, 0);
+    syscall(SYS_PRINT_STR, (int)str, 0, 0, 0, 0);
 }
 
 // Syscall 5: sys_getchar
-char getchar() {
-    return (char)syscall(5, 0, 0, 0, 0, 0);
+char getchar(void) {
+    return (char)syscall(SYS_GETCHAR, 0, 0, 0, 0, 0);
 }
 
-// 內部工具：將整數轉為字串並印出 (支援 10 進位與 16 進位)
+/**
+ * @brief 內部工具：將整數轉為字串並印出
+ * @param num 整數值
+ * @param base 進位 (10 或 16)
+ */
 static void print_int(int num, int base) {
     char buf[32];
     int i = 0;
@@ -25,7 +34,7 @@ static void print_int(int num, int base) {
 
     if (num < 0 && base == 10) {
         is_neg = 1;
-        num = -num; // 轉為正數處理
+        num = -num;
     }
 
     while (num != 0) {
@@ -36,7 +45,7 @@ static void print_int(int num, int base) {
 
     if (is_neg) buf[i++] = '-';
 
-    // 陣列是反的，把它倒過來印出
+    // 反向印出
     char str[32];
     int j = 0;
     while (i > 0) {
@@ -52,14 +61,14 @@ void printf(const char* format, ...) {
 
     for (int i = 0; format[i] != '\0'; i++) {
         if (format[i] == '%') {
-            i++; // 跳到下一個字元看格式
+            i++; 
             switch (format[i]) {
-                case 'd': { // 十進位整數
+                case 'd': { // 十進位
                     int num = va_arg(args, int);
                     print_int(num, 10);
                     break;
                 }
-                case 'x': { // 十六進位整數
+                case 'x': { // 十六進位
                     int num = va_arg(args, int);
                     print("0x");
                     print_int(num, 16);
@@ -71,24 +80,23 @@ void printf(const char* format, ...) {
                     print(str);
                     break;
                 }
-                case 'c': { // 單一字元
+                case 'c': { // 字元
                     char c = (char)va_arg(args, int);
                     char str[2] = {c, '\0'};
                     print(str);
                     break;
                 }
-                case '%': { // 印出 % 本身
+                case '%': { // 百分比符號
                     print("%");
                     break;
                 }
-                default: { // 不支援的格式，原樣印出
+                default: { // 不支援格式
                     char str[3] = {'%', format[i], '\0'};
                     print(str);
                     break;
                 }
             }
         } else {
-            // 普通字元直接印
             char str[2] = {format[i], '\0'};
             print(str);
         }
@@ -96,15 +104,3 @@ void printf(const char* format, ...) {
 
     va_end(args);
 }
-
-// int open(char* filename) {
-//     int fd;
-//     __asm__ volatile ("int $0x80" : "=a"(fd) : "a"(3), "b"(filename) : "memory");
-//     return fd;
-// }
-
-// int read(int fd, char* buffer, int size) {
-//     int bytes;
-//     __asm__ volatile ("int $0x80" : "=a"(bytes) : "a"(4), "b"(fd), "c"(buffer), "d"(size) : "memory");
-//     return bytes;
-// }
