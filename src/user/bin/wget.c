@@ -40,14 +40,46 @@ int main(int argc, char** argv) {
     while (retry < 10) {
         rx_len = sys_tcp_recv(rx_buf);
         if (rx_len > 0) {
-            printf("\n--- HTTP RESPONSE RECEIVED ---\n\n");
-            printf("%s\n", rx_buf);
-            printf("\n------------------------------\n");
+            printf("\n--- TCP Data Received (%d bytes) ---\n", rx_len);
+
+            // 【HTTP 解析器】尋找 \r\n\r\n
+            char* body = 0;
+            for (int i = 0; i < rx_len - 3; i++) {
+                if (rx_buf[i] == '\r' && rx_buf[i+1] == '\n' &&
+                    rx_buf[i+2] == '\r' && rx_buf[i+3] == '\n') {
+                    body = &rx_buf[i+4]; // Payload 的起點！
+                    break;
+                }
+            }
+
+            if (body != 0) {
+                int body_len = rx_len - (body - rx_buf);
+                printf("HTTP Headers stripped. Payload size: %d bytes.\n", body_len);
+
+                // 【檔案系統整合】寫入虛擬硬碟！
+                printf("Saving to 'index.html'...\n");
+
+                // 【修復】為字串補上結尾，因為 vfs_create_file 底層通常依賴 strlen 計算長度
+                body[body_len] = '\0';
+
+                // 【終極偷吃步】直接呼叫 SYS_CREATE (14)，將檔名與內容一次送進 SimpleFS！
+                int res = syscall(14, (int)"index.html", (int)body, 0, 0, 0);
+
+                if (res == 0) {
+                    printf("Success! Webpage saved to disk.\n");
+                } else {
+                    printf("Error: Failed to create or write index.html.\n");
+                }
+            } else {
+                printf("Error: Could not find HTTP body in response.\n");
+            }
             break;
         }
         for (volatile int i = 0; i < 20000000; i++) {} // Delay
         retry++;
     }
+
+    // 4. 掛斷電話 (保持不變)
 
     if (rx_len == 0) printf("Timeout: No data received.\n");
 

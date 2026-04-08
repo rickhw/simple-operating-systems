@@ -367,6 +367,23 @@ static int sys_net_tcp_recv_handler(registers_t *regs) {
     return tcp_recv_data((char*)regs->ebx);
 }
 
+// ==========================================
+// 【Day 98 新增】寫入檔案的系統呼叫
+// ==========================================
+static int sys_write_handler(registers_t *regs) {
+    int fd = (int)regs->ebx;
+    uint8_t* buffer = (uint8_t*)regs->ecx;
+    uint32_t size = (uint32_t)regs->edx;
+
+    // 確認 fd 是合法的 (3 以上，且已被 open)
+    if (fd >= 3 && fd < MAX_FD && fd_table[fd] != 0) {
+        // 呼叫虛擬檔案系統的寫入函式 (假設每次都從 offset 0 覆寫)
+        extern uint32_t vfs_write(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
+        return vfs_write(fd_table[fd], 0, size, buffer);
+    }
+    return -1;
+}
+
 /** @brief 切換顯示模式 (SYS_SET_DISPLAY_MODE) */
 static int sys_set_display_mode_handler(registers_t *regs) {
     switch_display_mode((int)regs->ebx);
@@ -416,6 +433,7 @@ static syscall_t syscall_table[MAX_SYSCALLS] = {
     [SYS_NET_TCP_SEND]    = sys_net_tcp_send_handler,
     [SYS_NET_TCP_CLOSE]   = sys_net_tcp_close_handler,
     [SYS_NET_TCP_RECV]    = sys_net_tcp_recv_handler,
+    [SYS_WRITE]           = sys_write_handler,
     [SYS_SET_DISPLAY_MODE] = sys_set_display_mode_handler,
 };
 

@@ -146,25 +146,40 @@
 
 ![](/about/NetworkOverview.png)
 
+哈哈，Rick！隨著 Phase 10 的完美收官，你的 `NetworkOverview.jpg` 確實需要一次「史詩級的擴充」了！
+
+我們不僅加入了最複雜的 TCP 協定、DNS 解析、HTTP 請求，甚至還打通了 VFS 虛擬檔案系統的存檔功能。為了讓你未來的技術文章或筆記更具互動性，我為你重新撰寫了這份**「全景圖說明」**，並且特別為你生成了一個**「互動式網路堆疊與封包探險器 (Interactive Network & Packet Explorer)」**來取代原本的靜態圖片！
+
+你可以先玩玩看下面這個動態架構圖，然後搭配底下的文字說明：
+
+```json?chameleon
+{"component":"LlmGeneratedComponent","props":{"height":"800px","prompt":"The objective is to visualize the complete network architecture and packet encapsulation of a custom OS (Simple OS). \nData State: Guest IP 10.0.2.15, Gateway 10.0.2.2, DNS Server 8.8.8.8, Web Server 104.18.27.120.\nStrategy: Standard Layout with interactive sections.\nBehavior: \n1. Create two main interactive sections (e.g., using tabs or a clear vertical separation): 'OS 分層架構 (OS Architecture)' and '封包嵌套結構 (Packet Encapsulation)'. All UI text MUST be in Traditional Chinese.\n2. In the Architecture section, visualize a top-down stack of 6 layers: \n   - User App: udpsend, ping, host (DNS), wget (HTTP + VFS 寫入)\n   - Syscall Interface: int 128, SYS_TCP_*, SYS_CREATE/WRITE\n   - Transport: udp.c, icmp.c, tcp.c (狀態機, Seq/Ack)\n   - Network: arp.c, ipv4.h (包含 Gateway 外網路由邏輯)\n   - Data Link: ethernet.h, rtl8139.c (中斷防護)\n   - Hardware: pci.c, RTL8139 實體網卡\n   Allow clicking on a layer to reveal a short descriptive text of its responsibility.\n3. In the Packet section, provide controls (buttons or a dropdown) to select a network scenario: 'ARP 請求', 'ICMP Ping', 'UDP DNS 查詢', 'TCP HTTP 請求'. \n4. Based on the selected scenario, dynamically render the nested packet structure (like Russian dolls). \n   - For ARP: Ethernet (0x0806) -> ARP Payload.\n   - For Ping: Ethernet (0x0800) -> IPv4 (Proto 1) -> ICMP -> Payload.\n   - For DNS: Ethernet -> IPv4 (Proto 17) -> UDP (Port 53) -> DNS Binary Payload.\n   - For HTTP: Ethernet -> IPv4 (Proto 6) -> TCP (Port 80, PSH/ACK Flags) -> HTTP Payload (GET... or HTML).\n   Display the actual IP addresses and key fields inside the nested boxes. Highlight the current active protocol layer when hovered. Use clear functional language for layout and structural nesting.","id":"im_dfafa27e56212f77"}}
+```
+
+---
+
+## Simple OS 網路實作與封包全景圖說明
+
 ### 👈 左半部：Simple OS 網路分層架構圖 (Conceptual Architecture)
 
-這部分採用上下分層（Top-Down）的概念，表達資料從 User Space（Ring 3）一路下放到實體硬體（Ring 0）的過程。
+這部分採用上下分層（Top-Down）的概念，表達資料從 User Space（Ring 3）一路下放到實體硬體（Ring 0），並結合檔案系統的過程。
 
-* **1. User Application Layer (User Space)：** 這是你的應用程式，像是 `udpsend.elf` 或 `ping.elf`。它們只需要知道你要傳送的文字和目標 IP/Port，完全不需要管底層細節。
-* **2. Syscall Interface (The Boundary)：** 這是 Ring 3 和 Ring 0 的分界線。User App 透過呼叫特殊的指令（圖中標記為 `int 128 (0x80)`）來觸發 Kernel 接手。這裡標記了我們的 `syscall.c` 和 `syscall_lib.c` 處理的部分。
-* **3. Transport Layer (Kernel Space)：** 這是核心的協定棧。這裡負責處理 UDP 標頭（例如 Port）或 ICMP 標頭（例如 Ping 類型），並計算 Checksum。標記了 `udp.c` 和 `icmp.c`。
-* **4. Network Layer (Kernel Space)：** 這裡負責 L3 的邏輯。如果是 ARP 請求，會在這裡封裝 ARP 標頭（標記 `arp.c`），並在 ARP 表中查詢 MAC 位址。如果是正常的 IP 資料，會在這裡封裝 IPv4 標頭（標記 `ipv4.h`）並負責路由判斷。
-* **5. Data Link Layer (Driver)：** 這裡負責把 L3 的封包貼上乙太網路標頭（標記 `ethernet.h`），並把完整的資料拷貝到網卡 DMA 緩衝區（Rx Ring Buffer）。標記了 `rtl8139.c` 的發送槽管理邏輯。
-* **6. PCI & Hardware Layer：** 最底層的硬體。這裡負責 PCI 的掃描（標記 `pci.c`）來揪出網卡，以及網卡硬體本身（如 Tx/Rx 埠）把資料變成真正的 bit 噴射出去。
+* **1. User Application Layer (User Space)：** 這是你的應用程式。現在除了原有的 `udpsend.elf` 與 `ping.elf`，更加入了 **`host.elf` (解析 DNS)** 以及 **`wget.elf` (負責發送 HTTP 請求並透過 VFS 將網頁存入實體硬碟)**。
+* **2. Syscall Interface (The Boundary)：** Ring 3 和 Ring 0 的分界線 (`int 128 / 0x80`)。除了網路收發，現在更擴充了 **TCP 專用的連線/中斷呼叫 (`SYS_NET_TCP_*`)**，以及與檔案系統串接的 **`SYS_CREATE` / `SYS_WRITE`**。
+* **3. Transport Layer (Kernel Space)：** 核心的協定棧。除了原有的 UDP 與 ICMP，現在加入了**最複雜的 `tcp.c`**。它負責維護連線狀態 (State Machine)、精準計算 Sequence/Acknowledge Numbers，以及處理包含偽標頭 (Pseudo Header) 的 Checksum。
+* **4. Network Layer (Kernel Space)：** 負責 L3 邏輯。封裝 IPv4 與 ARP 標頭，並加入了**「外網路由判斷 (Gateway Routing)」**：當目標 IP（如 `8.8.8.8`）不在區網內時，會自動解析預設閘道器 (`10.0.2.2`) 的 MAC 位址。
+* **5. Data Link Layer (Driver)：** 將 L3 封包貼上乙太網路標頭，拷貝至網卡 DMA 緩衝區。並具備了**防禦中斷競爭 (Interrupt Race Condition)** 的設計，確保網卡極速收發時不會干擾 GUI 繪圖。
+* **6. PCI & Hardware Layer：** 最底層的硬體。負責 PCI 掃描揪出網卡，設定 IRQ 11 硬體中斷，將資料化為真正的 bit 噴射到虛擬/實體網路上。
 
 ---
 
 ### 👉 右半部：網路封包概念圖 (Network Packet Conceptual Diagram)
 
-這部分採用**俄羅斯娃娃（嵌套）**的概念，表達一個封包在不同層級是如何被一層一層包裝起來的。
+採用**俄羅斯娃娃（嵌套）**的概念，表達一個封包在不同層級是如何被一層一層包裝起來的。
 
-* **Ethernet Frame (Blue)：** 這是最外層的信封（L2），所有封包都必須穿上它。它包含了目標 MAC（`Dest MAC`）和來源 MAC（`Src MAC`）。關鍵欄位是 `EtherType`，如果填 `0x0806`，裡面包的就是 ARP；如果填 `0x0800`，裡面包的就是 IPv4。
-    * **分支：ARP Packet (Green)：** 當 EtherType 為 `0x0806` 時。這顆封包用來問「誰的 IP 是 10.0.2.2？」。它包含了 ARP 的專屬欄位，像是 Opcode（1 Request/2 Reply）、來源/目標 MAC/IP。
-* **IPv4 Header (Green)：** 當 EtherType 為 `0x0800` 時（L3）。這是 IP 信封，它包含了來源 IP (`10.0.2.15`) 和目標 IP (`10.0.2.2`)。關鍵欄位是 `Protocol`，如果是 `1`，裡面包的就是 ICMP；如果是 `17`，裡面包的就是 UDP。
-    * **分支：ICMP Packet (Yellow)：** 當 Protocol 為 `1` 時（Ping）。它包含了 Ping 的專屬欄位，像是 Type（8 Request/0 Reply）、我特別標記了你用來 Debug 的 `Ident 0x1337`，以及垃圾資料 Payload ("ABCD...")。
-    * **分支：UDP Packet (Yellow)：** 當 Protocol 為 `17` 時（資料）。這就是你昨天成功的 UDP 封包。它包含了來源 Port (`12345`)、目標 Port (`8080`)，Checksum 欄位我標記為 `0`（不檢查）。最後就是你最感動的那個文字 Payload（**"Hello QEMU"**）。
+* **Ethernet Frame (最外層 L2 信封)：** 所有封包都必須穿上它。包含目標/來源 MAC。關鍵的 `EtherType` 決定了內部乘客的身分 (`0x0806` 為 ARP，`0x0800` 為 IPv4)。
+    * **分支 1：ARP Packet：** 當 EtherType 為 `0x0806` 時。負責詢問 IP 對應的 MAC 位址。
+* **IPv4 Header (L3 信封)：** 當 EtherType 為 `0x0800` 時。包含來源 IP (`10.0.2.15`) 與目標 IP (如 `93.184.216.34`)。關鍵的 `Protocol` 決定了傳輸層的身分：
+    * **分支 2：ICMP Packet (Protocol `1`)：** 你的 Ping 封包，包含 Type 與 Debug 用的 Ident。
+    * **分支 3：UDP Packet (Protocol `17`)：** 無狀態傳輸。除了文字聊天，現在更能包裝 **二進位的 DNS 查詢 Payload**，送往 Port `53`。
+    * **分支 4：TCP Packet (Protocol `6`) [🔥 終極魔王]：** 可靠連線傳輸。包含來源/目標 Port (如 `80` HTTP)、**控制旗標 (SYN, ACK, PSH, FIN)**、32-bit 大端序的 Seq/Ack Numbers。最核心的 **Payload 則是 HTTP GET 請求，或是 Web Server 傳回來的 `<!doctype html>` 網頁原始碼**！

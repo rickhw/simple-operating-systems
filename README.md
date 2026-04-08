@@ -203,7 +203,7 @@ EFER=0000000000000000
 
 下圖是大概的內容：
 
-![](/about/NetworkOverview.png)
+![](/about/NetworkOverview_20260408.png)
 
 網路功能, 用 ping (UDP) 來驗收. 用結果論來看沒啥, 但實作的內容卻超過前面 windows app 全部做的, 就是增加網路的部分. 包含了網卡驅動程式 (rtl8139), 底層協議 ethernet layer, 通訊協議實作 (ARP, ARP Cache, IPv4, ICMP, Ping, UDP, Socket API) 等實作. 這部分的難度遠超過 前面一堆看起來花俏的 window app, 而且 debug 不太容易, 要搭配 wireshark 才能搞定.
 
