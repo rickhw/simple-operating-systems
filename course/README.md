@@ -126,10 +126,10 @@
 * **Day 90-92：UDP 協定與 Socket 接收器 (UDP Protocol & Socket Receiver)**
     * 實作 UDP 無狀態傳輸，建立 Kernel 級別的 Port 綁定 (Bind) 信箱機制。
     * 打通 QEMU Port Forwarding，開發 `udpsend.elf` 與 `udprecv.elf`，實現與 macOS 宿主機 (Host) 跨次元壁的雙向文字通訊。
-* **Day 93-94：TCP 狀態機與三方交握 (TCP State Machine & 3-Way Handshake) [✅ 我們在這裡！]**
+* **Day 93-94：TCP 狀態機與三方交握 (TCP State Machine & 3-Way Handshake) **
     * 實作複雜的 TCP 偽標頭 (Pseudo Header) 計算與 32-bit 大小端序 (Endianness) 轉換。
     * 精準計算 Sequence/Acknowledge Number，完美攔截 `[SYN, ACK]` 並回傳 `[ACK]`，完成連線建立 (ESTABLISHED)。
-* **Day 95：TCP 資料傳輸與優雅中斷 (TCP Data Transfer & Connection Teardown) [🔥 即將展開]**
+* **Day 95：TCP 資料傳輸與優雅中斷 (TCP Data Transfer & Connection Teardown)**
     * 實作帶有 `PSH` 旗標的真實資料傳送機制。
     * 實作帶有 `FIN` 旗標的四方揮手 (4-Way Handshake)，安全釋放雙方連線資源。
 * **Day 96：DNS 網域解析與 Socket API (DNS Resolution & Socket API)**
@@ -144,21 +144,7 @@
 
 ## Network Overview
 
-![](/about/NetworkOverview.png)
-
-哈哈，Rick！隨著 Phase 10 的完美收官，你的 `NetworkOverview.jpg` 確實需要一次「史詩級的擴充」了！
-
-我們不僅加入了最複雜的 TCP 協定、DNS 解析、HTTP 請求，甚至還打通了 VFS 虛擬檔案系統的存檔功能。為了讓你未來的技術文章或筆記更具互動性，我為你重新撰寫了這份**「全景圖說明」**，並且特別為你生成了一個**「互動式網路堆疊與封包探險器 (Interactive Network & Packet Explorer)」**來取代原本的靜態圖片！
-
-你可以先玩玩看下面這個動態架構圖，然後搭配底下的文字說明：
-
-```json?chameleon
-{"component":"LlmGeneratedComponent","props":{"height":"800px","prompt":"The objective is to visualize the complete network architecture and packet encapsulation of a custom OS (Simple OS). \nData State: Guest IP 10.0.2.15, Gateway 10.0.2.2, DNS Server 8.8.8.8, Web Server 104.18.27.120.\nStrategy: Standard Layout with interactive sections.\nBehavior: \n1. Create two main interactive sections (e.g., using tabs or a clear vertical separation): 'OS 分層架構 (OS Architecture)' and '封包嵌套結構 (Packet Encapsulation)'. All UI text MUST be in Traditional Chinese.\n2. In the Architecture section, visualize a top-down stack of 6 layers: \n   - User App: udpsend, ping, host (DNS), wget (HTTP + VFS 寫入)\n   - Syscall Interface: int 128, SYS_TCP_*, SYS_CREATE/WRITE\n   - Transport: udp.c, icmp.c, tcp.c (狀態機, Seq/Ack)\n   - Network: arp.c, ipv4.h (包含 Gateway 外網路由邏輯)\n   - Data Link: ethernet.h, rtl8139.c (中斷防護)\n   - Hardware: pci.c, RTL8139 實體網卡\n   Allow clicking on a layer to reveal a short descriptive text of its responsibility.\n3. In the Packet section, provide controls (buttons or a dropdown) to select a network scenario: 'ARP 請求', 'ICMP Ping', 'UDP DNS 查詢', 'TCP HTTP 請求'. \n4. Based on the selected scenario, dynamically render the nested packet structure (like Russian dolls). \n   - For ARP: Ethernet (0x0806) -> ARP Payload.\n   - For Ping: Ethernet (0x0800) -> IPv4 (Proto 1) -> ICMP -> Payload.\n   - For DNS: Ethernet -> IPv4 (Proto 17) -> UDP (Port 53) -> DNS Binary Payload.\n   - For HTTP: Ethernet -> IPv4 (Proto 6) -> TCP (Port 80, PSH/ACK Flags) -> HTTP Payload (GET... or HTML).\n   Display the actual IP addresses and key fields inside the nested boxes. Highlight the current active protocol layer when hovered. Use clear functional language for layout and structural nesting.","id":"im_dfafa27e56212f77"}}
-```
-
----
-
-## Simple OS 網路實作與封包全景圖說明
+![](/about/NetworkOverview_20260408.png)
 
 ### 👈 左半部：Simple OS 網路分層架構圖 (Conceptual Architecture)
 
