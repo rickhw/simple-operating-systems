@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCP 4-Way Handshake & Retransmission Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .panel {
+            background-color: #252526;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .controls-panel {
+            flex: 1;
+            max-width: 350px;
+        }
+        .visual-panel {
+            flex: 2;
+            overflow: hidden;
+            position: relative;
+        }
+        h2 { color: #569cd6; margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .state-box {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #c586c0;
+        }
+        .state-name { color: #ce9178; font-weight: bold; font-size: 1.1rem; }
+        .info-text { font-size: 0.9rem; color: #9cdcfe; margin: 5px 0 0 0; }
+
+        .control-group { margin-bottom: 20px; }
+        button {
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #1177bb; }
+        button:disabled { background-color: #555; cursor: not-allowed; color: #888; }
+
+        label { display: block; margin-bottom: 5px; color: #dcdcaa; }
+        input[type="range"] { width: 100%; }
+
+        canvas {
+            background-color: #1e1e1e;
+            border-radius: 4px;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .rto-bar-container {
+            width: 100%; height: 10px; background-color: #333; border-radius: 5px; overflow: hidden; margin-top: 5px;
+        }
+        .rto-bar {
+            height: 100%; background-color: #d16969; width: 0%;
+        }
+        .reset-btn { background-color: #d16969; margin-top: auto; }
+        .reset-btn:hover { background-color: #c45b5b; }
+    </style>
+</head>
+<body>
+
+    <div class="panel controls-panel">
+        <h2>System State</h2>
+        <div class="state-box">
+            <div>Guest (Simple OS)</div>
+            <div class="state-name" id="guest-state">FIN_WAIT_1</div>
+            <p class="info-text" id="guest-info">Seq=43, Ack=1</p>
+            <label style="margin-top:10px; font-size:0.8rem;">RTO Timer:</label>
+            <div class="rto-bar-container"><div class="rto-bar" id="rto-bar"></div></div>
+        </div>
+
+        <div class="state-box" style="border-left-color: #4ec9b0;">
+            <div>Host (macOS)</div>
+            <div class="state-name" id="host-state">ESTABLISHED</div>
+            <p class="info-text" id="host-info">Expecting Seq=43</p>
+        </div>
+
+        <h2>Host Actions (Simulate)</h2>
+        <div class="control-group">
+            <button id="btn-ack" onclick="hostSendACK()">1. Send ACK (for Guest FIN)</button>
+            <button id="btn-fin" onclick="hostSendFIN()">2. Send FIN (Host close)</button>
+            <button id="btn-finack" onclick="hostSendFINACK()">Or: Send FIN+ACK (Combined)</button>
+        </div>
+
+        <div class="control-group">
+            <label>Retransmission Timeout (RTO): <span id="rto-val">2000</span>ms</label>
+            <input type="range" id="rto-slider" min="500" max="5000" value="2000" oninput="updateRTO(this.value)">
+        </div>
+
+        <button class="reset-btn" onclick="resetSimulation()">Restart Simulation</button>
+    </div>
+
+    <div class="panel visual-panel">
+        <canvas id="seqCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('seqCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // System State
+    let state = {
+        guest: { state: 'FIN_WAIT_1', seq: 43, ack: 1 },
+        host: { state: 'ESTABLISHED', seq: 1, ack: 43 },
+        rtoLimit: 2000,
+        rtoTimer: 0,
+        timeY: 50,
+        packets: [],
+        history: [],
+        lastTick: performance.now(),
+        scrollY: 0
+    };
+
+    // Resize canvas
+    function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function updateRTO(val) {
+        state.rtoLimit = parseInt(val);
+        document.getElementById('rto-val').innerText = val;
+    }
+
+    function updateUI() {
+        document.getElementById('guest-state').innerText = state.guest.state;
+        document.getElementById('guest-info').innerText = `Seq=${state.guest.seq}, Ack=${state.guest.ack}`;
+        document.getElementById('host-state').innerText = state.host.state;
+        document.getElementById('host-info').innerText = `Seq=${state.host.seq}, Ack=${state.host.ack}`;
+
+        let rtoPercent = Math.min((state.rtoTimer / state.rtoLimit) * 100, 100);
+        document.getElementById('rto-bar').style.width = rtoPercent + '%';
+
+        document.getElementById('btn-ack').disabled = state.host.state !== 'ESTABLISHED';
+        document.getElementById('btn-fin').disabled = state.host.state === 'CLOSED' || state.host.state === 'LAST_ACK';
+        document.getElementById('btn-finack').disabled = state.host.state !== 'ESTABLISHED';
+    }
+
+    // Packet Factory
+    function spawnPacket(sender, type, seq, ack, isRetransmit = false) {
+        state.packets.push({
+            sender: sender, // 'guest' or 'host'
+            type: type,
+            seq: seq,
+            ack: ack,
+            progress: 0,
+            startY: state.timeY,
+            isRetransmit: isRetransmit
+        });
+        state.timeY += 40; // Advance time for next packet spawn
+    }
+
+    // Host Actions
+    function hostSendACK() {
+        if(state.host.state !== 'ESTABLISHED') return;
+        state.host.ack = state.guest.seq + 1; // Ack the FIN
+        state.host.state = 'CLOSE_WAIT';
+        spawnPacket('host', 'ACK', state.host.seq, state.host.ack);
+        updateUI();
+    }
+
+    function hostSendFIN() {
+        if(state.host.state === 'CLOSED') return;
+        state.host.state = 'LAST_ACK';
+        spawnPacket('host', 'FIN', state.host.seq, state.host.ack);
+        updateUI();
+    }
+
+    function hostSendFINACK() {
+        if(state.host.state !== 'ESTABLISHED') return;
+        state.host.ack = state.guest.seq + 1;
+        state.host.state = 'LAST_ACK';
+        spawnPacket('host', 'FIN, ACK', state.host.seq, state.host.ack);
+        updateUI();
+    }
+
+    // Simulation Loop
+    function loop(timestamp) {
+        let dt = timestamp - state.lastTick;
+        state.lastTick = timestamp;
+
+        // RTO Logic for Guest FIN_WAIT_1
+        if (state.guest.state === 'FIN_WAIT_1') {
+            state.rtoTimer += dt;
+            if (state.rtoTimer >= state.rtoLimit) {
+                state.rtoTimer = 0;
+                spawnPacket('guest', 'FIN, ACK', state.guest.seq, state.guest.ack, true); // Retransmission
+            }
+        } else {
+            state.rtoTimer = 0; // Stop timer if not waiting for ACK of FIN
+        }
+
+        // Auto transition TIME_WAIT -> CLOSED (Simplified)
+        if (state.guest.state === 'TIME_WAIT') {
+            state.rtoTimer += dt;
+            if(state.rtoTimer > 3000) {
+                state.guest.state = 'CLOSED';
+            }
+        }
+
+        // Process Packets in flight
+        for (let i = state.packets.length - 1; i >= 0; i--) {
+            let p = state.packets[i];
+            p.progress += dt * 0.001; // Speed
+
+            if (p.progress >= 1) {
+                // Packet Arrived!
+                handlePacketArrival(p);
+                // Move to history
+                state.history.push({...p, endY: state.timeY});
+                state.packets.splice(i, 1);
+            }
+        }
+
+        // Auto-scroll
+        if (state.timeY - state.scrollY > canvas.height - 100) {
+            state.scrollY += (state.timeY - state.scrollY - canvas.height + 100) * 0.1;
+        }
+
+        draw();
+        updateUI();
+        requestAnimationFrame(loop);
+    }
+
+    function handlePacketArrival(p) {
+        if (p.sender === 'host') {
+            // Guest receives
+            if (p.type.includes('ACK') && state.guest.state === 'FIN_WAIT_1') {
+                state.guest.state = 'FIN_WAIT_2';
+            }
+            if (p.type.includes('FIN')) {
+                state.guest.ack = p.seq + 1;
+                state.guest.state = 'TIME_WAIT';
+                state.rtoTimer = 0; // Reset for time_wait delay
+                spawnPacket('guest', 'ACK', state.guest.seq + 1, state.guest.ack);
+            }
+        } else {
+            // Host receives
+            if (p.type === 'ACK' && state.host.state === 'LAST_ACK') {
+                state.host.state = 'CLOSED';
+            }
+        }
+    }
+
+    // Drawing Logic
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(0, -state.scrollY);
+
+        let leftX = 100;
+        let rightX = canvas.width - 100;
+
+        // Draw vertical lifelines
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(leftX, state.scrollY); ctx.lineTo(leftX, state.scrollY + canvas.height);
+        ctx.moveTo(rightX, state.scrollY); ctx.lineTo(rightX, state.scrollY + canvas.height);
+        ctx.stroke();
+
+        // Draw Nodes Text
+        ctx.fillStyle = '#fff';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("Guest (10.0.2.15)", leftX, state.scrollY + 20);
+        ctx.fillText("Host (10.0.2.2)", rightX, state.scrollY + 20);
+
+        // Draw History Packets
+        state.history.forEach(p => {
+            let startX = p.sender === 'guest' ? leftX : rightX;
+            let endX = p.sender === 'guest' ? rightX : leftX;
+            drawLine(startX, p.startY, endX, p.endY, p.isRetransmit ? '#d16969' : '#569cd6');
+            drawText(p, (startX + endX)/2, (p.startY + p.endY)/2);
+        });
+
+        // Draw Active Packets
+        state.packets.forEach(p => {
+            let startX = p.sender === 'guest' ? leftX : rightX;
+            let endX = p.sender === 'guest' ? rightX : leftX;
+            let currentX = startX + (endX - startX) * p.progress;
+            let currentY = p.startY + (state.timeY - p.startY) * p.progress;
+
+            drawLine(startX, p.startY, currentX, currentY, p.isRetransmit ? '#d16969' : '#569cd6');
+
+            // Draw packet head (dot)
+            ctx.fillStyle = p.isRetransmit ? '#d16969' : '#569cd6';
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            drawText(p, currentX, currentY - 10);
+        });
+
+        ctx.restore();
+    }
+
+    function drawLine(x1, y1, x2, y2, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function drawText(p, x, y) {
+        ctx.fillStyle = p.isRetransmit ? '#d16969' : '#9cdcfe';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        let text = `${p.isRetransmit ? '[Retransmit] ' : ''}${p.type} Seq=${p.seq} Ack=${p.ack}`;
+        ctx.fillText(text, x, y - 5);
+    }
+
+    function resetSimulation() {
+        state.guest = { state: 'FIN_WAIT_1', seq: 43, ack: 1 };
+        state.host = { state: 'ESTABLISHED', seq: 1, ack: 43 };
+        state.rtoTimer = 0;
+        state.timeY = 50;
+        state.scrollY = 0;
+        state.packets = [];
+        state.history = [];
+
+        // Initial PSH data was sent, now FIN is sent
+        spawnPacket('guest', 'FIN, ACK', 43, 1);
+        updateUI();
+    }
+
+    // Start
+    resetSimulation();
+    requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
