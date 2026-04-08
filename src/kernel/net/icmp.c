@@ -11,7 +11,7 @@ void ping_send_request(uint8_t* target_ip) {
     // 【修復】真實 OS 邏輯：先查 ARP 電話簿！
     uint8_t* target_mac = arp_lookup(target_ip);
     if (target_mac == 0) {
-        kprintf("[Ping] Target MAC unknown! Cannot send ping to %d.%d.%d.%d\n",
+        kprintf("[ICMP][Ping] Target MAC unknown! Cannot send ping to %d.%d.%d.%d\n",
                 target_ip[0], target_ip[1], target_ip[2], target_ip[3]);
 
         // ==========================================
@@ -69,6 +69,6 @@ void ping_send_request(uint8_t* target_ip) {
 
     // 4. 發射！
     rtl8139_send_packet(packet, packet_size);
-    kprintf("[Ping] Sending Echo Request to [%d.%d.%d.%d]...\n",
+    kprintf("[ICMP][Ping] Sending Echo Request to [%d.%d.%d.%d]...\n",
             target_ip[0], target_ip[1], target_ip[2], target_ip[3]);
 }

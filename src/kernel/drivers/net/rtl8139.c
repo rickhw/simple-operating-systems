@@ -42,7 +42,7 @@ void init_rtl8139(uint8_t bus, uint8_t slot) {
 
     // 組合出 32-bit 的位址，並清除最低 2 個 bit (PCI 規範，用來標示這是一塊 I/O 空間)
     rtl_iobase = (bar0_low | (bar0_high << 16)) & ~3;
-    // kprintf("[RTL8139] I/O Base Address found at: [%x]\n", rtl_iobase);
+    kprintf("[RTL8139] I/O Base Address found at: [%x]\n", rtl_iobase);
 
     // ==========================================
     // 啟用 PCI Bus Mastering！
@@ -72,9 +72,9 @@ void init_rtl8139(uint8_t bus, uint8_t slot) {
         mac_addr[i] = inb(rtl_iobase + i);
     }
 
-    // kprintf("[RTL8139] MAC Address: [%x:%x:%x:%x:%x:%x]\n",
-    //         mac_addr[0], mac_addr[1], mac_addr[2],
-    //         mac_addr[3], mac_addr[4], mac_addr[5]);
+    kprintf("[RTL8139] MAC Address: [%x:%x:%x:%x:%x:%x]\n",
+            mac_addr[0], mac_addr[1], mac_addr[2],
+            mac_addr[3], mac_addr[4], mac_addr[5]);
 
 
     // ==========================================
@@ -102,7 +102,7 @@ void init_rtl8139(uint8_t bus, uint8_t slot) {
     uint32_t irq_info = pci_read_config_word(bus, slot, 0, 0x3C);
     uint8_t irq_line = irq_info & 0xFF; // 取出最低 8 bits
 
-    // kprintf("[RTL8139] Hardware initialized. Assigned IRQ: [%d]\n", irq_line);
+    kprintf("[RTL8139] Hardware initialized. Assigned IRQ: [%d]\n", irq_line);
 }
 
 
@@ -186,8 +186,8 @@ void rtl8139_handler(void) {
                 if (ip->protocol == IPV4_PROTO_ICMP) { // 1 代表 ICMP
                     icmp_header_t* icmp = (icmp_header_t*)(packet_data + sizeof(ethernet_header_t) + (ip->ihl * 4));
                     if (icmp->type == 0) { // 0 代表 Echo Reply
-                        // kprintf("[Ping] Reply received from [%d.%d.%d.%d]!\n\n",
-                        //         ip->src_ip[0], ip->src_ip[1], ip->src_ip[2], ip->src_ip[3]);
+                        kprintf("[RTL8131][IPV4][ICMP][Ping] Reply received from [%d.%d.%d.%d]!\n\n",
+                                ip->src_ip[0], ip->src_ip[1], ip->src_ip[2], ip->src_ip[3]);
                     }
                 }
 
