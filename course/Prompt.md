@@ -23,3 +23,26 @@ https://gemini.google.com/app/18b8fcafe3a7592b
 4. 在 window 環境，實作 真多工，也就是支援多個 window 運行，最後提供 task manager (CPU / Disk / Networking Status) 以及幾格小遊戲 (時鐘 / 踩地雷 / 計算機) 驗收.
 
 幫我安排一下這幾個實作的課程大綱.
+
+
+---
+
+# Prompt 3
+
+你好！我正在開發一個 32-bit 的 x86 作業系統 (Simple OS)。目前已經完成了：實體記憶體管理、分頁、中斷處理、VFS (虛擬檔案系統)、SimpleFS、基礎的 Ring 3 User Space、Syscall 分派器，以及完整的 TCP/IP 網路堆疊 (RTL8139)。
+
+接下來的開發階段，我想要聚焦在：多使用者登入、行程排程器升級、硬體 Timer 與 NTP，以及進階 I/O 機制。
+
+這裡是我目前核心的 task.h、syscall.h ... 等定義檔。
+
+
+
+
+有幾個 topic 我想繼續 學習:
+
+1. 時間相關：現在 code 裡 timer.c 有個 tick 概念，我一直不是很懂這東西。我想透過寫一個 ntp client & date 來了解時間再計算機裡的運作.
+2. 登入：unix 系統都是可以多人登入，然後有自己的 home，以及 process，我想實作這一部分。
+3. 排程演算法：在作業系統概念 (恐龍書)，提到 process 排程，有討論很多演算法，我也想實作看看。
+4. I/O 概念：實際應用中，會用到比較進階的 I/O 機制，像是 epoll、io_uring 等機制，我也想了解這方面的實作。
+
+不過再開始之前，我想這些題目會消耗很多 token，我想確認一下，這個 session 的 context window 是否夠用？如果不夠，有沒有建議的方法？
