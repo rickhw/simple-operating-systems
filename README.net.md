@@ -80,8 +80,12 @@
 
 建立 TCP 封包，然後建立 SYN, ACK 三項交握，狀態為 `ESTABLISHED`
 
-
 ![](/about/Networking/11-tcp-3way-handshake.png)
+
+這段錄影則是用動畫展示 三項交握的過程：
+
+[![Watch the video](https://img.youtube.com/vi/eFi-fxMuvS8/0.jpg)](https://www.youtube.com/watch?v=eFi-fxMuvS8)
+
 
 底下兩張是用 `tcptest` 這個應用程式送出 `TCP_PSH` flag，把資料送透過 QEMU router 轉送給 Host Machine 的 nc 接收到資料 `Hello macOS, ...`，最後則是結束對話 `TCP_FIN` flag，完成整個交握。
 
