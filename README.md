@@ -1,5 +1,10 @@
 
-全文: [Blog 版本](https://rickhw.github.io/2026/03/27/ComputerScience/Simple-OS/)
+全文: 
+
+- [Blog 版本](https://rickhw.github.io/2026/03/27/ComputerScience/Simple-OS/)、[Simple OS - Networking](https://rickhw.github.io/2026/04/09/ComputerScience/Simple-OS-Networking/)
+- Source Code: [simple-operating-systems](https://github.com/rickhw/simple-operating-systems)
+- [Demo/錄影](https://www.youtube.com/playlist?list=PL63J1r2PBvojs-N7OLM6jo6IYKEIizK1P)
+- [Prompt - Section 1 and Section 2](https://github.com/rickhw/simple-operating-systems/blob/main/course/Prompt.md)、[Prompt - Section 3 within new Session](https://github.com/rickhw/simple-operating-systems/blob/main/course/NewSession.md)
 
 ## 很久以前就想做的事 - **純手工自幹一個作業系統**
 
