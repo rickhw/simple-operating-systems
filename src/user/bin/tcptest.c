@@ -13,18 +13,18 @@ int main(int argc, char** argv) {
 
     printf("1. Initiating TCP 3-Way Handshake...\n");
     sys_tcp_connect(target_ip, port); // 觸發 ARP
-    for (volatile int j = 0; j < 50000000; j++) {}
-    sys_tcp_connect(target_ip, port); // 真正的 SYN
+    msleep(500);
 
+    sys_tcp_connect(target_ip, port); // 真正的 SYN
     // 等待對方回傳 SYN, ACK，Kernel 會在背景自動回傳 ACK
-    for (volatile int j = 0; j < 50000000; j++) {}
+    msleep(500);
 
     printf("2. Sending Data (PSH)...\n");
     char* message = "Hello macOS, this is Simple OS over TCP!\n";
     sys_tcp_send(target_ip, port, message);
 
     // 等待對方接收
-    for (volatile int j = 0; j < 50000000; j++) {}
+    msleep(500);
 
     printf("3. Closing Connection (FIN)...\n");
     sys_tcp_close(target_ip, port);

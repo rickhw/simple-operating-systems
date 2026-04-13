@@ -2,6 +2,7 @@
 #include "syscall.h"
 #include "string.h"
 #include "dns.h"
+#include "unistd.h"
 
 // 網址轉換函數: "google.com" -> "\x06google\x03com\x00"
 void format_dns_name(char* dns_name, char* host_name) {
@@ -52,7 +53,7 @@ int main(int argc, char** argv) {
 
     // 先發第一顆換 ARP，等一下再發第二顆真實查詢
     sys_udp_send(dns_server, 53, (char*)packet, query_len); // Port 53 是 DNS 預設 Port
-    for (volatile int j = 0; j < 50000000; j++) {}
+    msleep(500);
     sys_udp_send(dns_server, 53, (char*)packet, query_len);
 
     // 3. 等待回應
@@ -61,17 +62,15 @@ int main(int argc, char** argv) {
     while (1) {
         rx_len = sys_udp_recv((char*)rx_buf);
         if (rx_len > 0) break;
-        for (volatile int i = 0; i < 1000000; i++) {} // Delay
+        msleep(500);
     }
-
-    printf(">> rx_len: %d \n", rx_len);
 
     // 4. 極度暴力的 DNS 解析器 (尋找最後 4 個 bytes)
     // 真正的 OS 會一步一步解析 Answer Section，
     // 但因為我們知道 Type A 的 IP 一定在封包的最後 4 個 bytes，直接偷吃步！
     if (rx_len > 4) {
         uint8_t* ip = rx_buf + rx_len - 4;
-        printf(">> %s has address %d.%d.%d.%d\n", domain, ip[0], ip[1], ip[2], ip[3]);
+        printf(">> %s has address [%d.%d.%d.%d]\n", domain, ip[0], ip[1], ip[2], ip[3]);
     } else {
         printf("Failed to resolve.\n");
     }

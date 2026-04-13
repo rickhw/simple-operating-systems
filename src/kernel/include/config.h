@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define INIT_TIMER_FREQUENCY 100
+
 // --- Screen Configuration ---
 #define SCREEN_WIDTH  800
 #define SCREEN_HEIGHT 600

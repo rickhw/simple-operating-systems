@@ -1,7 +1,7 @@
 /**
  * @file src/kernel/kernel/task.c
  * @brief 核心多工任務管理系統 (Kernel Multitasking System)
- * 
+ *
  * 本檔案負責處理進程控制區塊 (PCB) 的管理、任務排程 (Scheduling)、
  * 垃圾回收 (GC) 以及系統呼叫如 fork, exec, wait 的核心實作。
  */
@@ -12,6 +12,7 @@
 #include "kheap.h"
 #include "utils.h"
 #include "tty.h"
+// #include "timer.h"
 #include "gdt.h"
 #include "paging.h"
 #include "simplefs.h"
@@ -31,6 +32,7 @@ task_t *idle_task = 0;
 extern uint32_t page_directory[];
 extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3);
 extern void child_ret_stub();
+extern volatile uint32_t tick;
 
 /**
  * @brief 根據 PID 尋找特定的任務控制區塊
@@ -50,28 +52,31 @@ static task_t* get_task_by_pid(uint32_t pid) {
 
 /**
  * @brief 垃圾回收器 (Task Garbage Collector)
- * 
+ *
  * 掃描任務鏈結串列，尋找標記為 TASK_DEAD 的任務，並釋放其佔用的
  * 核心堆疊 (Kernel Stack) 與 PCB 記憶體空間。
  */
 static void task_gc() {
-    if (!current_task) return;
+    // 【修復】如果當前是 idle_task，它不在主環內，不要以它為起點進行 GC
+    if (!current_task || current_task == idle_task) return;
 
     task_t *prev = (task_t*)current_task;
     task_t *curr = prev->next;
 
     while (curr != current_task) {
         if (curr->state == TASK_DEAD) {
-            // 從環狀鏈結串列中移除
-            prev->next = curr->next;
+            // 【修復：懸空指標防護】如果剛好刪除到 ready_queue 所指的任務，必須交棒
+            if (curr == ready_queue) {
+                ready_queue = curr->next;
+                // 如果任務全死光了，清空指標
+                if (ready_queue == curr) ready_queue = 0;
+            }
 
-            // 釋放核心堆疊 (kfree 回到分配時的起始點)
+            prev->next = curr->next;
             if (curr->kernel_stack != 0) {
                 kfree((void*)(curr->kernel_stack - PAGE_SIZE));
             }
-            // 釋放 PCB 結構
             kfree((void*)curr);
-
             curr = prev->next;
         } else {
             prev = curr;
@@ -80,8 +85,8 @@ static void task_gc() {
     }
 }
 
-/** 
- * @brief 閒置任務迴圈 
+/**
+ * @brief 閒置任務迴圈
  * 當系統中沒有任何可執行的任務時，CPU 將在此執行 hlt (休眠) 節省電力，
  * 直到下一次時脈中斷觸發排程。
  */
@@ -91,7 +96,7 @@ void idle_loop() {
 
 /**
  * @brief 初始化多工系統
- * 
+ *
  * 將目前的執行流包裝成 PID 0 (kernel_main)，並建立閒置任務。
  */
 void init_multitasking() {
@@ -143,7 +148,7 @@ void init_multitasking() {
  * @brief 建立使用者模式任務
  * @param entry_point 程式起始位址
  * @param user_stack_top 使用者堆疊頂部位址
- * 
+ *
  * 此函式負責建立一個 Ring 3 任務，並手動佈置堆疊以確保 IRET 後能切換到 User Mode。
  */
 void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
@@ -247,22 +252,48 @@ void exit_task() {
 void schedule() {
     if (!current_task) return;
 
-    // ----------------------------------------------------
-    // 階段 1：垃圾回收 (Garbage Collection)
-    // ----------------------------------------------------
+    // 1. 保存進入前的 EFLAGS (包含中斷開關狀態)
+    uint32_t eflags;
+    __asm__ volatile("pushfl; popl %0" : "=r"(eflags));
+
+    // 2. 核心操作期間關閉中斷
+    __asm__ volatile("cli");
+
     task_gc();
+
+    // ----------------------------------------------------
+    // 階段 1.5：喚醒睡眠中的任務
+    // 【關鍵修復】不管現在是不是 idle_task，永遠從「主佇列 (ready_queue)」掃描！
+    // ----------------------------------------------------
+    if (ready_queue) {
+        task_t *iter = (task_t*)ready_queue;
+        task_t *first = iter;
+        do {
+            if (iter->state == TASK_SLEEPING && tick >= iter->wake_up_tick) {
+                iter->state = TASK_RUNNING;
+                iter->wake_up_tick = 0;
+            }
+            iter = iter->next;
+        } while (iter != first && iter != 0);
+    }
 
     // ----------------------------------------------------
     // 階段 2：尋找下一個準備就緒 (RUNNING) 的行程
     // ----------------------------------------------------
-    task_t *next_run = current_task->next;
-    while (next_run->state != TASK_RUNNING && next_run != current_task) {
-        next_run = next_run->next;
-    }
+    task_t *next_run = idle_task; // 預設降落傘：都沒人跑，就切給 idle
 
-    // 如果繞了一圈發現大家都還在等 (Waiting/Zombie)，那就派 idle_task 上場
-    if (next_run->state != TASK_RUNNING) {
-        next_run = idle_task;
+    if (ready_queue) {
+        // 【關鍵修復】如果目前是 idle_task，就從 ready_queue 的頭開始找
+        // 如果是正常 task，就從它的下一個開始找 (公平輪轉)
+        task_t *start_node = (current_task == idle_task) ? (task_t*)ready_queue : current_task->next;
+        task_t *iter = start_node;
+        do {
+            if (iter->state == TASK_RUNNING) {
+                next_run = iter;
+                break;
+            }
+            iter = iter->next;
+        } while (iter != start_node && iter != 0);
     }
 
     // ----------------------------------------------------
@@ -272,13 +303,14 @@ void schedule() {
     current_task = next_run;
 
     if (current_task != prev) {
-        // 更新 TSS 中的 ESP0，確保下次發生中斷時，能使用正確的 Kernel Stack
         if (current_task->kernel_stack != 0) {
             set_kernel_stack(current_task->kernel_stack);
         }
-        // 切換堆疊與位址空間 (CR3)
         switch_task((uint32_t*)&prev->esp, (uint32_t*)&current_task->esp, current_task->page_directory);
     }
+
+    // 3. 恢復進入前的狀態，而不是盲目 sti
+    __asm__ volatile("pushl %0; popfl" : : "r"(eflags));
 }
 
 int sys_fork(registers_t *regs) {
@@ -547,7 +579,7 @@ int sys_kill(uint32_t pid) {
 
     // 因為牽涉到跨行程狀態修改，鎖定中斷避免 Race Condition
     __asm__ volatile("cli");
-    
+
     task_t *target = get_task_by_pid(pid);
     if (!target || target->state == TASK_DEAD) {
         __asm__ volatile("sti");
@@ -606,4 +638,18 @@ int task_get_process_list(process_info_t* list, int max_count) {
     } while (temp != current_task && count < max_count);
 
     return count;
+}
+
+
+int sys_sleep(uint32_t ms) {
+    // 假設頻率設定為 100Hz，則 1 tick = 10ms
+    uint32_t ticks_to_sleep = ms / 10; // @TODO: Hardcode, 要從 timer.c 取得
+    if (ticks_to_sleep == 0) ticks_to_sleep = 1; // 至少睡一個滴答
+
+    current_task->wake_up_tick = tick + ticks_to_sleep;
+    current_task->state = TASK_SLEEPING;
+
+    // 讓出 CPU，schedule 會處理 cli/sti
+    schedule();
+    return 0;
 }

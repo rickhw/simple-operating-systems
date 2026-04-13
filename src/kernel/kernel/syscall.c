@@ -384,6 +384,17 @@ static int sys_write_handler(registers_t *regs) {
     return -1;
 }
 
+
+static int sys_sleep_handler(registers_t *regs) {
+    return sys_sleep((uint32_t)regs->ebx);
+}
+
+// 為了驗證 sleep 的時間是準的
+static int sys_get_ticks_handler(registers_t *regs) {
+    extern volatile uint32_t tick;
+    return tick;
+}
+
 /** @brief 切換顯示模式 (SYS_SET_DISPLAY_MODE) */
 static int sys_set_display_mode_handler(registers_t *regs) {
     switch_display_mode((int)regs->ebx);
@@ -434,6 +445,7 @@ static syscall_t syscall_table[MAX_SYSCALLS] = {
     [SYS_NET_TCP_CLOSE]   = sys_net_tcp_close_handler,
     [SYS_NET_TCP_RECV]    = sys_net_tcp_recv_handler,
     [SYS_WRITE]           = sys_write_handler,
+    [SYS_SLEEP]           = sys_sleep_handler,
     [SYS_SET_DISPLAY_MODE] = sys_set_display_mode_handler,
 };
 

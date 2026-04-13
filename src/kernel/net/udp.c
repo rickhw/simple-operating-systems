@@ -20,7 +20,7 @@ static uint8_t my_ip[4] = {10, 0, 2, 15};
 void udp_bind_port(uint16_t port) {
     bound_port = port;
     // rx_msg_ready = 0;
-    kprintf("[Kernel UDP] Port %d bound by User Space.\n", port);
+    kprintf("[Kernel][UDP] Port [%d] bound by User Space.\n", port);
 }
 
 // 讓 User App 讀取訊息 (非阻塞)

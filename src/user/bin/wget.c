@@ -17,9 +17,10 @@ int main(int argc, char** argv) {
 
     // 1. TCP 3-Way Handshake
     sys_tcp_connect(target_ip, port);
-    for (volatile int j = 0; j < 50000000; j++) {}
+    msleep(500);
+
     sys_tcp_connect(target_ip, port);
-    for (volatile int j = 0; j < 50000000; j++) {}
+    msleep(500);
 
     // 2. 組裝 HTTP GET 請求 (這就是瀏覽器底層在做的事！)
     char* http_request =
@@ -75,7 +76,7 @@ int main(int argc, char** argv) {
             }
             break;
         }
-        for (volatile int i = 0; i < 20000000; i++) {} // Delay
+        msleep(500);
         retry++;
     }
 

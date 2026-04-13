@@ -39,7 +39,8 @@ int main() {
         blink++;
 
         // 粗略等待半秒鐘 (讓冒號閃爍)
-        for(volatile int i = 0; i < 3000000; i++);
+        // for(volatile int i = 0; i < 3000000; i++);
+        sleep(1);
     }
 
     return 0;

@@ -24,7 +24,7 @@ int main() {
         }
 
         // 稍微延遲一下，避免 100% 佔用 CPU 資源
-        for (volatile int i = 0; i < 5000000; i++) {}
+        msleep(500);
     }
 
     return 0; // 實際上不會走到這裡

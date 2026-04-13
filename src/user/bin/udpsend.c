@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     sys_udp_send(target_ip, port, message, msg_len);
 
     // 等待 Kernel ARP 解析
-    for (volatile int j = 0; j < 50000000; j++) {}
+    msleep(500);
 
     // 再發送第二顆確保成功送達
     sys_udp_send(target_ip, port, message, msg_len);

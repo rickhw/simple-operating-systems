@@ -118,3 +118,16 @@ void clear_screen(void) {
 void get_time(int* h, int* m) {
     syscall(SYS_GET_TIME, (int)h, (int)m, 0, 0, 0);
 }
+
+// Timer
+void msleep(uint32_t ms) {
+    syscall(SYS_SLEEP, ms, 0, 0, 0, 0);
+}
+
+void sleep(uint32_t sec) {
+    msleep(sec * 1000);
+}
+
+uint32_t get_ticks() {
+    return syscall(SYS_GET_TICKS, 0, 0, 0, 0, 0);
+}

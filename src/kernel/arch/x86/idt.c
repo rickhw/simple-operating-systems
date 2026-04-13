@@ -1,5 +1,5 @@
 /**
- * [idt.c] - 中斷描述符表 (Interrupt Descriptor Table) 實作
+ * [idt.c] - 中斷描述符表/中斷向量表 (Interrupt Descriptor Table) 實作
  * * 核心功能：
  * 1. 定義 IDT 結構並填充 256 個中斷閘 (Gates)。
  * 2. 重新映射可程式化中斷控制器 (PIC 8259)，避免硬體中斷與 CPU 異常衝突。

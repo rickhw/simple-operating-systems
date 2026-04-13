@@ -1,5 +1,5 @@
-#include "tty.h"
 #include "utils.h"
+#include "tty.h"
 #include "gdt.h"
 #include "idt.h"
 #include "paging.h"
@@ -28,14 +28,13 @@ void setup_filesystem(uint32_t part_lba, multiboot_info_t* mbd) {
     simplefs_format(part_lba, 10000);
     simplefs_create_file(1, "hello.txt", "This is the content of the very first file ever created on Simple OS!\n", 70);
 
-    // 【修改】自動巡覽所有模組並寫入 HDD
     if (mbd->mods_count > 0) {
         multiboot_module_t* mod = (multiboot_module_t*)mbd->mods_addr;
 
         // 這個次序跟 GRUB 列出來的次序要對齊
         char* filenames[] = {
             "shell.elf",
-            "echo.elf", "ping2.elf", "pong.elf",
+            "echo.elf", "ping2.elf", "pong.elf", "sleep.elf",
             // file/directory
             "touch.elf", "cat.elf", "ls.elf", "rm.elf", "mkdir.elf",
             // process
@@ -93,6 +92,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     init_gdt();
     init_idt();
     init_paging();
+    init_timer(INIT_TIMER_FREQUENCY);
     init_pmm(INITIAL_PMM_SIZE);
     init_kheap();
     init_gfx(mbd);
@@ -150,7 +150,7 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
     // ==========================================
     // 應用程式載入與排程 (Ring 0 -> Ring 3)
     // ==========================================
-    kprintf("[Kernel] Fetching 'shell.elf' from Virtual File System...\n");
+    kprintf("[Kernel] Loading 'shell' from Virtual File System...\n");
     fs_node_t* app_node = simplefs_find(1, "shell.elf");
 
     if (app_node != 0) {

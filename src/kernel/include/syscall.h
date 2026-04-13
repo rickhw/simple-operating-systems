@@ -47,6 +47,8 @@
 #define SYS_NET_TCP_CLOSE   37
 #define SYS_NET_TCP_RECV    38
 #define SYS_WRITE           39
+#define SYS_SLEEP           40
+#define SYS_GET_TICKS       41
 #define SYS_SET_DISPLAY_MODE 99
 
 /**

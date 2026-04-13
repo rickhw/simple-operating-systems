@@ -103,7 +103,7 @@ void tcp_send_syn(uint8_t* dest_ip, uint16_t src_port, uint16_t dest_port) {
 
     // 發射！
     rtl8139_send_packet(packet, packet_size);
-    kprintf("[TCP] SYN sent to %d.%d.%d.%d:%d\n", dest_ip[0], dest_ip[1], dest_ip[2], dest_ip[3], dest_port);
+    kprintf("[TCP] SYN sent to [%d.%d.%d.%d:%d]\n", dest_ip[0], dest_ip[1], dest_ip[2], dest_ip[3], dest_port);
 }
 
 
@@ -174,7 +174,7 @@ void tcp_send_ack(uint8_t* dest_ip, uint16_t src_port, uint16_t dest_port, uint3
 
     // 發射！
     rtl8139_send_packet(packet, packet_size);
-    kprintf("[TCP] ACK sent to %d.%d.%d.%d:%d (Seq=%d, Ack=%d)\n",
+    kprintf("[TCP] ACK sent to [%d.%d.%d.%d:%d] (Seq=%d, Ack=%d)\n",
             dest_ip[0], dest_ip[1], dest_ip[2], dest_ip[3], dest_port, seq_num, ack_num);
 }
 
@@ -238,7 +238,7 @@ void tcp_send_data(uint8_t* dest_ip, uint16_t src_port, uint16_t dest_port, uint
     tcp->checksum = calculate_checksum(pseudo_buf, sizeof(tcp_pseudo_header_t) + tcp_len);
 
     rtl8139_send_packet(packet, packet_size);
-    kprintf("[TCP] Data Sent (Len: %d, Seq: %d)\n", len, active_seq);
+    kprintf("[TCP] Data Sent (Len: [%d], Seq: [%d])\n", len, active_seq);
 
     // 【重要數學】傳送了 len 個 bytes，我們的序號必須推進 len！
     active_seq += len;

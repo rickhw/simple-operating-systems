@@ -33,7 +33,8 @@ isr0:
 isr32:
     push 0          ; 假錯誤碼
     pusha           ; 備份暫存器 (eax, ecx, edx, ebx, esp, ebp, esi, edi)
-    call timer_handler
+                    ; 保存現場：CPU 本來在執行的程式暫存器會被存入堆疊，以免被中斷處理程式破壞。
+    call timer_handler  ; 呼叫 C 語言, 執行 call timer_handler
     popa            ; 恢復暫存器
     add esp, 4      ; 清除假錯誤碼
     iret

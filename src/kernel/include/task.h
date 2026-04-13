@@ -27,7 +27,7 @@
 #define TASK_DEAD    1
 #define TASK_WAITING 2
 #define TASK_ZOMBIE  3  ///< 行程已結束，但父行程尚未 wait() 回收它
-#define TASK_SLEEPING 4 ///< 睡眠中 (未來擴充使用)
+#define TASK_SLEEPING 4 ///< 睡眠中
 
 /**
  * @brief 中斷上下文快照 (Interrupt Context Snapshot)
@@ -81,6 +81,8 @@ typedef struct task {
     uint32_t heap_start;        ///< Heap 初始起點
     uint32_t heap_end;          ///< User Heap 的當前頂點
     uint32_t cwd_lba;           ///< 當前工作目錄 (CWD) 的 LBA
+
+    uint32_t wake_up_tick;      /// for sleep, 預計醒來的 tick 數
 
     struct task *next;          ///< 環狀鏈結串列指標
 } task_t;
@@ -142,6 +144,8 @@ int sys_wait(uint32_t pid);
  * @return 成功回傳 0，找不到行程回傳 -1
  */
 int sys_kill(uint32_t pid);
+
+int sys_sleep(uint32_t ms);
 
 /**
  * @brief 取得系統中所有活躍的行程清單

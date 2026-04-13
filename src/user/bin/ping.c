@@ -19,8 +19,7 @@ int main(int argc, char** argv) {
         sys_ping(target_ip);
 
         // 延遲一下，避免發送過快導致網卡信箱塞車或路由器忽略
-        // (如果有 sys_sleep 可以用，沒有的話就用 busy wait)
-        for (volatile int j = 0; j < 500000000; j++) {}
+        msleep(500);
     }
 
     return 0;
