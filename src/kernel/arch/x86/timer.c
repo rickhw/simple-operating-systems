@@ -44,15 +44,15 @@ volatile uint32_t tick = 0;
 //
 // 在 main.c 裡面的初始流程設定為 100
 void init_timer(uint32_t frequency) {
-
-    // divisor 表示晶片數 N 次，就發出一次中斷。
+    /*  1. divisor 表示震盪 N 次，就發出一次中斷。 */
     //
     // 用 frequency 當基數，如果想要每秒中斷 100 次，frequency=100，
     // 則晶片每數 (PIT8254_BASE_FREQ / frequency = 11931 次訊號，
     // 就發出一次中斷。
     uint32_t divisor = PIT_CLOCK_RATE / frequency;
 
-    // x43: PIT 的 模式控制暫存器 埠號。
+    /* 2. 設定 PIT 的 模式控制 */
+    // 0x43: PIT 的 模式控制 暫存器 埠號。
     // 0x36 (00110110b): 這是控制字組（Control Word）。
     //  - 00: 選擇通道 0（接在 IRQ0，負責系統時鐘）。
     //  - 11: 存取模式 (LOBYTE/HIBYTE)，先寫低八位元，再寫高八位元
@@ -60,16 +60,16 @@ void init_timer(uint32_t frequency) {
     //         它會自動重新加載計數器，適合產生週期性心跳。
     outb(0x43, 0x36);
 
-    // 取得 divisor 的低 8 位元 (low byte) 和 高八位元 (high byte)
+    /* 3. 把 divisor 值塞到 8254 暫存器. */
+    // 8254 是 8bit 匯流排
+    // 先取得 divisor 的低 8 位元 (low byte) 和 高八位元 (high byte)
     uint8_t l = (uint8_t)(divisor & 0xFF);
     uint8_t h = (uint8_t)((divisor >> 8) & 0xFF);
 
-    // 把 divisor 塞到 8254 暫存器, 但 8254 是 8bit 匯流排
-    // 所以分成兩次, 把高低位原 依序「餵」進去
-    //
+    // 分成兩次, 把高低位原 依序「餵」進去
     // 0x40: 這是通道 0 的 資料暫存器
-    outb(0x40, l);
-    outb(0x40, h);
+    outb(0x40, l); // low byte
+    outb(0x40, h); // high byte
 }
 
 // 中斷發生後的處理流程，由組合語言 interrupts.S#isr32 調用

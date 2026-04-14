@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-// extern volatile uint32_t tick;
-
 void init_timer(uint32_t frequency);
 void timer_handler(void);
 
