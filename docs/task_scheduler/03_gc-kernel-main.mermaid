@@ -1,0 +1,10 @@
+graph LR
+    T1["[PID 1] Shell<br/>State: RUNNING"] -- next --> T1
+
+    current_task ==> T1
+    ready_queue ==> T1
+
+    subgraph Freed_Memory
+        T0_X["[PID 0] DEAD"]
+    end
+    style T0_X stroke-dasharray: 5 5, fill:#fbb

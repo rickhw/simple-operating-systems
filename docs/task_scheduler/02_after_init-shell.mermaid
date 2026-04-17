@@ -1,0 +1,16 @@
+graph LR
+    subgraph FinalState ["Shell is Leading, Kernel is Dead"]
+    T0[task_t: PID 0<br/>name: kernel_main<br/>state: DEAD<br/>total_ticks: N+1]
+    T1[task_t: PID 1<br/>name: shell.elf<br/>state: RUNNING<br/>total_ticks: 1+]
+    end
+
+    %% 鏈結依然存在 (直到下次 GC 移除 T0)
+    T0 -- next --> T1
+    T1 -- next --> T0
+
+    %% 全域指標切換
+    current_task[volatile task_t* current_task] ==>|Currently Executing| T1
+    ready_queue[volatile task_t* ready_queue] ==> T0
+
+    style T0 fill:#eeeeee,stroke:#999,stroke-dasharray: 5 5
+    style T1 fill:#f9f,stroke:#333,stroke-width:4px

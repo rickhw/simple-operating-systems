@@ -1,0 +1,16 @@
+graph LR
+    subgraph MultiTask ["Shell Created, Kernel Still Running"]
+    T0[task_t: PID 0<br/>name: kernel_main<br/>state: RUNNING<br/>total_ticks: N]
+    T1[task_t: PID 1<br/>name: shell.elf<br/>state: RUNNING<br/>total_ticks: 0]
+    end
+
+    %% 環狀鏈結：PID 0 指向 1, PID 1 指向 0
+    T0 -- next --> T1
+    T1 -- next --> T0
+
+    %% 全域指標
+    current_task[volatile task_t* current_task] ==>|Currently Executing| T0
+    ready_queue[volatile task_t* ready_queue] ==> T0
+
+    style T0 fill:#f9f,stroke:#333,stroke-width:2px
+    style T1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px

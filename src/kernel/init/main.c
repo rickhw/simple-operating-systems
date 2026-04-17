@@ -161,19 +161,19 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbd) {
         if (entry_point != 0) {
             kprintf("Creating Initial Process (Shell)...\n\n");
 
-            // 啟動排程器 (Timer IRQ0 開始跳動)
+            // 1) 啟動排程器 (Timer IRQ0 開始跳動)
             init_multitasking();
 
             // 為 Shell 分配專屬的 User Stack
             uint32_t ustack1_phys = (uint32_t) pmm_alloc_page();
             map_page(0x083FF000, ustack1_phys, 7);
 
-            // 建立 Ring 3 主任務
+            // 2) 建立 Ring 3 主任務
             create_user_task(entry_point, 0x083FF000 + 4096);
 
             kprintf("[Kernel] Dropping to idle state. Enjoy your GUI!\n");
 
-            // Kernel 功成身退，把自己宣告死亡！
+            // 3) Kernel 功成身退，把自己宣告死亡！
             exit_task();
         }
     } else {

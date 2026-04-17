@@ -22,17 +22,23 @@
 
 /** @brief 當前正在執行的任務指標 */
 volatile task_t *current_task = 0;
+
 /** @brief 排程器準備佇列的起點 (目前採環狀鏈結串列) */
 volatile task_t *ready_queue = 0;
-/** @brief 下一個可分配的 PID */
-uint32_t next_pid = 0;
+
 /** @brief 閒置任務 (Idle Task)，當系統無事可做時執行 */
 task_t *idle_task = 0;
 
-extern uint32_t page_directory[];
+/** @brief 下一個可分配的 PID */
+// `next_pid` 目前是 `uint32_t` 遞增，理論上可用很久，但若長時間運作且頻繁開關進程，需要考慮 PID 回收機制，以免 PID 數字變得過大。
+uint32_t next_pid = 0;
+
+extern uint32_t page_directory[];   // paging.c
+extern volatile uint32_t tick;      // timer.c
+
+// task_switch.S
 extern void switch_task(uint32_t *current_esp, uint32_t *next_esp, uint32_t next_cr3);
 extern void child_ret_stub();
-extern volatile uint32_t tick;
 
 /**
  * @brief 根據 PID 尋找特定的任務控制區塊
@@ -252,18 +258,20 @@ void exit_task() {
 void schedule() {
     if (!current_task) return;
 
-    // 1. 保存進入前的 EFLAGS (包含中斷開關狀態)
+    // 1. 關閉中斷
+    // 1.1 保存進入前的 EFLAGS (包含中斷開關狀態)
     uint32_t eflags;
     __asm__ volatile("pushfl; popl %0" : "=r"(eflags));
 
-    // 2. 核心操作期間關閉中斷
+    // 1.2 核心操作期間關閉中斷
     __asm__ volatile("cli");
 
+    // 1.3 執行 GC
     task_gc();
 
     // ----------------------------------------------------
-    // 階段 1.5：喚醒睡眠中的任務
-    // 【關鍵修復】不管現在是不是 idle_task，永遠從「主佇列 (ready_queue)」掃描！
+    // 1.5：喚醒睡眠中的任務
+    // 不管現在是不是 idle_task，永遠從「主佇列 (ready_queue)」掃描！
     // ----------------------------------------------------
     if (ready_queue) {
         task_t *iter = (task_t*)ready_queue;
@@ -304,8 +312,10 @@ void schedule() {
 
     if (current_task != prev) {
         if (current_task->kernel_stack != 0) {
+            // @ref: src/kernel/lib/gdt.h#set_kernel_stack
             set_kernel_stack(current_task->kernel_stack);
         }
+        // @ref: src/kernel/arch/x86/switch_task.S
         switch_task((uint32_t*)&prev->esp, (uint32_t*)&current_task->esp, current_task->page_directory);
     }
 

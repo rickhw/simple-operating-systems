@@ -60,31 +60,48 @@ typedef struct {
 } registers_t;
 
 /**
- * @brief 任務控制區塊 (Process Control Block, PCB)
+ * @brief 進程控制區塊 (Process Control Block, PCB) / 任務控制區塊 (Task Control Block, TCB)
+ *
+ * - TCB 的執行流資訊:如 esp, state
+ * - PCB 的資源管理資訊: 如 page_directory, cwd_lba
+ *
+ * | 欄位           | 功能說明                   | 邊界/限制                        |
+ * |----------------|--------------------------|---------------------------------|
+ * | esp            | 核心堆疊指標               | 切換任務時儲存現場                 |
+ * | pid            | 唯一識別碼                 | 0:Kernel, 9999:Idle             |
+ * | page_directory | CR3 實體位址               | 4KB 對齊的實體位址                |
+ * | kernel_stack   | Ring 0 堆疊頂部            | 固定 4KB 大小                    |
+ * | wake_up_tick   | 睡眠喚醒時間               | 0 表示非睡眠狀態                   |
  */
 typedef struct task {
-    uint32_t esp;               ///< 核心堆疊指標
+    uint32_t esp;               ///< 核心堆疊指標 (Context Switch 關鍵)。當任務被切換走時，CPU 暫存器現場存於此堆疊位址。
 
-    // === 行程身分資訊 ===
-    uint32_t pid;               ///< 行程 ID
-    uint32_t ppid;              ///< 父行程 ID
-    char name[32];              ///< 行程名稱
+    // === 行程身份資訊 (PCB Properties) ===
+    uint32_t pid;               ///< 行程 ID (Unique Identifier)。範例：1 (Shell)。
+    uint32_t ppid;              ///< 父行程 ID (Parent PID)。若為 0 則代表由核心直接建立。
+    char name[32];              ///< 行程名稱。用於 ps/top 顯示，上限 31 字元 + \0。
 
-    uint32_t total_ticks;       ///< 行程總執行時間 (Ticks)
+    uint32_t total_ticks;       ///< 累計執行時間 (CPU Accounting)。統計該任務佔用 CPU 的總滴答數。
 
-    uint32_t page_directory;    ///< 專屬的分頁目錄實體位址 (CR3)
-    uint32_t kernel_stack;      ///< 核心堆疊頂部
+    // === 資源與記憶體管理 (PCB Properties) ===
+    uint32_t page_directory;    ///< 專屬分頁目錄實體位址 (CR3)。確保行程間記憶體空間完全隔離。
+    uint32_t kernel_stack;      ///< 核心堆疊頂部。進入核心模式時 TSS.esp0 的加載目標。
+                                ///< `kernel_stack` 分配了一個 `PAGE_SIZE` (4KB)。如果 `timer_handler` 呼叫深度太深，或是局部變數太大，會直接踩到別的資料結構，導致莫名其妙的當。
 
-    uint32_t state;             ///< 行程當前狀態
-    uint32_t wait_pid;          ///< 正在等待的子行程 PID
+    // === 執行狀態與排程控制 (TCB Properties) ===
+    uint32_t state;             ///< 行程當前狀態。0:RUNNING, 1:DEAD, 2:WAITING, 3:ZOMBIE, 4:SLEEPING。
+    uint32_t wait_pid;          ///< 正在等待的子行程 PID。僅在 TASK_WAITING 狀態下有效。
 
-    uint32_t heap_start;        ///< Heap 初始起點
-    uint32_t heap_end;          ///< User Heap 的當前頂點
-    uint32_t cwd_lba;           ///< 當前工作目錄 (CWD) 的 LBA
+    // === 執行環境實體資訊 ===
+    uint32_t heap_start;        ///< 使用者堆積 (Heap) 起始虛擬位址。通常為 0x10000000。
+    uint32_t heap_end;          ///< 使用者堆積當前邊界。隨 sbrk() 動態調整。
+    uint32_t cwd_lba;           ///< 目前工作目錄 (CWD) 的 LBA。決定相對路徑檔案存取的起點。
 
-    uint32_t wake_up_tick;      /// for sleep, 預計醒來的 tick 數
+    // === 計時器功能 ===
+    uint32_t wake_up_tick;      ///< 喚醒時間點。當全域 tick >= 此值時，排程器將任務由 SLEEPING 撥回 RUNNING。
 
-    struct task *next;          ///< 環狀鏈結串列指標
+    // === 鏈結結構 ===
+    struct task *next;          ///< 環狀鏈結串列指標。指向下一個任務，實現 Round-Robin 輪轉。
 } task_t;
 
 /**
