@@ -653,7 +653,9 @@ int task_get_process_list(process_info_t* list, int max_count) {
 
 int sys_sleep(uint32_t ms) {
     // 假設頻率設定為 100Hz，則 1 tick = 10ms
-    uint32_t ticks_to_sleep = ms / 10; // @TODO: Hardcode, 要從 timer.c 取得
+    extern uint32_t timer_frequency;  // 從 timer.c 暴露
+    uint32_t ticks_to_sleep = (ms * timer_frequency) / 1000;
+
     if (ticks_to_sleep == 0) ticks_to_sleep = 1; // 至少睡一個滴答
 
     current_task->wake_up_tick = tick + ticks_to_sleep;

@@ -446,6 +446,7 @@ static syscall_t syscall_table[MAX_SYSCALLS] = {
     [SYS_NET_TCP_RECV]    = sys_net_tcp_recv_handler,
     [SYS_WRITE]           = sys_write_handler,
     [SYS_SLEEP]           = sys_sleep_handler,
+    [SYS_GET_TICKS]       = sys_get_ticks_handler,
     [SYS_SET_DISPLAY_MODE] = sys_set_display_mode_handler,
 };
 

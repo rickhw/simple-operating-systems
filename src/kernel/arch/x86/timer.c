@@ -39,11 +39,15 @@
 // 如果不加 volatile，編譯器可能會為了優化而把 tick 的值存在暫存器裡，導致其他程式碼讀到舊的值。
 volatile uint32_t tick = 0;
 
+volatile uint32_t timer_frequency = 0;
+
 // @param frequency: 每秒觸發中斷的次數
 // 如果設定為 100Hz，每個 tick 的時間長就是 10ms；若改為 1000Hz，則可以精確到 1ms。
 //
 // 在 main.c 裡面的初始流程設定為 100
 void init_timer(uint32_t frequency) {
+    timer_frequency = frequency;
+
     /*  1. divisor 表示震盪 N 次，就發出一次中斷。 */
     //
     // 用 frequency 當基數，如果想要每秒中斷 100 次，frequency=100，
