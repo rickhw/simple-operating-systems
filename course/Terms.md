@@ -19,16 +19,24 @@
 | **ATA/IDE** | Advanced Technology Attachment | 先進技術附加介面 | 21 | 傳統硬碟的傳輸介面標準，我們透過 I/O Port (`0x1F0`~`0x1F7`) 與其控制器溝通。 |
 | **LBA** | Logical Block Addressing | 邏輯區塊位址 | 21 | 現代硬碟的尋址方式。將硬碟視為一個巨大的陣列，從 LBA 0 開始，每個區塊通常是 512 Bytes。 |
 
-#### CPU 內部暫存器 (CPU Registers)
+#### CPU 內部暫存器 (CPU Registers / x86 暫存器整理表)
 
-| 縮寫 | 全名 | 繁體中文名 | Day | 用途與說明 |
-| --- | --- | --- | --- | --- |
-| **esp** | Extended Stack Pointer | 堆疊指標暫存器 | 2 | [極重要] 記錄當前堆疊的最高（最舊）位址。在排程器中，保存與替換 `esp` 是 Context Switch 的核心魔法。 |
-| **eip** | Extended Instruction Pointer | 指令指標暫存器 | 12 | 記錄 CPU 當前（或下一條）要執行的指令在記憶體中的位址。 |
-| **CR0** | Control Register 0 | 控制暫存器 0 | 10 | 內含多個系統狀態旗標，最高位 PG (bit 31) 是虛擬記憶體（分頁機制）的總開關。 |
-| **CR3** | Control Register 3 | 控制暫存器 3 | 10 | [極重要] 存放當前任務的「分頁目錄 (Page Directory)」實體位址。Day 38 學到，切換 CR3 就是在切換不同的平行宇宙。 |
-| **cs** | Code Segment | 程式碼區段暫存器 | 16 | 記錄當前執行的程式碼區段。CPU 透過讀取其底層的 CPL 判斷當前處於 Ring 0 還是 Ring 3。 |
-| **eflags** | Extended Flags Register | 狀態旗標暫存器 | 17 | 存放各種系統狀態（如是否允許中斷 IF 旗標）。在切換至 Ring 3 或 Context Switch 時極度關鍵。 |
+| 縮寫         | 全名                            | 繁體中文名    | Day | 用途與說明                                                                |
+| ---------- | ----------------------------- | -------- | --- | -------------------------------------------------------------------- |
+| **EAX**    | Extended Accumulator Register | 累加器暫存器   | -   | 常用於算術運算與函數回傳值（例如 `return value`）。                                    |
+| **EBX**    | Extended Base Register        | 基底暫存器    | -   | 常用於儲存資料位址的基底位置（base address）。                                        |
+| **ECX**    | Extended Counter Register     | 計數器暫存器   | -   | 用於迴圈控制（如 `loop` 指令）或字串操作計數。                                          |
+| **EDX**    | Extended Data Register        | 資料暫存器    | -   | 搭配 EAX 用於乘除法運算（如 64-bit 結果分佈在 EDX:EAX）。                              |
+| **ESI**    | Extended Source Index         | 來源變址暫存器  | -   | 指向資料來源位址，常用於字串或陣列操作。                                                 |
+| **EDI**    | Extended Destination Index    | 目的變址暫存器  | -   | 指向目標位址，搭配 ESI 使用於記憶體搬移操作。                                            |
+| **EBP**    | Extended Base Pointer         | 基底指標暫存器  | -   | 指向當前 Stack Frame 底部，用於存取區域變數與參數。                                     |
+| **ESP**    | Extended Stack Pointer        | 堆疊指標暫存器  | 2   | ⭐ [極重要] 指向目前堆疊頂端（Top of Stack）。在 Context Switch 中，保存與切換 ESP 是核心機制。   |
+| **EIP**    | Extended Instruction Pointer  | 指令指標暫存器  | 12  | 指向 CPU 下一條要執行的指令位址。控制程式流程（jump/call）。                                |
+| **EFLAGS** | Extended Flags Register       | 狀態旗標暫存器  | 17  | 儲存 CPU 狀態（如 ZF/CF/SF）與控制旗標（如 IF 中斷開關）。在中斷與權限切換中非常關鍵。                 
+| **CS**     | Code Segment                  | 程式碼區段暫存器 | 16  | 指向目前執行的程式碼區段，並隱含 CPL（Ring 等級）。                                       |
+| **CR0**    | Control Register 0            | 控制暫存器 0  | 10  | 控制 CPU 核心行為，包含 PG (bit 31) → 分頁機制開關。                                 |
+| **CR3**    | Control Register 3            | 控制暫存器 3  | 10  | ⭐ [極重要] 存放 Page Directory 實體位址。切換 CR3 等於切換虛擬記憶體空間（Context Universe）。 |
+
 
 #### x86 核心資料結構 (Core Data Structures)
 
