@@ -207,7 +207,7 @@ void create_user_task(uint32_t entry_point, uint32_t user_stack_top) {
     *(--kstack) = 0; // ESI
     *(--kstack) = 0; // EDI
 
-    *(--kstack) = (uint32_t) child_ret_stub; // 返回位址
+    *(--kstack) = (uint32_t) child_ret_stub; // ← switch_task 的 ret 跳到這裡
 
     // 為 switch_task 的彈出指令留空位
     for(int i = 0; i < 8; i++) *(--kstack) = 0;
@@ -258,21 +258,21 @@ void exit_task() {
 void schedule() {
     if (!current_task) return;
 
-    // 1. 關閉中斷
-    // 1.1 保存進入前的 EFLAGS (包含中斷開關狀態)
+    // ----------------------------------------------------
+    // 步驟 1: 垃圾回收 + 喚醒睡眠任務
+    // ----------------------------------------------------
+    // 保存進入前的 EFLAGS (包含中斷開關狀態)
     uint32_t eflags;
     __asm__ volatile("pushfl; popl %0" : "=r"(eflags));
 
-    // 1.2 核心操作期間關閉中斷
+    // 關閉中斷，避免 Race Condition
     __asm__ volatile("cli");
 
-    // 1.3 執行 GC
+    // 執行 GC: 釋放已標記為 TASK_DEAD 的 PCB 與 Kernel Stack
     task_gc();
 
-    // ----------------------------------------------------
-    // 1.5：喚醒睡眠中的任務
-    // 不管現在是不是 idle_task，永遠從「主佇列 (ready_queue)」掃描！
-    // ----------------------------------------------------
+    // 掃描睡眠任務，時間到了就喚醒
+    // 不管現在是不是 idle_task，永遠從「主佇列 (ready_queue)」掃描
     if (ready_queue) {
         task_t *iter = (task_t*)ready_queue;
         task_t *first = iter;
@@ -286,14 +286,17 @@ void schedule() {
     }
 
     // ----------------------------------------------------
-    // 階段 2：尋找下一個準備就緒 (RUNNING) 的行程
+    // 步驟 2：Round-Robin 輪轉找下一個準備就緒 (RUNNING) 的行程
     // ----------------------------------------------------
     task_t *next_run = idle_task; // 預設降落傘：都沒人跑，就切給 idle
 
     if (ready_queue) {
-        // 【關鍵修復】如果目前是 idle_task，就從 ready_queue 的頭開始找
-        // 如果是正常 task，就從它的下一個開始找 (公平輪轉)
-        task_t *start_node = (current_task == idle_task) ? (task_t*)ready_queue : current_task->next;
+        // 從當前行程的 next 開始找，公平輪轉
+        task_t *start_node = (current_task == idle_task)
+            ? (task_t*)ready_queue
+            : current_task->next;
+
+        // 排程器從當前行程的「下一個」開始掃，找到第一個 TASK_RUNNING 的就選它
         task_t *iter = start_node;
         do {
             if (iter->state == TASK_RUNNING) {
@@ -305,21 +308,26 @@ void schedule() {
     }
 
     // ----------------------------------------------------
-    // 階段 3：執行 Context Switch
+    // 步驟 3：執行 Context Switch
     // ----------------------------------------------------
     task_t *prev = (task_t*)current_task;
     current_task = next_run;
 
     if (current_task != prev) {
         if (current_task->kernel_stack != 0) {
+            // 更新 TSS.esp0 (Task State Segment)
             // @ref: src/kernel/lib/gdt.h#set_kernel_stack
             set_kernel_stack(current_task->kernel_stack);
         }
         // @ref: src/kernel/arch/x86/switch_task.S
-        switch_task((uint32_t*)&prev->esp, (uint32_t*)&current_task->esp, current_task->page_directory);
+        switch_task(
+            (uint32_t*)&prev->esp,          // 儲存舊行程的 ESP
+            (uint32_t*)&current_task->esp,  // 載入新行程的 ESP
+            current_task->page_directory    // 新行程的 CR3
+        );
     }
 
-    // 3. 恢復進入前的狀態，而不是盲目 sti
+    // 恢復進入前的狀態，而不是盲目 sti
     __asm__ volatile("pushl %0; popfl" : : "r"(eflags));
 }
 
