@@ -1,5 +1,4 @@
-FROM --platform=linux/amd64 debian:bullseye
-# FROM debian:bullseye
+FROM debian:bullseye
 
 RUN apt-get update && apt-get install -y \
     nasm \
@@ -7,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     grub-pc-bin \
     grub-common \
     xorriso \
+    mtools \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
