@@ -9,6 +9,7 @@ A 32-bit x86 operating system built from scratch in C and NASM assembly — boot
 - [自幹作業系統 - Networking Fundamentals](https://rickhw.github.io/2026/04/09/ComputerScience/Simple-OS-Networking/)
 - [自幹作業系統 - 初探 Timer 原理](https://rickhw.github.io/2026/04/12/ComputerScience/Simple-OS-Timer/)
 - [自幹作業系統 - Task and Scheduler](https://rickhw.github.io/2026/04/17/ComputerScience/Simple-OS-Task-and-Scheduler/)
+- [自幹作業系統 - Context Switch](https://rickhw.github.io/2026/04/28/ComputerScience/Simple-OS-Context-Switch/)
 - [Demo / 錄影](https://www.youtube.com/playlist?list=PL63J1r2PBvojs-N7OLM6jo6IYKEIizK1P)
 
 

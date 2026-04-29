@@ -40,6 +40,7 @@ hdd.img:
 run: all hdd.img
 	@echo "==> 寫入網路封包到 dump.pcap"
 	qemu-system-i386 -cdrom simple-os.iso -monitor stdio \
+		-display cocoa,show-cursor=on,zoom-to-fit=on \
 		-netdev user,id=n0,hostfwd=udp::8080-:8080 \
 		-device rtl8139,netdev=n0 \
 		-object filter-dump,id=f1,netdev=n0,file=dump.pcap \
@@ -49,6 +50,7 @@ run: all hdd.img
 debug: all hdd.img
 	qemu-system-i386 -cdrom simple-os.iso \
 		-d int -no-reboot \
+		-display cocoa,show-cursor=on,zoom-to-fit=on \
 		-netdev user,id=n0,hostfwd=udp::8080-:8080 \
 		-device rtl8139,netdev=n0 \
 		-object filter-dump,id=f1,netdev=n0,file=dump.pcap \
