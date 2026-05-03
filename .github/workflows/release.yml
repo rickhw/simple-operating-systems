@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            nasm \
+            build-essential \
+            gcc-multilib \
+            grub-pc-bin \
+            grub-common \
+            xorriso \
+            mtools
+
+      - name: Extract version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+      - name: Build ISO
+        run: make IN_CONTAINER=1 VERSION=${{ env.VERSION }}
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "Simple OS ${{ github.ref_name }}" \
+            --notes "## Simple OS ${{ github.ref_name }}
+
+          ### 下載與使用
+
+          1. 下載 \`simple-os.iso\`
+          2. 使用 QEMU 啟動：
+             \`\`\`
+             qemu-system-i386 -cdrom simple-os.iso -boot d
+             \`\`\`
+          3. 或燒錄到 USB/光碟開機" \
+            simple-os.iso
+        env:
+          GH_TOKEN: ${{ github.token }}

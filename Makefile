@@ -72,8 +72,11 @@ USER_BIN_DIR = $(USER_DIR)/bin
 KERNEL_INC = -I$(KERNEL_DIR)/include -I$(KERNEL_DIR)/lib
 USER_INC   = -I$(USER_DIR)/include -I$(USER_DIR)/lib
 
+VERSION   ?= 1.0.0
+
 CFLAGS     = -m32 -ffreestanding -O2 -Wall -Wextra $(KERNEL_INC)
-APP_CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector $(USER_INC)
+APP_CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-pic -fno-stack-protector $(USER_INC) \
+             -DOS_VERSION='"$(VERSION)"'
 
 # -----------------------------------------------------------------------------
 # 檔案選取

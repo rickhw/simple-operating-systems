@@ -1,6 +1,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "unistd.h"
+#include "version.h"
 
 // 讀取一整行指令
 void read_line(char* buffer, int max_len) {
@@ -23,6 +24,7 @@ int main(int argc, char** argv) {
     if (argc <= 1) {
         printf("\n======================================\n");
         printf("      Welcome to Simple OS Shell!     \n");
+        printf("         Version: " OS_VERSION "          \n");
         printf("======================================\n");
     } else {
         printf("Awesome! I received %d arguments:\n", argc);
@@ -62,7 +64,7 @@ int main(int argc, char** argv) {
             printf("External commands: echo, cat, ping, pong, ls, touch, mkdir, ps, top\n");
         }
         else if (strcmp(cmd, "about") == 0) {
-            printf("Simple OS v1.0 - Dynamic Shell Edition\n");
+            printf("Simple OS v" OS_VERSION " - Dynamic Shell Edition\n");
         }
         else if (strcmp(cmd, "exit") == 0) {
             printf("Goodbye!\n");
